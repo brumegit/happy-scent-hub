@@ -89,7 +89,7 @@ function Landing() {
               alt="Aura smart scent diffuser releasing a soft mist on a stone surface"
               width={1408}
               height={1008}
-              className="w-full rounded-3xl border border-border object-cover"
+              className="w-full rounded-none border border-border object-cover"
               style={{ boxShadow: "var(--shadow-soft)" }}
             />
           </div>
@@ -97,7 +97,7 @@ function Landing() {
 
         <section className="grid gap-5 sm:grid-cols-3">
           {steps.map(({ icon: Icon, title, copy }, i) => (
-            <div key={title} className="rounded-2xl border border-border bg-card p-6">
+            <div key={title} className="rounded-none border border-border bg-card p-6">
               <Icon className="size-5 text-primary" aria-hidden />
               <h2 className="mt-4 text-lg font-semibold">
                 {i + 1}. {title}

@@ -86,7 +86,7 @@ function AuthPage() {
         </Link>
 
         <div
-          className="rounded-3xl border border-border bg-card p-8"
+          className="rounded-none border border-border bg-card p-8"
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
           {sent ? (

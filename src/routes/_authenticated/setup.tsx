@@ -106,7 +106,7 @@ function Setup() {
         </div>
 
         <div
-          className="mt-8 rounded-3xl border border-border bg-card p-8"
+          className="mt-8 rounded-none border border-border bg-card p-8"
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
           {step === 0 && (
@@ -135,7 +135,7 @@ function Setup() {
               )}
 
               {deviceId && (
-                <div className="space-y-4 rounded-2xl border border-border bg-secondary/40 p-5">
+                <div className="space-y-4 rounded-none border border-border bg-secondary/40 p-5">
                   <p className="flex items-center gap-2 text-sm text-accent">
                     <Check className="size-4" aria-hidden />
                     Device found
@@ -176,7 +176,7 @@ function Setup() {
                     key={option.value}
                     type="button"
                     onClick={() => setIntensity(option.value)}
-                    className={`w-full rounded-2xl border p-5 text-left transition-colors ${
+                    className={`w-full rounded-none border p-5 text-left transition-colors ${
                       intensity === option.value
                         ? "border-primary bg-secondary/60"
                         : "border-border hover:bg-secondary/30"
