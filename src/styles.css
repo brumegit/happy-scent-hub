@@ -156,6 +156,20 @@
 
   h1, h2, h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.08;
   }
+
+  button {
+    letter-spacing: 0.12em;
+  }
+}
+
+@utility eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
 }
