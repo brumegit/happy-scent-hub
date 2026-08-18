@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      diffusers: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          end_time: string
+          id: string
+          intensity: Database["public"]["Enums"]["intensity_level"]
+          name: string
+          schedule_active: boolean
+          schedule_days: number[]
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          end_time?: string
+          id?: string
+          intensity?: Database["public"]["Enums"]["intensity_level"]
+          name: string
+          schedule_active?: boolean
+          schedule_days?: number[]
+          start_time?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          end_time?: string
+          id?: string
+          intensity?: Database["public"]["Enums"]["intensity_level"]
+          name?: string
+          schedule_active?: boolean
+          schedule_days?: number[]
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +82,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      intensity_level: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +209,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      intensity_level: ["low", "medium", "high"],
+    },
   },
 } as const
