@@ -19,8 +19,8 @@
  */
 
 @theme inline {
-  --font-display: "Fraunces", Georgia, serif;
-  --font-body: "Manrope", system-ui, sans-serif;
+  --font-display: "Playfair Display", "Iowan Old Style", Baskerville, serif;
+  --font-body: "Jost", system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -64,46 +64,47 @@
 }
 
 :root {
-  --radius: 1rem;
-  --font-display: "Fraunces", Georgia, serif;
-  --font-body: "Manrope", system-ui, sans-serif;
+  --radius: 0rem;
+  --font-display: "Playfair Display", "Iowan Old Style", Baskerville, serif;
+  --font-body: "Jost", system-ui, sans-serif;
 
-  --background: oklch(0.17 0.015 65);
-  --foreground: oklch(0.96 0.012 85);
-  --card: oklch(0.22 0.018 65);
-  --card-foreground: oklch(0.96 0.012 85);
-  --popover: oklch(0.22 0.018 65);
-  --popover-foreground: oklch(0.96 0.012 85);
-  --primary: oklch(0.79 0.135 72);
-  --primary-foreground: oklch(0.2 0.03 60);
-  --secondary: oklch(0.27 0.02 65);
-  --secondary-foreground: oklch(0.95 0.012 85);
-  --muted: oklch(0.26 0.018 65);
-  --muted-foreground: oklch(0.73 0.02 75);
-  --accent: oklch(0.62 0.09 165);
-  --accent-foreground: oklch(0.15 0.02 165);
-  --destructive: oklch(0.62 0.19 25);
+  /* Brume-like editorial palette: warm paper, near-black ink, muted gold */
+  --background: oklch(0.976 0.011 85);
+  --foreground: oklch(0.16 0.004 85);
+  --card: oklch(0.995 0.004 85);
+  --card-foreground: oklch(0.16 0.004 85);
+  --popover: oklch(0.995 0.004 85);
+  --popover-foreground: oklch(0.16 0.004 85);
+  --primary: oklch(0.18 0.004 85);
+  --primary-foreground: oklch(0.976 0.011 85);
+  --secondary: oklch(0.945 0.012 85);
+  --secondary-foreground: oklch(0.2 0.004 85);
+  --muted: oklch(0.94 0.01 85);
+  --muted-foreground: oklch(0.5 0.008 85);
+  --accent: oklch(0.72 0.09 82);
+  --accent-foreground: oklch(0.18 0.004 85);
+  --destructive: oklch(0.55 0.19 25);
   --destructive-foreground: oklch(0.98 0.005 85);
-  --border: oklch(0.32 0.02 65);
-  --input: oklch(0.3 0.02 65);
-  --ring: oklch(0.79 0.135 72);
-  --chart-1: oklch(0.79 0.135 72);
-  --chart-2: oklch(0.62 0.09 165);
-  --chart-3: oklch(0.6 0.1 40);
-  --chart-4: oklch(0.7 0.08 100);
-  --chart-5: oklch(0.5 0.06 300);
-  --sidebar: oklch(0.2 0.018 65);
-  --sidebar-foreground: oklch(0.96 0.012 85);
-  --sidebar-primary: oklch(0.79 0.135 72);
-  --sidebar-primary-foreground: oklch(0.2 0.03 60);
-  --sidebar-accent: oklch(0.27 0.02 65);
-  --sidebar-accent-foreground: oklch(0.95 0.012 85);
-  --sidebar-border: oklch(0.32 0.02 65);
-  --sidebar-ring: oklch(0.79 0.135 72);
+  --border: oklch(0.86 0.01 85);
+  --input: oklch(0.86 0.01 85);
+  --ring: oklch(0.3 0.006 85);
+  --chart-1: oklch(0.18 0.004 85);
+  --chart-2: oklch(0.72 0.09 82);
+  --chart-3: oklch(0.6 0.05 60);
+  --chart-4: oklch(0.75 0.03 85);
+  --chart-5: oklch(0.45 0.02 85);
+  --sidebar: oklch(0.976 0.011 85);
+  --sidebar-foreground: oklch(0.16 0.004 85);
+  --sidebar-primary: oklch(0.18 0.004 85);
+  --sidebar-primary-foreground: oklch(0.976 0.011 85);
+  --sidebar-accent: oklch(0.945 0.012 85);
+  --sidebar-accent-foreground: oklch(0.2 0.004 85);
+  --sidebar-border: oklch(0.86 0.01 85);
+  --sidebar-ring: oklch(0.3 0.006 85);
 
-  --gradient-warm: linear-gradient(140deg, oklch(0.79 0.135 72 / 0.22), oklch(0.62 0.09 165 / 0.12));
-  --gradient-glow: radial-gradient(60% 60% at 50% 0%, oklch(0.79 0.135 72 / 0.28), transparent 70%);
-  --shadow-soft: 0 24px 60px -24px oklch(0.05 0.01 65 / 0.9);
+  --gradient-warm: linear-gradient(140deg, oklch(0.94 0.02 85), oklch(0.99 0.006 85));
+  --gradient-glow: radial-gradient(70% 55% at 50% 0%, oklch(0.72 0.09 82 / 0.14), transparent 72%);
+  --shadow-soft: 0 1px 0 0 oklch(0.16 0.004 85 / 0.08);
 }
 
 
@@ -155,6 +156,20 @@
 
   h1, h2, h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.08;
   }
+
+  button {
+    letter-spacing: 0.12em;
+  }
+}
+
+@utility eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
 }

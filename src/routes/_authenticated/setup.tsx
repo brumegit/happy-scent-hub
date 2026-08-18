@@ -106,13 +106,13 @@ function Setup() {
         </div>
 
         <div
-          className="mt-8 rounded-3xl border border-border bg-card p-8"
+          className="mt-8 rounded-none border border-border bg-card p-8"
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
           {step === 0 && (
             <section className="space-y-6">
               <div>
-                <h1 className="text-2xl">Connect your diffuser</h1>
+                <h1 className="font-display text-3xl uppercase">Connect your diffuser</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Turn your Aura on, hold the button until the light pulses, then pair over Bluetooth.
                 </p>
@@ -135,8 +135,8 @@ function Setup() {
               )}
 
               {deviceId && (
-                <div className="space-y-4 rounded-2xl border border-border bg-secondary/40 p-5">
-                  <p className="flex items-center gap-2 text-sm text-accent">
+                <div className="space-y-4 rounded-none border border-border bg-secondary/40 p-5">
+                  <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-accent">
                     <Check className="size-4" aria-hidden />
                     Device found
                   </p>
@@ -166,7 +166,7 @@ function Setup() {
           {step === 1 && (
             <section className="space-y-6">
               <div>
-                <h1 className="text-2xl">Choose your intensity</h1>
+                <h1 className="font-display text-3xl uppercase">Choose your intensity</h1>
                 <p className="mt-2 text-sm text-muted-foreground">You can change this at any time.</p>
               </div>
 
@@ -176,7 +176,7 @@ function Setup() {
                     key={option.value}
                     type="button"
                     onClick={() => setIntensity(option.value)}
-                    className={`w-full rounded-2xl border p-5 text-left transition-colors ${
+                    className={`w-full rounded-none border p-5 text-left transition-colors ${
                       intensity === option.value
                         ? "border-primary bg-secondary/60"
                         : "border-border hover:bg-secondary/30"
@@ -205,7 +205,7 @@ function Setup() {
           {step === 2 && (
             <section className="space-y-6">
               <div>
-                <h1 className="text-2xl">Set your schedule</h1>
+                <h1 className="font-display text-3xl uppercase">Set your schedule</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Pick the days and the hours your diffuser should run.
                 </p>

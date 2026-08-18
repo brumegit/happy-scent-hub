@@ -80,13 +80,13 @@ function AuthPage() {
         aria-hidden
       />
       <div className="relative w-full max-w-md">
-        <Link to="/" className="mb-8 flex items-center justify-center gap-2 font-display text-xl font-semibold">
+        <Link to="/" className="mb-8 flex items-center justify-center gap-2 font-display text-2xl uppercase tracking-[0.3em]">
           <Waves className="size-5 text-primary" aria-hidden />
           Aura
         </Link>
 
         <div
-          className="rounded-3xl border border-border bg-card p-8"
+          className="rounded-none border border-border bg-card p-8"
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
           {sent ? (
