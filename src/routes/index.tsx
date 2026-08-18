@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Waves, Bluetooth, Gauge, CalendarClock } from "lucide-react";
+import { Bluetooth, Gauge, CalendarClock } from "lucide-react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/diffuser-hero.jpg";
@@ -53,9 +54,8 @@ function Landing() {
       />
       <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-6 py-10 lg:py-20">
         <header className="flex items-center justify-between">
-          <span className="flex items-center gap-2 font-display text-2xl uppercase tracking-[0.3em]">
-            <Waves className="size-5 text-accent" aria-hidden />
-            Aura
+          <span className="flex items-center">
+            <BrandLogo className="h-7" />
           </span>
           <Button asChild variant="ghost">
             <Link to="/auth">Sign in</Link>
