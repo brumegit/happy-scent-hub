@@ -19,8 +19,8 @@
  */
 
 @theme inline {
-  --font-display: "Fraunces", Georgia, serif;
-  --font-body: "Manrope", system-ui, sans-serif;
+  --font-display: "Playfair Display", "Iowan Old Style", Baskerville, serif;
+  --font-body: "Jost", system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
