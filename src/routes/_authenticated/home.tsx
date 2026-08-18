@@ -52,7 +52,7 @@ function Home() {
 
         <div className="mt-10 flex items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-4xl">Your diffusers</h1>
+            <h1 className="font-display text-4xl uppercase">Your diffusers</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Intensity and schedule, always one tap away.
             </p>
@@ -93,8 +93,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl">{diffuser.name}</h2>
-          <p className="mt-1 flex items-center gap-2 text-sm text-accent">
+          <h2 className="font-display text-2xl uppercase tracking-wide">{diffuser.name}</h2>
+          <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-accent">
             <Bluetooth className="size-4" aria-hidden />
             Connected
           </p>
@@ -112,7 +112,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       </div>
 
       <div className="mt-6 rounded-none border border-border bg-secondary/30 p-5">
-        <p className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+        <p className="flex items-center gap-2 eyebrow text-muted-foreground">
           <Gauge className="size-4" aria-hidden />
           Intensity
         </p>
@@ -136,7 +136,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       </div>
 
       <div className="mt-4 rounded-none border border-border bg-secondary/30 p-5">
-        <p className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+        <p className="flex items-center gap-2 eyebrow text-muted-foreground">
           <CalendarClock className="size-4" aria-hidden />
           Active schedule
         </p>

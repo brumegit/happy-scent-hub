@@ -53,8 +53,8 @@ function Landing() {
       />
       <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-6 py-10 lg:py-20">
         <header className="flex items-center justify-between">
-          <span className="flex items-center gap-2 font-display text-xl font-semibold">
-            <Waves className="size-5 text-primary" aria-hidden />
+          <span className="flex items-center gap-2 font-display text-2xl uppercase tracking-[0.3em]">
+            <Waves className="size-5 text-accent" aria-hidden />
             Aura
           </span>
           <Button asChild variant="ghost">
@@ -64,9 +64,11 @@ function Landing() {
 
         <section className="grid items-center gap-12 lg:grid-cols-2">
           <div className="space-y-7">
-            <p className="text-sm uppercase tracking-[0.2em] text-primary">Now available across the USA</p>
-            <h1 className="font-display text-5xl leading-[1.05] sm:text-6xl">
-              Your home, scented on schedule.
+            <p className="eyebrow text-muted-foreground">Now available across the USA</p>
+            <h1 className="font-display text-5xl uppercase leading-[1.02] sm:text-7xl">
+              Your home,
+              <br />
+              scented on schedule.
             </h1>
             <p className="max-w-md text-lg text-muted-foreground">
               Connect your Aura smart scent diffuser in under a minute, dial in the intensity and let it
@@ -98,8 +100,8 @@ function Landing() {
         <section className="grid gap-5 sm:grid-cols-3">
           {steps.map(({ icon: Icon, title, copy }, i) => (
             <div key={title} className="rounded-none border border-border bg-card p-6">
-              <Icon className="size-5 text-primary" aria-hidden />
-              <h2 className="mt-4 text-lg font-semibold">
+              <Icon className="size-5 text-accent" aria-hidden />
+              <h2 className="mt-4 font-display text-xl uppercase tracking-wide">
                 {i + 1}. {title}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">{copy}</p>

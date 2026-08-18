@@ -17,9 +17,9 @@ export function AppHeader() {
   }
 
   return (
-    <header className="flex items-center justify-between">
-      <Link to="/home" className="flex items-center gap-2 font-display text-xl font-semibold">
-        <Waves className="size-5 text-primary" aria-hidden />
+    <header className="flex items-center justify-between border-b border-border pb-5">
+      <Link to="/home" className="flex items-center gap-2 font-display text-xl uppercase tracking-[0.3em]">
+        <Waves className="size-5 text-accent" aria-hidden />
         Aura
       </Link>
       <Button variant="ghost" size="sm" onClick={signOut}>
