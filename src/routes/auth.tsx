@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Waves } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -80,9 +80,8 @@ function AuthPage() {
         aria-hidden
       />
       <div className="relative w-full max-w-md">
-        <Link to="/" className="mb-8 flex items-center justify-center gap-2 font-display text-2xl uppercase tracking-[0.3em]">
-          <Waves className="size-5 text-primary" aria-hidden />
-          Aura
+        <Link to="/" className="mb-8 flex items-center justify-center">
+          <BrandLogo className="h-7" />
         </Link>
 
         <div
