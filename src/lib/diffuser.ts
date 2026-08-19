@@ -442,20 +442,23 @@ export function scheduleStatus(
   const level = intensityLabel ? ` at ${intensityLabel.toLowerCase()} intensity` : "";
   if (!scheduleActive) return "The schedule is paused. The diffuser will not spray until you turn it back on.";
 
-  const isOn = (day: number, hour: number) =>
-    !!schedule.find((d) => d.day === day && d.active)?.hours.includes(hour);
+  // Minute-accurate: a day is on when the minute falls inside one of its windows.
+  const isOn = (dayIndex: number, minute: number) => {
+    const entry = schedule.find((d) => d.day === dayIndex && d.active);
+    if (!entry) return false;
+    return dayRanges(entry).some(([start, end]) => minute >= start && minute < Math.max(end, start + 1));
+  };
 
   const day = now.getDay();
-  const hour = now.getHours();
-  const running = isOn(day, hour);
+  const running = isOn(day, now.getHours() * 60 + now.getMinutes());
 
-  // Walk forward hour by hour (up to a week) to find the next state change.
-  for (let step = 1; step <= 24 * 7; step += 1) {
+  // Walk forward minute by minute (up to a week) to find the next state change.
+  for (let step = 1; step <= 60 * 24 * 7; step += 1) {
     const next = new Date(now.getTime());
-    next.setMinutes(0, 0, 0);
-    next.setHours(next.getHours() + step);
-    if (isOn(next.getDay(), next.getHours()) !== running) {
-      const when = formatHourLabel(next.getHours());
+    next.setSeconds(0, 0);
+    next.setMinutes(next.getMinutes() + step);
+    if (isOn(next.getDay(), next.getHours() * 60 + next.getMinutes()) !== running) {
+      const when = formatMinutes(next.getHours() * 60 + next.getMinutes());
       const dayLabel = next.getDay() === day ? "" : ` on ${DAYS[next.getDay()]?.long}`;
       return running
         ? `The diffuser is programmed to be running${level} and scheduled to pause at ${when}${dayLabel}.`
