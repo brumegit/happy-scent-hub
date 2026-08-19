@@ -373,7 +373,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex-1 border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+                        className="flex-1 border border-border bg-background px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => setConfirmRemove(false)}
                       >
                         Cancel
