@@ -172,12 +172,23 @@ export async function pairDiffuser(opts?: {
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
-      // Always show every nearby device; the chooser highlights a BRUME unit
-      // when one is advertising so it can be picked in one tap.
-      const device = await nav.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: SERVICE_UUIDS,
-      });
+      // Re-connecting to a known diffuser: narrow the chooser to its hardware label.
+      // Otherwise show every nearby device.
+      let device: BluetoothDeviceLike | null = null;
+      if (preferName) {
+        device = await nav.bluetooth
+          .requestDevice({
+            filters: [{ namePrefix: preferName.slice(0, 20) }],
+            optionalServices: SERVICE_UUIDS,
+          })
+          .catch(() => null);
+      }
+      if (!device) {
+        device = await nav.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: SERVICE_UUIDS,
+        });
+      }
 
       try {
         await attachLink(device);
