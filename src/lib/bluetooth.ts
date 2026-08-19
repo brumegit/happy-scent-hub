@@ -6,14 +6,7 @@
  * are silently dropped by these serial modules, which is why the device never
  * beeps when a whole timer-list frame is written at once.
  */
-import {
-  buildGetTimers,
-  buildModifyTimer,
-  buildTimerList,
-  parseTimerListResponse,
-  toHex,
-  type TimerSlot,
-} from "@/lib/scentlife";
+import { toHex } from "@/lib/scentlife";
 import {
   connectNative,
   isNativeConnected,
@@ -76,7 +69,7 @@ function createResponseChannel() {
     }
   };
 
-  const waitFor = (fn: number, timeoutMs = 2500) =>
+  const waitFor = (fn: number, timeoutMs = 1200) =>
     new Promise<Uint8Array>((resolve, reject) => {
       const entry = { fn, resolve };
       pending.push(entry);
