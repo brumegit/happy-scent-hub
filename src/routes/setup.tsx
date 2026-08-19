@@ -24,7 +24,9 @@ import { useDiffuserStore } from "@/stores/diffuserStore";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>) => ({ start: search.start === true || search.start === "true" }),
+  validateSearch: (search: Record<string, unknown>): { start?: boolean } => ({
+    start: search["start"] === true || search["start"] === "true",
+  }),
   head: () => ({
     meta: [
       { title: "Set up your diffuser — Brume" },
