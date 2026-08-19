@@ -137,12 +137,17 @@ async function attachLink(device: {
   return true;
 }
 
-export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<PairedDevice> {
+export async function pairDiffuser(opts?: {
+  preferBrume?: boolean;
+  /** Known hardware label ("Device name - Room name") to auto-select when re-connecting. */
+  preferName?: string;
+}): Promise<PairedDevice> {
   const preferBrume = opts?.preferBrume ?? false;
+  const preferName = opts?.preferName?.trim();
 
-  // Native iOS / Android build: scan silently and auto-select a BRUME unit.
+  // Native iOS / Android build: scan silently and auto-select the known unit.
   if (await isNativePlatform()) {
-    const found = await scanForDiffuser();
+    const found = await scanForDiffuser(preferName);
     if (!found) {
       throw new Error("No diffuser found. Double-tap the button and try again.");
     }
