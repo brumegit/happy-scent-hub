@@ -121,30 +121,12 @@ export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<Pa
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
-      // When pairing the first diffuser, narrow the chooser to devices whose
-      // advertised name contains "BRUME" so a Brume diffuser is auto-selected
-      // from the list. If none matches (or the user cancels), fall back to an
-      // open scan so pairing still works.
-      let device: Awaited<ReturnType<BluetoothLike["requestDevice"]>>;
-      if (preferBrume) {
-        try {
-          device = await nav.bluetooth.requestDevice({
-            filters: [{ namePrefix: "BRUME" }],
-            optionalServices: SERVICE_UUIDS,
-          });
-        } catch (error) {
-          if ((error as Error)?.name !== "NotFoundError") throw error;
-          device = await nav.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: SERVICE_UUIDS,
-          });
-        }
-      } else {
-        device = await nav.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: SERVICE_UUIDS,
-        });
-      }
+      // Always show every nearby device; the chooser highlights a BRUME unit
+      // when one is advertising so it can be picked in one tap.
+      const device = await nav.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: SERVICE_UUIDS,
+      });
 
       try {
         await attachLink(device);

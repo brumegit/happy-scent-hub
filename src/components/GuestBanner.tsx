@@ -12,8 +12,7 @@ export function GuestBanner() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 w-full"
-      style={{ backgroundColor: "oklch(0.62 0.24 25)", color: "oklch(1 0 0)" }}
+      className="fixed bottom-0 left-0 right-0 z-50 w-full bg-destructive text-destructive-foreground"
     >
       <div className="mx-auto flex min-h-[5rem] max-w-4xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-4 text-center text-sm tracking-[0.06em]">
         <span className="flex items-center gap-2">

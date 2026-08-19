@@ -1,6 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bluetooth, CalendarClock, ChevronDown, Gauge, MoreVertical, Plus } from "lucide-react";
+import {
+  Bluetooth,
+  CalendarClock,
+  ChevronDown,
+  Gauge,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
@@ -8,6 +17,7 @@ import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import {
@@ -80,7 +90,7 @@ function Home() {
                   Intensity and schedule, always one tap away.
                 </p>
               </div>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="secondary" size="sm">
                 <Link to="/setup" search={{ start: false }}>
                   <Plus className="size-4" aria-hidden />
                   Add
@@ -94,7 +104,7 @@ function Home() {
                 <DiffuserCard key={diffuser.id} diffuser={diffuser} />
               ))}
               {hydrated && diffusers.length > 0 && (
-                <Button asChild variant="outline" className="w-full">
+                <Button asChild variant="secondary" className="w-full">
                   <Link to="/setup" search={{ start: false }}>
                     <Plus className="size-4" aria-hidden />
                     Add a diffuser
@@ -122,6 +132,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [now, setNow] = useState<Date | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(diffuser.name);
+  const [editingSettings, setEditingSettings] = useState(false);
 
   useEffect(() => {
     setConnected(isRealLink(diffuser.device_id));
@@ -195,10 +208,32 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl tracking-wide">{diffuser.name}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{diffuser.room}</p>
+          {editingName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={nameDraft}
+                aria-label="Diffuser name"
+                onChange={(e) => setNameDraft(e.target.value)}
+                className="h-9 w-56"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  const next = nameDraft.trim();
+                  if (next) updateDiffuser(diffuser.id, { name: next });
+                  setEditingName(false);
+                }}
+              >
+                Save
+              </Button>
+            </div>
+          ) : (
+            <h2 className="font-display text-2xl tracking-wide">{diffuser.name}</h2>
+          )}
+          <p className="mt-1 text-sm text-gold">{diffuser.room}</p>
           {connected && (
-            <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
+            <p className="mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
               <Bluetooth className="size-4" aria-hidden />
               Connected
             </p>
@@ -241,7 +276,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex-1 border border-destructive px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                        className="flex-1 border border-destructive bg-background px-2 py-1 text-xs text-destructive hover:opacity-80"
                         onClick={() => {
                           removeDiffuser(diffuser.id);
                           setMenuOpen(false);
@@ -253,7 +288,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex-1 border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary/40"
+                        className="flex-1 border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => setConfirmRemove(false)}
                       >
                         Cancel
@@ -261,14 +296,30 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                     </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="w-full px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
-                    onClick={() => setConfirmRemove(true)}
-                  >
-                    Remove diffuser
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:text-muted-foreground"
+                      onClick={() => {
+                        setNameDraft(diffuser.name);
+                        setEditingName(true);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      <Pencil className="size-4" aria-hidden />
+                      Edit name
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-destructive hover:opacity-80"
+                      onClick={() => setConfirmRemove(true)}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                      Remove diffuser
+                    </button>
+                  </>
                 )}
               </div>
             </>
@@ -294,9 +345,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         </div>
       ) : (
         <>
-          <p className="mt-5 border-l-2 border-gold pl-3 text-sm text-muted-foreground">
+          <p className="mb-6 mt-5 border-l-2 border-gold pl-3 text-sm text-muted-foreground">
             {now
-              ? scheduleStatus(diffuser.schedule, diffuser.schedule_active, now)
+              ? `${scheduleStatus(diffuser.schedule, diffuser.schedule_active, now)} Running at ${preset.label} intensity.`
               : "Checking the current schedule…"}
           </p>
 
@@ -306,7 +357,18 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             onToggle={() => setShowLast((v) => !v)}
           />
 
-          <div className="mt-6 border border-border bg-secondary/30 p-5">
+          <div className="mt-4">
+            <StatusButton
+              state="idle"
+              icon={false}
+              label={editingSettings ? "Close settings" : "Edit settings"}
+              onClick={() => setEditingSettings((v) => !v)}
+            />
+          </div>
+
+          {editingSettings && (
+          <>
+          <div className="mt-6 border border-border p-5">
             <p className="flex items-center gap-2 eyebrow text-muted-foreground">
               <Gauge className="size-4" aria-hidden />
               Intensity
@@ -320,8 +382,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                   onClick={() => push(option.value, schedule)}
                   className={`flex-1 border px-3 py-2 text-sm transition-colors ${
                     diffuser.intensity === option.value
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:bg-secondary/60"
+                      ? "border-foreground bg-background text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {option.label}
@@ -334,7 +396,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </p>
           </div>
 
-          <div className="mt-4 border border-border bg-secondary/30 p-5">
+          <div className="mt-4 border border-border p-5">
             <p className="flex items-center gap-2 eyebrow text-muted-foreground">
               <CalendarClock className="size-4" aria-hidden />
               Weekly schedule
@@ -374,6 +436,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               </div>
             )}
           </div>
+          </>
+          )}
         </>
       )}
     </article>
@@ -408,7 +472,7 @@ function LastSettings({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground hover:bg-secondary/40"
+        className="flex w-full items-center justify-between gap-3 bg-background px-4 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
       >
         Last used settings
         <ChevronDown

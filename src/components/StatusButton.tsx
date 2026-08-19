@@ -27,7 +27,7 @@ export function StatusButton({
         ? "border-emerald-400 text-emerald-300"
         : state === "error"
           ? "border-destructive text-destructive"
-          : "border-foreground text-foreground hover:bg-foreground/5";
+          : "border-foreground text-foreground";
 
   const Tag = onClick && state === "idle" ? "button" : "div";
 
@@ -38,11 +38,10 @@ export function StatusButton({
     >
       <Tag
         {...(Tag === "button" ? { type: "button" as const, onClick } : {})}
-        className={`relative flex w-full items-center justify-center gap-3 overflow-hidden border px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
+        className={`relative flex w-full items-center justify-center gap-3 overflow-hidden border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
       >
         {state === "pairing" && (
           <span className="pointer-events-none absolute inset-0">
-            <span className="absolute inset-0 animate-pulse bg-gold/10" />
             <span className="absolute bottom-0 left-0 h-px w-1/3 animate-[slide-in-right_1.6s_ease-in-out_infinite] bg-gold" />
           </span>
         )}

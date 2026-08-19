@@ -36,9 +36,9 @@ export function ScheduleGrid({
             type="button"
             onClick={() => setEditing(day.day)}
             disabled={!day.active}
-            className={`truncate border border-border px-3 py-2 text-left text-xs transition-colors ${
+            className={`truncate border border-border bg-background px-3 py-2 text-left text-xs transition-colors ${
               day.active
-                ? "text-foreground hover:bg-secondary/60"
+                ? "text-foreground hover:border-muted-foreground"
                 : "text-muted-foreground/50"
             }`}
           >

@@ -85,7 +85,7 @@
   --muted-foreground: oklch(0.68 0 0);
   --accent: oklch(1 0 0);
   --accent-foreground: oklch(0 0 0);
-  --destructive: oklch(0.58 0.19 25);
+  --destructive: oklch(0.62 0.24 25);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.2 0 0);
   --input: oklch(0.22 0 0);
@@ -104,8 +104,8 @@
   --sidebar-border: oklch(0.2 0 0);
   --sidebar-ring: oklch(0.85 0 0);
 
-  /* Guest-mode notice bar only — never buttons or the logo. */
-  --gold: oklch(0.86 0.11 90);
+  /* Champagne = #ffe49d. Used for accents (room name, painted hours). */
+  --gold: oklch(0.925 0.0755 92.5);
   --gold-foreground: oklch(0.16 0.02 90);
 
   --gradient-warm: linear-gradient(140deg, oklch(0.08 0 0), oklch(0 0 0));
