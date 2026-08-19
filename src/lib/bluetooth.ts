@@ -212,8 +212,12 @@ export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<Pa
  */
 export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) {
   const link = deviceId ? links.get(deviceId) : undefined;
-  if (!link) {
-    throw new Error("Diffuser is not connected. Pair it over Bluetooth and try again.");
+  if (!link || link.simulated) {
+    throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
+  }
+  if (link.isLive && !(await link.isLive())) {
+    links.delete(deviceId!);
+    throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
   for (const frame of frames) {
     console.info("[ScentLife] TX", toHex(frame));
