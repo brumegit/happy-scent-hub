@@ -34,28 +34,24 @@ export const DAYS = [
 export const INTENSITIES: {
   value: Intensity;
   label: string;
-  blurb: string;
   onSeconds: number;
   offSeconds: number;
 }[] = [
   {
     value: "low",
     label: "Low",
-    blurb: "A whisper of scent. Best for bedrooms and small rooms.",
     onSeconds: 5,
     offSeconds: 600,
   },
   {
     value: "medium",
     label: "Medium",
-    blurb: "Balanced diffusion for living rooms and offices.",
     onSeconds: 12,
     offSeconds: 240,
   },
   {
     value: "high",
     label: "High",
-    blurb: "Full strength for open spaces and entryways.",
     onSeconds: 25,
     offSeconds: 60,
   },
@@ -84,14 +80,14 @@ export function formatHourLabel(hour: number, minutes = "00") {
 }
 
 export function defaultHours() {
-  // 8 AM → 11 PM
-  return Array.from({ length: 15 }, (_, i) => i + 8);
+  // Always on — every hour of the day.
+  return Array.from({ length: 24 }, (_, i) => i);
 }
 
 export function defaultSchedule(): DaySchedule[] {
   return DAYS.map((d) => ({
     day: d.value,
-    active: d.value >= 1 && d.value <= 5,
+    active: true,
     hours: defaultHours(),
   }));
 }
@@ -111,6 +107,7 @@ export function hourRanges(hours: number[]): [number, number][] {
 export function formatHourRanges(hours: number[]) {
   const ranges = hourRanges(hours);
   if (ranges.length === 0) return "No hours selected";
+  if (ranges.length === 1 && ranges[0]![0] === 0 && ranges[0]![1] === 24) return "Always on";
   return ranges
     .map(([start, end]) => `${formatHourLabel(start)} – ${formatHourLabel(end % 24)}`)
     .join(" · ");
