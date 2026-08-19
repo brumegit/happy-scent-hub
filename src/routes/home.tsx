@@ -19,11 +19,13 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { buildSetBroadcastName } from "@/lib/scentlife";
 import { checkConnection, disconnect, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import {
   INTENSITIES,
   activeDays,
   buildPushFrames,
+  hardwareName,
   formatDays,
   formatHourRanges,
   formatSeconds,
@@ -171,15 +173,20 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
 
   /**
-   * Renames the diffuser inside the app. The ScentLife protocol has no
-   * set name command, so nothing is written over Bluetooth here.
+   * Renames the diffuser and pushes the new "Device name - Room name" label to
+   * the module's BLE advertising name (0x52) when it is connected.
    */
-  function saveNames() {
+  async function saveNames() {
     const name = nameDraft.trim();
     const room = roomDraft.trim();
     if (!name || !room) return;
     updateDiffuser(diffuser.id, { name, room });
     setEditingName(false);
+    try {
+      await sendFrames(diffuser.device_id, [buildSetBroadcastName(hardwareName(name, room))]);
+    } catch {
+      // Not connected — the name is stored in the app and pushed on next sync.
+    }
   }
 
   async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
@@ -187,7 +194,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setResult("idle");
     setError(null);
     try {
-      await sendFrames(diffuser.device_id, buildPushFrames(nextSchedule, nextIntensity));
+      await sendFrames(
+        diffuser.device_id,
+        buildPushFrames(nextSchedule, nextIntensity, hardwareName(diffuser.name, diffuser.room)),
+      );
       updateDiffuser(diffuser.id, {
         intensity: nextIntensity,
         schedule: nextSchedule,

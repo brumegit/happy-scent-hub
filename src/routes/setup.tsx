@@ -15,6 +15,7 @@ import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/li
 import {
   INTENSITIES,
   buildPushFrames,
+  hardwareName,
   defaultSchedule,
   formatSeconds,
   intensityPreset,
@@ -130,7 +131,10 @@ function Setup() {
     setResult("pairing");
     setError(null);
     try {
-      await sendFrames(deviceId, buildPushFrames(schedule, intensity));
+      await sendFrames(
+        deviceId,
+        buildPushFrames(schedule, intensity, hardwareName(name.trim() || DEFAULT_NAME, room.trim())),
+      );
       setResult("success");
       setTimeout(() => {
         setResult("idle");
