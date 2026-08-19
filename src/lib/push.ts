@@ -1,5 +1,6 @@
 import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
+  buildModifyTimer,
   buildPower,
   buildSetBroadcastName,
   buildSyncTimestamp,
@@ -8,6 +9,7 @@ import {
   sanitizeBroadcastName,
   type TimerSlot,
 } from "@/lib/scentlife";
+
 import {
   buildTimerSlots,
   intensityFromTimer,
@@ -65,17 +67,27 @@ export async function pushSettings(opts: {
     );
     const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
 
-
     const timerAck = ackFor(0x13);
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
-      for (const key of ["modes", "intensity", "schedule"] as const) {
-        debug.set(key, "fail", `0x13 rejected (code ${timerAck.code})`);
-      }
-      return acks;
+      log(`0x13 rejected (code ${timerAck.code}) — falling back to per-timer 0x14`);
     }
 
     // Read back the persisted working modes — the only real proof.
-    const readback = await queryTimers(opts.deviceId, log);
+    let readback = await queryTimers(opts.deviceId, log);
+
+    // 0x13 is the server-sync command; several firmwares only honour it inside
+    // the sync handshake and silently keep their old modes. The app-initiated
+    // path in the protocol is 0x14 (modify timer), one frame per working mode.
+    if (!readback || !matches(readback, slots)) {
+      log("Timer list not applied — retrying with 0x14 modify-timer per mode");
+      await sendFrames(
+        opts.deviceId,
+        slots.map((slot) => buildModifyTimer(slot)),
+        log,
+      );
+      readback = await queryTimers(opts.deviceId, log);
+    }
+
     if (!readback) {
       const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
       debug.set("modes", "unconfirmed", detail);
@@ -86,6 +98,7 @@ export async function pushSettings(opts: {
 
     verify(readback, slots);
     return acks;
+
   } catch (error) {
     const message = (error as Error).message;
     debug.setLinkError(message);
@@ -95,6 +108,26 @@ export async function pushSettings(opts: {
     throw error;
   }
 }
+
+/** True when the device's persisted modes already match what we want to push. */
+function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
+  const sameMinute = (a: number, b: number) =>
+    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
+  return wanted.every((w) => {
+    const d = readback.find((s) => s.index === w.index);
+    if (!d) return false;
+    if (!w.enabled) return !d.enabled;
+    return (
+      d.enabled &&
+      d.weekdayMask === w.weekdayMask &&
+      sameMinute(d.startMinute, w.startMinute) &&
+      sameMinute(d.endMinute, w.endMinute) &&
+      d.onSeconds === w.onSeconds &&
+      d.offSeconds === w.offSeconds
+    );
+  });
+}
+
 
 function verify(readback: TimerSlot[], wantedSlots: TimerSlot[]) {
   const debug = pushDebug();
