@@ -57,7 +57,7 @@ function Home() {
 
         {empty ? (
           <section className="mt-10 border border-border bg-card p-7">
-            <h1 className="font-display text-4xl uppercase leading-tight">Connect your diffuser</h1>
+            <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               Pair your diffuser to set its intensity and weekly schedule.
             </p>
