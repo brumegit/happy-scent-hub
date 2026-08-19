@@ -19,7 +19,8 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
+import { checkConnection, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
+import { buildSetDeviceName } from "@/lib/scentlife";
 import {
   DAYS,
   INTENSITIES,
@@ -137,7 +138,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [editingSettings, setEditingSettings] = useState(false);
 
   useEffect(() => {
-    setConnected(isRealLink(diffuser.device_id));
+    void checkConnection(diffuser.device_id).then(setConnected);
     setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
@@ -161,6 +162,30 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     }
   }
 
+
+  /** Renames locally and pushes the new name to the diffuser over Bluetooth. */
+  async function renameDevice(next: string) {
+    updateDiffuser(diffuser.id, { name: next });
+    setPushing(true);
+    setResult("idle");
+    setError(null);
+    try {
+      await sendFrames(diffuser.device_id, [buildSetDeviceName(next)]);
+      updateDiffuser(diffuser.id, { last_pushed_at: new Date().toISOString() });
+      setResult("success");
+      setTimeout(() => {
+        setResult("idle");
+        setPushing(false);
+      }, 1400);
+    } catch (err) {
+      setError((err as Error).message || "Could not rename the diffuser.");
+      setResult("error");
+      setTimeout(() => {
+        setResult("idle");
+        setPushing(false);
+      }, 2400);
+    }
+  }
 
   async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
     setPushing(true);
@@ -221,7 +246,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                 variant="secondary"
                 onClick={() => {
                   const next = nameDraft.trim();
-                  if (next) updateDiffuser(diffuser.id, { name: next });
+                  if (next) void renameDevice(next);
                   setEditingName(false);
                 }}
               >
@@ -317,7 +342,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       onClick={() => setConfirmRemove(true)}
                     >
                       <Trash2 className="size-4" aria-hidden />
-                      Remove diffuser
+                      Remove
                     </button>
                   </>
                 )}

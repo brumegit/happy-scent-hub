@@ -7,6 +7,13 @@
  * beeps when a whole timer-list frame is written at once.
  */
 import { toHex } from "@/lib/scentlife";
+import {
+  connectNative,
+  isNativeConnected,
+  isNativePlatform,
+  scanForDiffuser,
+  writeNative,
+} from "@/lib/native-ble";
 
 export type PairedDevice = { deviceId: string; suggestedName: string };
 
@@ -118,6 +125,30 @@ async function attachLink(device: {
 
 export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<PairedDevice> {
   const preferBrume = opts?.preferBrume ?? false;
+
+  // Native iOS / Android build: scan silently and auto-select a BRUME unit.
+  if (await isNativePlatform()) {
+    const found = await scanForDiffuser();
+    if (!found) {
+      throw new Error("No diffuser found. Double-tap the button and try again.");
+    }
+    const target = await connectNative(found.deviceId, (value) =>
+      console.info("[ScentLife] RX", toHex(value)),
+    );
+    if (target) {
+      links.set(found.deviceId, {
+        simulated: false,
+        write: async (frame) => {
+          for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
+            await writeNative(found.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
+            await wait(CHUNK_DELAY_MS);
+          }
+        },
+      });
+    }
+    return { deviceId: found.deviceId, suggestedName: found.name || "The 24/7 Room Diffuser" };
+  }
+
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
@@ -176,4 +207,16 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
     // Inter-frame gap: the module needs to process before the next command.
     await wait(150);
   }
+}
+
+/**
+ * Async connection check — on native builds the OS keeps the GATT link, so we
+ * ask the platform instead of relying on the in-memory map.
+ */
+export async function checkConnection(deviceId: string | null) {
+  if (!deviceId) return false;
+  if (await isNativePlatform()) {
+    if (await isNativeConnected(deviceId)) return true;
+  }
+  return isRealLink(deviceId);
 }
