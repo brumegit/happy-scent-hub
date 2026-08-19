@@ -121,21 +121,37 @@ export const FN_SET_MODULE_INFO = 0x52;
 
 /** Default identity bytes used by ScentLife single-Bluetooth diffusers. */
 const MANUFACTURER_ID = 0x5a53;
-const MODULE_TYPE = "A".charCodeAt(0); // Bluetooth only
 const DEVICE_TYPE = "001";
+
+/** Module type byte: 'A' Bluetooth only, 'B' Bluetooth+WiFi. */
+export const MODULE_TYPES = ["A", "B"] as const;
+
+/**
+ * The 0x52 example in the protocol carries a 12-character ASCII broadcast name,
+ * and modules reject longer or non-ASCII names silently (no 0xD2 reply), so the
+ * label is sanitised down to plain ASCII and capped at 12 bytes.
+ */
+export const MAX_BROADCAST_NAME_BYTES = 12;
+
+export function sanitizeBroadcastName(name: string) {
+  const ascii = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9 _-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (ascii || "BRUME").slice(0, MAX_BROADCAST_NAME_BYTES);
+}
 
 /**
  * 0x52 — set module info, including the BLE advertising (device) name.
  * This is the only command in the protocol that renames the hardware.
  */
-/** BLE advertising names are capped by the module firmware. */
-export const MAX_BROADCAST_NAME_BYTES = 20;
-
-export function buildSetBroadcastName(name: string) {
-  const bytes = [...new TextEncoder().encode(name)].slice(0, MAX_BROADCAST_NAME_BYTES);
+export function buildSetBroadcastName(name: string, moduleType: string = "A") {
+  const bytes = [...new TextEncoder().encode(sanitizeBroadcastName(name))];
   return buildFrame(FN_SET_MODULE_INFO, [
     ...u16(MANUFACTURER_ID),
-    MODULE_TYPE,
+    moduleType.charCodeAt(0),
     ...[...DEVICE_TYPE].map((c) => c.charCodeAt(0)),
     ...u16(bytes.length),
     ...bytes,

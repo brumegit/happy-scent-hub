@@ -298,7 +298,9 @@ function Setup() {
               Allow 30 minutes for the room to adapt before judging the strength.
             </p>
 
-            <StatusButton state="idle" icon={false} label="Next" onClick={() => void push("schedule")} />
+            {/* Nothing is written to the hardware yet — everything is pushed
+                once the schedule is confirmed. */}
+            <StatusButton state="idle" icon={false} label="Next" onClick={() => setPhase("schedule")} />
           </section>
         )}
 

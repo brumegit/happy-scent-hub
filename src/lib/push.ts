@@ -4,7 +4,8 @@ import {
   buildSetBroadcastName,
   buildSyncTimestamp,
   buildTimerList,
-  MAX_BROADCAST_NAME_BYTES,
+  MODULE_TYPES,
+  sanitizeBroadcastName,
   type TimerSlot,
 } from "@/lib/scentlife";
 import { buildTimerSlots, MAX_TIMERS, type DaySchedule, type Intensity } from "@/lib/diffuser";
@@ -30,27 +31,22 @@ export async function pushSettings(opts: {
   const slots = buildTimerSlots(opts.schedule, opts.intensity);
   const wanted = slots[0]!;
 
-  const frames = [buildSyncTimestamp()];
-  if (opts.hardwareName) frames.push(buildSetBroadcastName(opts.hardwareName));
-  frames.push(buildTimerList(slots), buildPower(true));
-
   try {
-    const acks = await sendFrames(opts.deviceId, frames, log);
-    const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
-
-    // Device name: only the 0x52 acknowledgment can confirm it.
+    // Rename first, on its own, retrying the two module-type bytes: modules
+    // ignore a 0x52 whose module-type byte doesn't match their own firmware.
     if (!opts.hardwareName) {
       debug.set("name", "idle", "not sent");
     } else {
-      const ack = ackFor(0x52);
-      debug.set(
-        "name",
-        !ack?.acked ? "unconfirmed" : ack.code === 0 ? "ok" : "fail",
-        `"${opts.hardwareName.slice(0, MAX_BROADCAST_NAME_BYTES)}" · ${
-          ack?.acked ? `ack 0xD2 code ${ack.code}` : "no 0xD2 reply"
-        }`,
-      );
+      await renameModule(opts.deviceId, opts.hardwareName, log);
     }
+
+    const acks = await sendFrames(
+      opts.deviceId,
+      [buildSyncTimestamp(), buildTimerList(slots), buildPower(true)],
+      log,
+    );
+    const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
+
 
     const timerAck = ackFor(0x13);
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
@@ -125,19 +121,41 @@ function verify(readback: TimerSlot[], wanted: TimerSlot) {
   );
 }
 
+/**
+ * Sends 0x52 (set module info) and waits for the 0xD2 reply, retrying with the
+ * other module-type byte when the module stays silent. Reports to the debug
+ * strip and returns true when the hardware confirmed the new name.
+ */
+export async function renameModule(
+  deviceId: string | null,
+  hardwareName: string,
+  log?: (line: string) => void,
+) {
+  const debug = pushDebug();
+  const label = sanitizeBroadcastName(hardwareName);
+  let last = "";
+  for (const moduleType of MODULE_TYPES) {
+    const acks = await sendFrames(deviceId, [buildSetBroadcastName(label, moduleType)], log);
+    const ack = acks[0];
+    if (ack?.acked && ack.code === 0) {
+      debug.set("name", "ok", `"${label}" · ack 0xD2 (module type ${moduleType})`);
+      return true;
+    }
+    last = ack?.acked
+      ? `ack 0xD2 error ${ack.code} (module type ${moduleType})`
+      : `no 0xD2 reply (module type ${moduleType})`;
+  }
+  debug.set("name", "unconfirmed", `"${label}" · ${last}`);
+  return false;
+}
+
 /** Pushes only the module (BLE advertising) name, used when renaming. */
 export async function pushName(deviceId: string | null, hardwareName: string) {
   const debug = pushDebug();
   const log = (line: string) => pushDebug().addLog(line);
   debug.set("name", "pending");
   try {
-    const acks = await sendFrames(deviceId, [buildSetBroadcastName(hardwareName)], log);
-    const ack = acks[0];
-    debug.set(
-      "name",
-      !ack?.acked ? "unconfirmed" : ack.code === 0 ? "ok" : "fail",
-      `"${hardwareName}" · ${ack?.acked ? `ack 0xD2 code ${ack.code}` : "no 0xD2 reply"}`,
-    );
+    await renameModule(deviceId, hardwareName, log);
   } catch (error) {
     debug.set("name", "fail", (error as Error).message);
     throw error;
