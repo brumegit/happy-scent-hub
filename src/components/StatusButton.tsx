@@ -41,11 +41,15 @@ export function StatusButton({
         className={`relative flex w-full items-center justify-center gap-3 overflow-hidden border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
       >
         {state === "pairing" && (
-          <span className="pointer-events-none absolute inset-0 overflow-hidden">
-            <span className="absolute inset-y-0 left-0 w-1/3 animate-[slide-in-right_1.6s_ease-in-out_infinite] bg-[linear-gradient(90deg,transparent,var(--pairing),transparent)] opacity-15" />
+          <span className="drip-layer absolute inset-0 overflow-hidden">
+            <span style={{ left: "16%", animationDelay: "0s" }} />
+            <span style={{ left: "44%", animationDelay: "0.8s" }} />
+            <span style={{ left: "72%", animationDelay: "1.6s" }} />
           </span>
         )}
-        {icon && state === "idle" && <Bluetooth className="size-4" aria-hidden />}
+        {(state === "idle" || state === "pairing") && icon && (
+          <Bluetooth className="size-4 relative" aria-hidden />
+        )}
         {state === "success" && <Check className="size-4" aria-hidden />}
         {state === "error" && <X className="size-4" aria-hidden />}
         <span className="relative">{label}</span>
