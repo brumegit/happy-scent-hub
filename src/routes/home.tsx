@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bluetooth, CalendarClock, ChevronDown, Gauge, Plus } from "lucide-react";
+import { Bluetooth, CalendarClock, ChevronDown, Gauge, MoreVertical, Plus } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
@@ -57,7 +57,7 @@ function Home() {
 
         {empty ? (
           <section className="mt-10 border border-border bg-card p-7">
-            <h1 className="font-display text-4xl uppercase leading-tight">Connect your diffuser</h1>
+            <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               Pair your diffuser to set its intensity and weekly schedule.
             </p>
@@ -73,7 +73,7 @@ function Home() {
           <>
             <div className="mt-10 flex items-end justify-between gap-4">
               <div>
-                <h1 className="font-display text-4xl uppercase">
+                <h1 className="font-display text-4xl">
                   {status === "matched" && firstName ? `${firstName}'s diffusers` : "Your diffusers"}
                 </h1>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -93,6 +93,14 @@ function Home() {
               {diffusers.map((diffuser) => (
                 <DiffuserCard key={diffuser.id} diffuser={diffuser} />
               ))}
+              {hydrated && diffusers.length > 0 && (
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/setup" search={{ start: false }}>
+                    <Plus className="size-4" aria-hidden />
+                    Add a diffuser
+                  </Link>
+                </Button>
+              )}
             </div>
           </>
         )}
@@ -103,6 +111,7 @@ function Home() {
 
 function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
+  const removeDiffuser = useDiffuserStore((s) => s.removeDiffuser);
   const [draft, setDraft] = useState<DaySchedule[] | null>(null);
   const [pushing, setPushing] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
@@ -111,6 +120,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [connecting, setConnecting] = useState(false);
   const [showLast, setShowLast] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   useEffect(() => {
     setConnected(isRealLink(diffuser.device_id));
@@ -180,7 +191,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl uppercase tracking-wide">{diffuser.name}</h2>
+          <h2 className="font-display text-2xl tracking-wide">{diffuser.name}</h2>
           {connected && (
             <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
               <Bluetooth className="size-4" aria-hidden />
@@ -188,13 +199,76 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </p>
           )}
         </div>
-        {connected && (
-          <Switch
-            checked={diffuser.schedule_active}
-            aria-label="Toggle schedule"
-            onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
-          />
-        )}
+        <div className="relative flex items-center gap-3">
+          {connected && (
+            <Switch
+              checked={diffuser.schedule_active}
+              aria-label="Toggle schedule"
+              onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
+            />
+          )}
+          <button
+            type="button"
+            aria-label="Diffuser options"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <MoreVertical className="size-5" aria-hidden />
+          </button>
+          {menuOpen && (
+            <>
+              <button
+                type="button"
+                aria-label="Close menu"
+                className="fixed inset-0 z-10 cursor-default"
+                onClick={() => setMenuOpen(false)}
+              />
+              <div
+                role="menu"
+                className="absolute right-0 top-8 z-20 w-44 border border-border bg-card p-1 text-sm"
+              >
+                {confirmRemove ? (
+                  <div className="p-2">
+                    <p className="mb-2 text-xs text-muted-foreground">Remove this diffuser?</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex-1 border border-destructive px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          removeDiffuser(diffuser.id);
+                          setMenuOpen(false);
+                          setConfirmRemove(false);
+                        }}
+                      >
+                        Remove
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex-1 border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary/40"
+                        onClick={() => setConfirmRemove(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="w-full px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
+                    onClick={() => setConfirmRemove(true)}
+                  >
+                    Remove diffuser
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {!connected ? (
