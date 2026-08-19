@@ -496,7 +496,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </p>
             <p className="mt-3 font-display text-xl">{formatDays(activeDays(schedule))}</p>
             <p className="text-sm text-muted-foreground">
-              {formatHourRanges(schedule.find((d) => d.active)?.hours ?? [])}
+              {(() => {
+                const first = schedule.find((d) => d.active);
+                return first ? formatMinuteRanges(dayRanges(first)) : "No hours selected";
+              })()}
             </p>
 
             <div className="mt-4">
