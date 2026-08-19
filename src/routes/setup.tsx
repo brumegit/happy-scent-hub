@@ -163,9 +163,12 @@ function Setup() {
   }
 
   const combinedName = hardwareName(name, room.trim());
-  const nameError = validateBroadcastName(name);
+  // The device name stays in the app only — never broadcast — so it is free
+  // form. Only the room name ends up in the Bluetooth label and is validated.
+  const nameError = null;
   const roomError = room.trim().length === 0 ? "Enter a room name." : validateBroadcastName(room);
-  const combinedError = nameError || roomError ? null : validateBroadcastName(combinedName);
+  const combinedError = roomError ? null : validateBroadcastName(combinedName);
+
 
   const preset = intensityPreset(intensity);
   const simulated = deviceId !== null && !isRealLink(deviceId);
