@@ -329,9 +329,10 @@ export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): 
       enabled,
       index,
       weekdayMask: enabled ? window!.mask : 0,
-      startMinute: enabled ? window!.start * 60 : 0,
+      // Windows are already minutes of the day (minute granularity, 0–1439).
+      startMinute: enabled ? Math.max(0, Math.min(1439, Math.round(window!.start))) : 0,
       // The device rejects/clamps 1440, so a full day ends at 23:59.
-      endMinute: enabled ? Math.min(window!.end * 60, 1439) : 0,
+      endMinute: enabled ? Math.max(0, Math.min(1439, Math.round(window!.end))) : 0,
       onSeconds: preset.onSeconds,
       offSeconds: preset.offSeconds,
       timerId: index,
