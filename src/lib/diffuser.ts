@@ -315,14 +315,23 @@ function routineTimeWord(start: number, end: number) {
   return "late evening";
 }
 
+/** Routine names stay short enough to fit one line in the UI. */
+const MAX_ROUTINE_NAME = 25;
+
 export function routineName(block: TimeBlock) {
   const day = routineDayWord(block.days);
   const time = routineTimeWord(block.start, block.end);
   if (day === "Daily" && time === "all-day") return "Always-on routine";
   if (!day && !time) return "My routine";
   const label = `${day} ${time} routine`.trim().replace(/\s+/g, " ");
-  return label.charAt(0).toUpperCase() + label.slice(1);
+  const cased = label.charAt(0).toUpperCase() + label.slice(1);
+  if (cased.length <= MAX_ROUTINE_NAME) return cased;
+  // Drop the "routine" suffix first, then trim on a word boundary.
+  const short = cased.replace(/ routine$/, "");
+  if (short.length <= MAX_ROUTINE_NAME) return short;
+  return short.slice(0, MAX_ROUTINE_NAME).replace(/[\s&-]+\S*$/, "");
 }
+
 
 
 
