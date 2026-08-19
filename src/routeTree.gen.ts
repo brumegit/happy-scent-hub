@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
 import { Route as ProductHandleRouteImport } from './routes/product.$handle'
@@ -36,6 +37,11 @@ const ShopRoute = ShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -56,6 +62,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/shop': typeof ShopRoute
+  '/welcome': typeof WelcomeRoute
   '/home': typeof AuthenticatedHomeRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/product/$handle': typeof ProductHandleRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/shop': typeof ShopRoute
+  '/welcome': typeof WelcomeRoute
   '/home': typeof AuthenticatedHomeRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/product/$handle': typeof ProductHandleRoute
@@ -74,21 +82,37 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/shop': typeof ShopRoute
+  '/welcome': typeof WelcomeRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
   '/product/$handle': typeof ProductHandleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/shop' | '/home' | '/setup' | '/product/$handle'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/shop'
+    | '/welcome'
+    | '/home'
+    | '/setup'
+    | '/product/$handle'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/shop' | '/home' | '/setup' | '/product/$handle'
+  to:
+    | '/'
+    | '/auth'
+    | '/shop'
+    | '/welcome'
+    | '/home'
+    | '/setup'
+    | '/product/$handle'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/shop'
+    | '/welcome'
     | '/_authenticated/home'
     | '/_authenticated/setup'
     | '/product/$handle'
@@ -99,6 +123,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ShopRoute: typeof ShopRoute
+  WelcomeRoute: typeof WelcomeRoute
   ProductHandleRoute: typeof ProductHandleRoute
 }
 
@@ -130,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop'
       preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/home': {
@@ -174,6 +206,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ShopRoute: ShopRoute,
+  WelcomeRoute: WelcomeRoute,
   ProductHandleRoute: ProductHandleRoute,
 }
 export const routeTree = rootRouteImport
