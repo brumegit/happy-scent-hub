@@ -202,7 +202,9 @@ export function scheduleStatus(
   schedule: DaySchedule[],
   scheduleActive: boolean,
   now: Date = new Date(),
+  intensityLabel = "",
 ) {
+  const level = intensityLabel ? ` at ${intensityLabel.toLowerCase()} intensity` : "";
   if (!scheduleActive) return "The schedule is paused — the diffuser will not spray until you turn it back on.";
 
   const isOn = (day: number, hour: number) =>
@@ -221,12 +223,12 @@ export function scheduleStatus(
       const when = formatHourLabel(next.getHours());
       const dayLabel = next.getDay() === day ? "" : ` on ${DAYS[next.getDay()]?.long}`;
       return running
-        ? `The diffuser is programmed to be running and scheduled to pause at ${when}${dayLabel}.`
-        : `The diffuser is programmed to be in pause and scheduled to resume at ${when}${dayLabel}.`;
+        ? `The diffuser is programmed to be running${level} and scheduled to pause at ${when}${dayLabel}.`
+        : `The diffuser is programmed to be in pause and scheduled to resume${level} at ${when}${dayLabel}.`;
     }
   }
 
   return running
-    ? "The diffuser is programmed to run continuously."
+    ? `The diffuser is programmed to run continuously${level}.`
     : "No hours are scheduled — the diffuser stays in pause.";
 }
