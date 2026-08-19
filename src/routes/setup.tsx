@@ -406,6 +406,9 @@ function Setup() {
                     schedule,
                     schedule_active: true,
                     last_pushed_at: new Date().toISOString(),
+                    last_pushed_intensity: intensity,
+                    last_pushed_schedule: schedule,
+
                   });
                   navigate({ to: "/home", replace: true });
                 })
