@@ -286,14 +286,16 @@ function Setup() {
               {roomError && <p className="text-xs text-destructive">{roomError}</p>}
             </div>
             <p className="text-xs text-muted-foreground">
-              The diffuser broadcasts as "{combinedName}" ({MAX_BROADCAST_NAME_BYTES} characters max,
-              letters, numbers, spaces, hyphens and underscores only).
+              The diffuser broadcasts as "{combinedName}" — the room name must stay within{" "}
+              {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens and
+              underscores only.
               {combinedError && <span className="block text-destructive">{combinedError}</span>}
             </p>
             <Button
               size="lg"
               className="w-full"
-              disabled={!!nameError || !!roomError || !!combinedError}
+              disabled={!!roomError || !!combinedError}
+
               onClick={() => {
                 setPhase("intensity");
               }}
