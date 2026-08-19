@@ -97,46 +97,61 @@ export async function pushSettings(opts: {
   }
 }
 
-function verify(readback: TimerSlot[], wanted: TimerSlot) {
+function verify(readback: TimerSlot[], wantedSlots: TimerSlot[]) {
   const debug = pushDebug();
-  const mode1 = readback.find((s) => s.index === 1);
+  const wantedOn = wantedSlots.filter((s) => s.enabled);
+  const deviceOn = readback.filter((s) => s.enabled && s.index <= MAX_TIMERS);
 
-  if (!mode1) {
-    debug.set("modes", "fail", `device returned ${readback.length} timers, none at index 1`);
-    debug.set("intensity", "fail", "working mode 1 missing");
-    debug.set("schedule", "fail", "working mode 1 missing");
-    return;
-  }
-
-  const others = readback.filter((s) => s.index !== 1 && s.index <= MAX_TIMERS);
-  const stillOn = others.filter((s) => s.enabled).map((s) => s.index);
+  const modesOk =
+    deviceOn.length === wantedOn.length &&
+    wantedOn.every((w) => deviceOn.some((d) => d.index === w.index));
   debug.set(
     "modes",
-    mode1.enabled === wanted.enabled && stillOn.length === 0 ? "ok" : "fail",
-    `mode 1 ${mode1.enabled ? "on" : "off"} · ${
-      stillOn.length ? `modes still on: ${stillOn.join(", ")}` : "modes 2–5 off"
+    modesOk ? "ok" : "fail",
+    `device modes on: ${deviceOn.map((s) => s.index).join(", ") || "none"} · sent ${
+      wantedOn.map((s) => s.index).join(", ") || "none"
     }`,
   );
 
-  const intensityOk =
-    mode1.onSeconds === wanted.onSeconds && mode1.offSeconds === wanted.offSeconds;
+  const reference = wantedOn[0] ?? wantedSlots[0]!;
+  const intensityOk = deviceOn.length
+    ? deviceOn.every(
+        (s) => s.onSeconds === reference.onSeconds && s.offSeconds === reference.offSeconds,
+      )
+    : false;
   debug.set(
     "intensity",
     intensityOk ? "ok" : "fail",
-    `device spray ${mode1.onSeconds}s / pause ${mode1.offSeconds}s · sent ${wanted.onSeconds}s / ${wanted.offSeconds}s`,
+    `device spray ${deviceOn[0]?.onSeconds ?? "–"}s / pause ${
+      deviceOn[0]?.offSeconds ?? "–"
+    }s · sent ${reference.onSeconds}s / ${reference.offSeconds}s`,
   );
 
   // The firmware normalises end-of-day: 1439 (23:59) comes back as 1440.
   const sameMinute = (a: number, b: number) =>
     a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
   const scheduleOk =
-    mode1.weekdayMask === wanted.weekdayMask &&
-    sameMinute(mode1.startMinute, wanted.startMinute) &&
-    sameMinute(mode1.endMinute, wanted.endMinute);
+    wantedOn.length > 0 &&
+    wantedOn.every((w) => {
+      const d = readback.find((s) => s.index === w.index);
+      return (
+        !!d &&
+        d.weekdayMask === w.weekdayMask &&
+        sameMinute(d.startMinute, w.startMinute) &&
+        sameMinute(d.endMinute, w.endMinute)
+      );
+    });
   debug.set(
     "schedule",
     scheduleOk ? "ok" : "fail",
-    `device days 0b${mode1.weekdayMask.toString(2)} ${mode1.startMinute}–${mode1.endMinute} min · sent 0b${wanted.weekdayMask.toString(2)} ${wanted.startMinute}–${wanted.endMinute} min`,
+    wantedOn
+      .map((w) => {
+        const d = readback.find((s) => s.index === w.index);
+        return `#${w.index} device 0b${(d?.weekdayMask ?? 0).toString(2)} ${d?.startMinute ?? "–"}–${
+          d?.endMinute ?? "–"
+        } · sent 0b${w.weekdayMask.toString(2)} ${w.startMinute}–${w.endMinute}`;
+      })
+      .join(" | ") || "no window scheduled",
   );
 }
 
