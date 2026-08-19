@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
 import { pushSettings, readSettings } from "@/lib/push";
-import { buildSyncTimestamp, MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
+import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
 import {
   INTENSITIES,
   hardwareName,
