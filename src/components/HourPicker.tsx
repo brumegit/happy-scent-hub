@@ -148,6 +148,24 @@ export function HourPicker({
 
         <p className="text-center text-sm text-muted-foreground">{formatHourRanges(selected)}</p>
 
+        <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+          <span>Time format</span>
+          {(["auto", "12", "24"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={clockMode === option}
+              onClick={() => setClockMode(option)}
+              className={`border bg-background px-2 py-1 transition-colors ${
+                clockMode === option ? "border-gold text-gold" : "border-border text-muted-foreground"
+              }`}
+            >
+              {option === "auto" ? "Auto" : option === "12" ? "12 h" : "24 h"}
+            </button>
+          ))}
+        </div>
+
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
