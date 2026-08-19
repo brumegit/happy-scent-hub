@@ -251,9 +251,11 @@ function Setup() {
               ))}
             </div>
 
-            <p className="text-xs leading-relaxed text-muted-foreground">
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
               Sprays {formatSeconds(preset.onSeconds)}, then stops {formatSeconds(preset.offSeconds)}{" "}
-              between sprays. Allow 30 minutes for the room to adapt before judging the strength.
+              between sprays.
+              <br />
+              Allow 30 minutes for the room to adapt before judging the strength.
             </p>
 
             <StatusButton state="idle" icon={false} label="Next" onClick={() => void push("schedule")} />
@@ -295,7 +297,7 @@ function Setup() {
               </button>
               <h1 className="font-display text-4xl">Your schedule</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pick the days, then paint the working hours.
+                Pick the days, then set the working hours.
               </p>
             </div>
             <ScheduleGrid schedule={schedule} onChange={setSchedule} />

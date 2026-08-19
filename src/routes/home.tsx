@@ -18,11 +18,9 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { checkConnection, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import { buildSetDeviceName } from "@/lib/scentlife";
 import {
-  DAYS,
   INTENSITIES,
   activeDays,
   buildPushFrames,
@@ -87,9 +85,6 @@ function Home() {
                 <h1 className="font-display text-4xl">
                   {status === "matched" && firstName ? `${firstName}'s diffusers` : "Your diffusers"}
                 </h1>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Intensity and schedule, always one tap away.
-                </p>
               </div>
               <Button asChild variant="secondary" size="sm">
                 <Link to="/setup" search={{ start: false }}>
@@ -265,13 +260,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
           )}
         </div>
         <div className="relative flex items-center gap-3">
-          {connected && (
-            <Switch
-              checked={diffuser.schedule_active}
-              aria-label="Toggle schedule"
-              onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
-            />
-          )}
           <button
             type="button"
             aria-label="Diffuser options"
@@ -372,7 +360,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <>
           <p className="mb-6 mt-5 border-l-2 border-gold pl-3 text-sm text-muted-foreground">
             {now
-              ? `${scheduleStatus(diffuser.schedule, diffuser.schedule_active, now)} Running at ${preset.label} intensity.`
+              ? scheduleStatus(diffuser.schedule, diffuser.schedule_active, now, preset.label)
               : "Checking the current schedule…"}
           </p>
 
@@ -415,9 +403,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Spray {formatSeconds(preset.onSeconds)} · Pause {formatSeconds(preset.offSeconds)} — allow
-              30 minutes for the room to adapt.
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Spray {formatSeconds(preset.onSeconds)} · Pause {formatSeconds(preset.offSeconds)}
+              <br />
+              Allow 30 minutes for the room to adapt.
             </p>
           </div>
 
@@ -435,20 +424,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               <ScheduleGrid schedule={schedule} onChange={setDraft} />
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {DAYS.map((day) => (
-                <span
-                  key={day.value}
-                  className={`border px-3 py-1 text-xs ${
-                    schedule.find((d) => d.day === day.value)?.active
-                      ? "border-foreground/60 text-foreground"
-                      : "border-border text-muted-foreground/60"
-                  }`}
-                >
-                  {day.short}
-                </span>
-              ))}
-            </div>
 
             {dirty && (
               <div className="mt-4">

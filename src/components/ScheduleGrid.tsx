@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { HourPainter } from "@/components/HourPainter";
+import { HourPicker } from "@/components/HourPicker";
 import { Switch } from "@/components/ui/switch";
 import { DAYS, formatHourRanges, type DaySchedule } from "@/lib/diffuser";
 
@@ -47,7 +47,7 @@ export function ScheduleGrid({
         </div>
       ))}
 
-      <HourPainter
+      <HourPicker
         open={editing !== null}
         dayLabel={editing !== null ? (DAYS[editing]?.long ?? "") : ""}
         hours={editingDay?.hours ?? []}

@@ -63,6 +63,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
+  --color-pairing: var(--pairing);
 }
 
 :root {
@@ -107,6 +108,9 @@
   /* Champagne = #ffe49d. Used for accents (room name, painted hours). */
   --gold: oklch(0.925 0.0755 92.5);
   --gold-foreground: oklch(0.16 0.02 90);
+
+  /* Pairing state — light blue, same vividness as the guest-bar red. */
+  --pairing: oklch(0.82 0.13 230);
 
   --gradient-warm: linear-gradient(140deg, oklch(0.08 0 0), oklch(0 0 0));
   --gradient-glow: radial-gradient(70% 55% at 50% 0%, oklch(1 0 0 / 0.08), transparent 72%);
