@@ -128,8 +128,11 @@ const DEVICE_TYPE = "001";
  * 0x52 — set module info, including the BLE advertising (device) name.
  * This is the only command in the protocol that renames the hardware.
  */
+/** BLE advertising names are capped by the module firmware. */
+export const MAX_BROADCAST_NAME_BYTES = 20;
+
 export function buildSetBroadcastName(name: string) {
-  const bytes = [...new TextEncoder().encode(name)];
+  const bytes = [...new TextEncoder().encode(name)].slice(0, MAX_BROADCAST_NAME_BYTES);
   return buildFrame(FN_SET_MODULE_INFO, [
     ...u16(MANUFACTURER_ID),
     MODULE_TYPE,
