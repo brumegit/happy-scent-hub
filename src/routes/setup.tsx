@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
 import { pushSettings, readSettings } from "@/lib/push";
-import { buildSyncTimestamp, MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
+import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
 import {
   INTENSITIES,
   hardwareName,
@@ -128,7 +128,7 @@ function Setup() {
     const next = setTimeout(() => {
       setFading(false);
       setPhase("name");
-    }, 3900);
+    }, 1400);
     return () => {
       clearTimeout(fade);
       clearTimeout(next);
@@ -288,14 +288,9 @@ function Setup() {
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              The diffuser broadcasts as "{combinedName}" — the room name must stay within{" "}
-              {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens and
-              underscores only.
-              {roomTouched && combinedError && (
-                <span className="block text-destructive">{combinedError}</span>
-              )}
-            </p>
+            {roomTouched && combinedError && (
+              <p className="text-xs text-destructive">{combinedError}</p>
+            )}
             <Button
               size="lg"
               className="w-full"

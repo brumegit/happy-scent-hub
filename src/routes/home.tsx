@@ -348,16 +348,20 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               />
               <div
                 role="menu"
-                className="absolute right-0 top-8 z-20 w-44 border border-border bg-card p-1 text-sm"
+                className={`absolute right-0 top-8 z-20 border border-border bg-card p-1 text-sm ${
+                  confirmRemove ? "w-60" : "w-44"
+                }`}
               >
                 {confirmRemove ? (
-                  <div className="p-2">
-                    <p className="mb-2 text-xs text-muted-foreground">Remove this diffuser?</p>
-                    <div className="flex gap-2">
+                  <div className="p-5">
+                    <p className="mb-5 text-xs leading-relaxed text-muted-foreground">
+                      Remove this diffuser?
+                    </p>
+                    <div className="flex gap-3">
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex-1 border border-destructive bg-background px-2 py-1 text-xs text-destructive hover:opacity-80"
+                        className="flex-1 border border-destructive bg-background px-3 py-2.5 text-xs text-destructive hover:opacity-80"
                         onClick={() => {
                           removeDiffuser(diffuser.id);
                           setMenuOpen(false);
@@ -369,7 +373,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex-1 border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+                        className="flex-1 border border-border bg-background px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => setConfirmRemove(false)}
                       >
                         Cancel
