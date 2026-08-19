@@ -60,7 +60,7 @@ function Steps({ phase }: { phase: Phase }) {
     <div className="mt-8 grid grid-cols-3 gap-4">
       {STEPS.map((step, index) => (
         <div key={step}>
-          <div className={`h-0.5 ${index <= current ? "bg-foreground" : "bg-border"}`} />
+          <div className={`h-0.5 ${index <= current ? "bg-gold" : "bg-border"}`} />
           <p
             className={`mt-3 text-sm ${index <= current ? "text-foreground" : "text-muted-foreground"}`}
           >
