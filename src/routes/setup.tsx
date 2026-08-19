@@ -262,7 +262,16 @@ function Setup() {
 
         {phase === "intensity" && (
           <section className="mt-8 space-y-6 border border-border bg-card p-7 animate-fade-in">
+            <button
+              type="button"
+              onClick={() => setPhase("name")}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              Back
+            </button>
             <h1 className="font-display text-4xl">Choose your intensity</h1>
+
 
             <div className="grid grid-cols-3 gap-2">
               {INTENSITIES.map((option) => (
