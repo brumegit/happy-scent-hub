@@ -30,14 +30,14 @@ export function ScheduleGrid({
   schedule,
   onChange,
   showNames = true,
+  showTimeFormat = true,
 }: {
   schedule: DaySchedule[];
   onChange: (schedule: DaySchedule[]) => void;
   showNames?: boolean;
+  showTimeFormat?: boolean;
 }) {
   const blocks = blocksFromSchedule(schedule);
-  const clockMode = useClockStore((s) => s.mode);
-  const setClockMode = useClockStore((s) => s.setMode);
 
   function commit(next: TimeBlock[]) {
     onChange(blocksToSchedule(next.filter((b) => b.days.length > 0 && b.end > b.start)));
