@@ -65,19 +65,21 @@ function Home() {
         <AppHeader />
 
         {empty ? (
-          <section className="mt-10 border border-border bg-card p-7">
-            <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Pair your diffuser to set its intensity and weekly schedule.
-            </p>
-            <div className="mt-7">
-              <StatusButton
-                state="idle"
-                label="Start now"
-                onClick={() => navigate({ to: "/setup", search: { start: true } })}
-              />
-            </div>
-          </section>
+          <div className="flex flex-1 flex-col justify-center">
+            <section className="border border-border bg-card p-7">
+              <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Pair your diffuser to set its intensity and weekly schedule.
+              </p>
+              <div className="mt-7">
+                <StatusButton
+                  state="idle"
+                  label="Start now"
+                  onClick={() => navigate({ to: "/setup", search: { start: true } })}
+                />
+              </div>
+            </section>
+          </div>
         ) : (
           <>
             <div className="mt-10 flex items-end justify-between gap-4">
@@ -94,19 +96,21 @@ function Home() {
               </Button>
             </div>
 
-            <div className="mt-8 space-y-5">
-              {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
-              {diffusers.map((diffuser) => (
-                <DiffuserCard key={diffuser.id} diffuser={diffuser} />
-              ))}
-              {hydrated && diffusers.length > 0 && (
-                <Button asChild variant="secondary" className="w-full">
-                  <Link to="/setup" search={{ start: false }}>
-                    <Plus className="size-4" aria-hidden />
-                    Add a diffuser
-                  </Link>
-                </Button>
-              )}
+            <div className="flex flex-1 flex-col justify-center">
+              <div className="space-y-5 py-8">
+                {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
+                {diffusers.map((diffuser) => (
+                  <DiffuserCard key={diffuser.id} diffuser={diffuser} />
+                ))}
+                {hydrated && diffusers.length > 0 && (
+                  <Button asChild variant="secondary" className="w-full">
+                    <Link to="/setup" search={{ start: false }}>
+                      <Plus className="size-4" aria-hidden />
+                      Add a diffuser
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           </>
         )}
