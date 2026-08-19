@@ -1,6 +1,7 @@
 import {
-  
+  buildModifyTimer,
   buildPower,
+  buildSetBroadcastName,
   buildSyncTimestamp,
   buildTimerList,
   weekdayBit,
