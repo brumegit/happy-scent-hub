@@ -54,14 +54,14 @@ export const useDiffuserStore = create<DiffuserState>()(
         return {
           diffusers: (state?.diffusers ?? []).map((d) => {
             if (Array.isArray(d.schedule))
-              return { room: d.room ?? "Living room", last_pushed_at: d.last_pushed_at ?? null, ...d };
+              return { ...d, room: d.room ?? "Living room", last_pushed_at: d.last_pushed_at ?? null };
             const start = Number(d.start_time?.split(":")[0] ?? 8);
             const end = Number(d.end_time?.split(":")[0] ?? 23);
             const hours = Array.from({ length: Math.max(end - start, 1) }, (_, i) => start + i);
             return {
+              ...d,
               room: d.room ?? "Living room",
               last_pushed_at: d.last_pushed_at ?? null,
-              ...d,
               schedule: defaultSchedule().map((day) => ({
                 ...day,
                 active: (d.schedule_days ?? [1, 2, 3, 4, 5]).includes(day.day),
