@@ -22,12 +22,12 @@ export function StatusButton({
 }) {
   const tone =
     state === "pairing"
-      ? "border-gold bg-gold/15 text-gold"
+      ? "border-gold text-gold"
       : state === "success"
-        ? "border-emerald-400 bg-emerald-400/15 text-emerald-300"
+        ? "border-emerald-400 text-emerald-300"
         : state === "error"
-          ? "border-destructive bg-destructive/15 text-destructive"
-          : "border-foreground bg-foreground text-background hover:bg-foreground/90";
+          ? "border-destructive text-destructive"
+          : "border-foreground text-foreground hover:bg-foreground/5";
 
   const Tag = onClick && state === "idle" ? "button" : "div";
 
