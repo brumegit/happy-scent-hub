@@ -8,6 +8,7 @@ import {
   MoreVertical,
   Pencil,
   Plus,
+  PowerOff,
   Trash2,
 } from "lucide-react";
 
@@ -18,7 +19,7 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { checkConnection, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
+import { checkConnection, disconnect, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import {
   INTENSITIES,
   activeDays,
