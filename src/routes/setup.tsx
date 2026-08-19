@@ -392,9 +392,9 @@ function Setup() {
               </button>
               <h1 className="font-display text-4xl">When?</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Add routines to choose when the diffuser runs. Start about 30 minutes early so the
-                scent has time to fill the room.
+                Start about 30 minutes early so the scent has time to fill the room.
               </p>
+
             </div>
             <ScheduleGrid
               schedule={schedule}
