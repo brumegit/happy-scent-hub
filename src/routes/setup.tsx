@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
@@ -78,6 +79,7 @@ function Setup() {
   const [fading, setFading] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [name, setName] = useState(DEFAULT_NAME);
+  const [room, setRoom] = useState("");
   const [intensity, setIntensity] = useState<Intensity>("medium");
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule);
   const [result, setResult] = useState<CircleState>("idle");
@@ -156,7 +158,17 @@ function Setup() {
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section className="mt-8 border border-border bg-card p-7">
-            <h1 className="font-display text-4xl uppercase leading-tight">Connect your diffuser</h1>
+            {existingCount > 0 && (
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/home" })}
+                className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="size-4" aria-hidden />
+                Back
+              </button>
+            )}
+            <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               Double tap on the diffuser button to enter pairing mode. The LED should be blinking in
               blue.
@@ -192,7 +204,21 @@ function Setup() {
               <Label htmlFor="name">Device name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-            <Button size="lg" className="w-full" onClick={() => setPhase("intensity")}>
+            <div className="space-y-2">
+              <Label htmlFor="room">Room name (required)</Label>
+              <Input
+                id="room"
+                value={room}
+                placeholder="Living room"
+                onChange={(e) => setRoom(e.target.value)}
+              />
+            </div>
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={room.trim().length === 0}
+              onClick={() => setPhase("intensity")}
+            >
               Continue
             </Button>
           </section>
@@ -276,10 +302,12 @@ function Setup() {
                 void push("schedule", () => {
                   addDiffuser({
                     name: name.trim() || DEFAULT_NAME,
+                    room: room.trim(),
                     device_id: deviceId,
                     intensity,
                     schedule,
                     schedule_active: true,
+                    last_pushed_at: new Date().toISOString(),
                   });
                   navigate({ to: "/home", replace: true });
                 })
