@@ -381,12 +381,21 @@ export async function sendBatch(
     link.waitFor ? link.waitFor((fn + 0x80) & 0xff).catch(() => null) : Promise.resolve(null),
   );
 
+  // All frames are concatenated into ONE continuous byte stream before being
+  // chunked, so the module parses them inside a single serial burst and beeps
+  // once for the whole push instead of once per command.
+  const total = frames.reduce((sum, frame) => sum + frame.length, 0);
+  const stream = new Uint8Array(total);
+  let offset = 0;
   for (const frame of frames) {
     const hex = toHex(frame);
     console.info("[ScentLife] TX", hex);
     onLog?.(`TX ${hex}`);
-    await link.write(frame);
+    stream.set(frame, offset);
+    offset += frame.length;
   }
+  await link.write(stream);
+
 
   const responses = await Promise.all(waiters);
   const acks: FrameAck[] = frames.map((frame, index) => {
