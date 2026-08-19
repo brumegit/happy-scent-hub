@@ -222,6 +222,43 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
   return (
     <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
+      {editingName && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
+          <div
+            role="dialog"
+            aria-label="Edit diffuser"
+            className="w-full max-w-sm border border-border bg-card p-6"
+          >
+            <h3 className="font-display text-2xl">Edit diffuser</h3>
+            <label className="mt-5 block text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Room name
+            </label>
+            <Input
+              value={roomDraft}
+              aria-label="Room name"
+              onChange={(e) => setRoomDraft(e.target.value)}
+              className="mt-2"
+            />
+            <label className="mt-4 block text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Diffuser name
+            </label>
+            <Input
+              value={nameDraft}
+              aria-label="Diffuser name"
+              onChange={(e) => setNameDraft(e.target.value)}
+              className="mt-2"
+            />
+            <div className="mt-6 flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setEditingName(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={saveNames} disabled={!nameDraft.trim() || !roomDraft.trim()}>
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
