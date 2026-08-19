@@ -130,6 +130,7 @@ async function attachLink(device: {
   const responses = createResponseChannel();
 
   let writable: Char | undefined;
+  let writableWithNotify: Char | undefined;
   for (const service of services) {
     const characteristics = await service.getCharacteristics();
 
@@ -149,12 +150,18 @@ async function attachLink(device: {
       }
     }
 
-    writable =
-      writable ??
-      characteristics.find((c) => c.properties?.writeWithoutResponse || c.properties?.write);
+    const write = characteristics.find(
+      (c) => c.properties?.writeWithoutResponse || c.properties?.write,
+    );
+    // Prefer the write characteristic that lives in the same service as the
+    // notify one — that pair is the transparent serial channel.
+    if (notify && write) writableWithNotify = writableWithNotify ?? write;
+    writable = writable ?? write;
   }
 
+  writable = writableWithNotify ?? writable;
   if (!writable) return false;
+
 
   const write = async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
