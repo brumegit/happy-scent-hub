@@ -40,6 +40,17 @@ export async function pushSettings(opts: {
       await renameModule(opts.deviceId, opts.hardwareName, log);
     }
 
+    // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes
+    // the firmware keep its old working modes (with their old hours) alongside
+    // ours, which is why the device still showed a stale end time.
+    const existing = await queryTimers(opts.deviceId, log).catch(() => null);
+    if (existing?.length) {
+      for (const slot of slots) {
+        const match = existing.find((s) => s.index === slot.index);
+        if (match?.timerId) slot.timerId = match.timerId;
+      }
+    }
+
     const acks = await sendFrames(
       opts.deviceId,
       [buildSyncTimestamp(), buildTimerList(slots), buildPower(true)],
