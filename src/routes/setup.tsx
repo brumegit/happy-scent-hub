@@ -7,6 +7,7 @@ import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
+import { TimeFormatToggle } from "@/components/TimeFormatToggle";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
