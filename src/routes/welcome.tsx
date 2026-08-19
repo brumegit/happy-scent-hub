@@ -53,8 +53,12 @@ function Welcome() {
           result.firstName ? `Welcome back, ${result.firstName}.` : "We found your purchase history.",
         );
       } else {
-        setGuest();
-        toast.message("No orders found for that email. Continuing as a guest.");
+        setGuest(email.trim());
+        toast.message(
+          result.unavailable
+            ? "Order lookup is temporarily unavailable. Continuing as a guest."
+            : "No orders found for that email. Continuing as a guest.",
+        );
       }
       goNext();
     } catch (error) {
