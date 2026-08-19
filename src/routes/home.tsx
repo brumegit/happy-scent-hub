@@ -73,7 +73,7 @@ function Home() {
 
         {empty ? (
           <div className="flex flex-1 flex-col justify-center">
-            <section className="border border-border bg-card p-7">
+            <section className="border border-border glass p-7">
               <h1 className="font-display text-4xl leading-tight">Start pairing</h1>
               <p className="mt-3 text-sm text-muted-foreground">
                 Pair your diffuser to set its intensity and weekly schedule.
@@ -105,7 +105,7 @@ function Home() {
 
             <div className="flex flex-1 flex-col justify-center">
               <div className="space-y-5 py-8">
-                {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
+                {!hydrated && <div className="h-52 animate-pulse border border-border glass" />}
                 {diffusers.map((diffuser) => (
                   <DiffuserCard key={diffuser.id} diffuser={diffuser} />
                 ))}
@@ -256,7 +256,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
   if (pushing) {
     return (
-      <article className="border border-border bg-card p-7">
+      <article className="border border-border glass p-7">
         <StatusButton
           state={result === "idle" ? "pairing" : result}
           icon={result !== "idle"}
@@ -270,13 +270,13 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
   return (
-    <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
+    <article className="border border-border glass p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
       {editingName && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
           <div
             role="dialog"
             aria-label="Edit diffuser"
-            className="w-full max-w-sm border border-border bg-card p-6"
+            className="w-full max-w-sm border border-border glass p-6"
           >
             <h3 className="font-display text-2xl">Edit diffuser</h3>
             <label className="mt-5 block text-xs uppercase tracking-[0.18em] text-muted-foreground">
@@ -350,7 +350,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               />
               <div
                 role="menu"
-                className={`absolute right-0 top-8 z-20 border border-border bg-card p-1 text-sm ${
+                className={`absolute right-0 top-8 z-20 border border-border glass p-1 text-sm ${
                   confirmRemove ? "w-60" : "w-44"
                 }`}
               >
