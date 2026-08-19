@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bluetooth, CalendarClock, ChevronDown, Gauge, Plus } from "lucide-react";
+import { Bluetooth, CalendarClock, ChevronDown, Gauge, MoreVertical, Plus } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
