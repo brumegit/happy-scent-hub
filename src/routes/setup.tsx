@@ -45,7 +45,7 @@ const DEFAULT_NAME = "The 24/7 Room Diffuser";
 
 type Phase = "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
 
-const STEPS = ["Connect", "Intensity", "Schedule"] as const;
+const STEPS = ["Connect", "Intensity", "Routine"] as const;
 
 function stepIndex(phase: Phase) {
   if (phase === "intensity") return 1;
