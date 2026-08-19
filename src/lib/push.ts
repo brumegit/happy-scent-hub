@@ -11,7 +11,7 @@ import {
 import {
   buildTimerSlots,
   intensityFromTimer,
-  scheduleFromTimer,
+  scheduleFromTimers,
   MAX_TIMERS,
   type DaySchedule,
   type Intensity,
@@ -37,7 +37,6 @@ export async function pushSettings(opts: {
   const log = (line: string) => pushDebug().addLog(line);
 
   const slots = buildTimerSlots(opts.schedule, opts.intensity);
-  const wanted = slots[0]!;
 
   try {
     // Rename first, on its own, retrying the two module-type bytes: modules
@@ -85,7 +84,7 @@ export async function pushSettings(opts: {
       return acks;
     }
 
-    verify(readback, wanted);
+    verify(readback, slots);
     return acks;
   } catch (error) {
     const message = (error as Error).message;
@@ -243,7 +242,7 @@ export async function readSettings(deviceId: string | null) {
   const intensity = intensityFromTimer(mode1);
   debug.set("intensity", "ok", `spray ${mode1.onSeconds}s / pause ${mode1.offSeconds}s → ${intensity}`);
 
-  const schedule = scheduleFromTimer(mode1);
+  const schedule = scheduleFromTimers(timers);
   debug.set(
     "schedule",
     mode1.enabled ? "ok" : "unconfirmed",
