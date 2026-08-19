@@ -300,55 +300,32 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
     links.delete(deviceId!);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
-  let outgoing = frames;
-  let expectedTimers: TimerSlot[] | null = null;
-  const timerListIndex = frames.findIndex((frame) => frame[3] === 0x13);
-  if (timerListIndex >= 0) {
-    console.info("[ScentLife] TX", toHex(buildGetTimers()));
-    const current = parseTimerListResponse(await link.request(buildGetTimers(), 0x88));
-    const requested = parseTimerListFrame(frames[timerListIndex] as Uint8Array);
-    const withRealIds = requested.map((slot) => ({
-      ...slot,
-      timerId: current.find((saved) => saved.index === slot.index)?.timerId ?? 0,
-    }));
-    expectedTimers = withRealIds;
-    // 0x14 is the documented phone-app downlink operation. Dispatch each
-    // working mode individually, retaining the IDs assigned by this device.
-    outgoing = [
-      ...frames.slice(0, timerListIndex),
-      ...withRealIds.map(buildModifyTimer),
-      ...frames.slice(timerListIndex + 1),
-    ];
-  }
-  for (const frame of outgoing) {
+
+  // One frame per command — the module beeps once per accepted command, so the
+  // schedule is pushed as a single timer-list frame (0x13), never expanded.
+  for (const frame of frames) {
     console.info("[ScentLife] TX", toHex(frame));
-    const response = await link.request(frame, ((frame[3] ?? 0) + 0x80) & 0xff);
-    if (response.length === 7 && response[4] !== 0) {
-      throw new Error(`The diffuser rejected command 0x${(frame[3] ?? 0).toString(16)} (error ${response[4]}).`);
+    const fn = frame[3] ?? 0;
+    let response: Uint8Array | null = null;
+    try {
+      response = await link.request(frame, (fn + 0x80) & 0xff);
+    } catch {
+      // Some modules acknowledge silently (no notify characteristic). A missing
+      // ack is not an error as long as the link is still up.
+      response = null;
     }
-    await wait(150);
+    if (response && response.length === 7 && response[4] !== 0) {
+      throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
+    }
+    await wait(200);
   }
-  if (expectedTimers) {
-    const saved = parseTimerListResponse(await link.request(buildGetTimers(), 0x88));
-    const matches = expectedTimers.every((slot) => {
-      const actual = saved.find((candidate) => candidate.index === slot.index);
-      return actual && sameTimerSettings(actual, slot);
-    });
-    if (!matches) throw new Error("The diffuser responded but did not save the new working modes. Reconnect and try again.");
+
+  if (link.isLive && !(await link.isLive())) {
+    links.delete(deviceId!);
+    throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
 }
 
-function parseTimerListFrame(frame: Uint8Array): TimerSlot[] {
-  const synthetic = new Uint8Array(frame);
-  synthetic[3] = 0x88;
-  return parseTimerListResponse(synthetic);
-}
-
-function sameTimerSettings(a: TimerSlot, b: TimerSlot) {
-  return a.enabled === b.enabled && a.index === b.index && a.weekdayMask === b.weekdayMask &&
-    a.startMinute === b.startMinute && a.endMinute === b.endMinute &&
-    a.onSeconds === b.onSeconds && a.offSeconds === b.offSeconds;
-}
 
 /**
  * Async connection check — on native builds the OS keeps the GATT link, so we
