@@ -163,50 +163,63 @@ function Setup() {
         <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
-          <section className="mt-8 border border-border bg-card p-7">
-            {existingCount > 0 && (
-              <button
-                type="button"
-                onClick={() => navigate({ to: "/home" })}
-                className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="size-4" aria-hidden />
-                Back
-              </button>
-            )}
-            <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
+          <section
+            className={`mt-8 border border-border bg-card p-7 transition-all duration-[3000ms] ${
+              phase === "paired" && fading ? "border-transparent bg-black opacity-0" : "opacity-100"
+            }`}
+          >
+            {phase === "paired" ? (
+              // Once connected, everything else is hidden and only the success
+              // confirmation stays, centered, while the tile fades to black.
+              <div className="flex min-h-[18rem] items-center justify-center">
+                <div className="w-full">
+                  <StatusButton state="success" label="OK" />
+                </div>
+              </div>
+            ) : (
+              <>
+                {existingCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/home" })}
+                    className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowLeft className="size-4" aria-hidden />
+                    Back
+                  </button>
+                )}
+                <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
 
-            <video
-              className="my-8 w-full object-cover"
-              style={{ borderRadius: "10px" }}
-              src={pairingVideo.url}
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
+                <video
+                  className="mx-auto my-8 w-4/5 object-cover"
+                  style={{ borderRadius: "10px" }}
+                  src={pairingVideo.url}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
 
-            <p className="mt-3 text-sm text-muted-foreground">
-              Double tap on the diffuser button to enter pairing mode. The LED should be blinking in
-              blue.
-            </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Double tap on the diffuser button to enter pairing mode. The LED should be blinking
+                  in blue.
+                </p>
 
-            <div className="mt-7">
-              <StatusButton
-                state={phase === "idle" ? "idle" : phase === "pairing" ? "pairing" : "success"}
-                label={
-                  phase === "idle" ? "Scan for my diffuser" : phase === "pairing" ? "Searching" : "OK"
-                }
-                fading={fading}
-                {...(phase === "idle" ? { onClick: handlePair } : {})}
-              />
-            </div>
+                <div className="mt-7">
+                  <StatusButton
+                    state={phase === "idle" ? "idle" : "pairing"}
+                    label={phase === "idle" ? "Scan for my diffuser" : "Searching"}
+                    {...(phase === "idle" ? { onClick: handlePair } : {})}
+                  />
+                </div>
 
-            {phase === "idle" && !isBluetoothSupported() && (
-              <p className="mt-5 text-xs text-muted-foreground">
-                This browser doesn't support Bluetooth pairing, so we'll set up a demo connection so
-                you can finish. Use Chrome or the mobile app for a real pairing.
-              </p>
+                {phase === "idle" && !isBluetoothSupported() && (
+                  <p className="mt-5 text-xs text-muted-foreground">
+                    This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
+                    so you can finish. Use Chrome or the mobile app for a real pairing.
+                  </p>
+                )}
+              </>
             )}
           </section>
         )}
