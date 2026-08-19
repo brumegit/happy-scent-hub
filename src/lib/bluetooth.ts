@@ -237,6 +237,7 @@ export async function checkConnection(deviceId: string | null) {
  */
 export async function disconnect(deviceId: string | null) {
   if (!deviceId) return;
+  await links.get(deviceId)?.close?.().catch(() => {});
   if (await isNativePlatform()) {
     const { disconnectNative } = await import("@/lib/native-ble");
     await disconnectNative(deviceId).catch(() => {});
