@@ -296,9 +296,11 @@ function Setup() {
             <Button
               size="lg"
               className="w-full"
-              disabled={!!roomError || !!combinedError}
-
               onClick={() => {
+                if (roomError || combinedError) {
+                  setRoomTouched(true);
+                  return;
+                }
                 setPhase("intensity");
               }}
             >
