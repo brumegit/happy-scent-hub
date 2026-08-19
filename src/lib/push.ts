@@ -1,5 +1,6 @@
 import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
+  buildModifyTimer,
   buildPower,
   buildSetBroadcastName,
   buildSyncTimestamp,
@@ -8,6 +9,7 @@ import {
   sanitizeBroadcastName,
   type TimerSlot,
 } from "@/lib/scentlife";
+
 import {
   buildTimerSlots,
   intensityFromTimer,
