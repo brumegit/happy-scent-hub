@@ -28,7 +28,9 @@ import {
   hardwareName,
   formatDays,
   formatHourRanges,
+  formatScheduleLines,
   formatSeconds,
+
   intensityPreset,
   scheduleStatus,
   type DaySchedule,
