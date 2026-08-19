@@ -109,6 +109,26 @@ export async function pushSettings(opts: {
   }
 }
 
+/** True when the device's persisted modes already match what we want to push. */
+function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
+  const sameMinute = (a: number, b: number) =>
+    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
+  return wanted.every((w) => {
+    const d = readback.find((s) => s.index === w.index);
+    if (!d) return false;
+    if (!w.enabled) return !d.enabled;
+    return (
+      d.enabled &&
+      d.weekdayMask === w.weekdayMask &&
+      sameMinute(d.startMinute, w.startMinute) &&
+      sameMinute(d.endMinute, w.endMinute) &&
+      d.onSeconds === w.onSeconds &&
+      d.offSeconds === w.offSeconds
+    );
+  });
+}
+
+
 function verify(readback: TimerSlot[], wantedSlots: TimerSlot[]) {
   const debug = pushDebug();
   const wantedOn = wantedSlots.filter((s) => s.enabled);
