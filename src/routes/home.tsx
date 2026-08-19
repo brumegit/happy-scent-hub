@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Bluetooth, CalendarClock, Gauge, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bluetooth, CalendarClock, ChevronDown, Gauge, Plus } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
@@ -9,7 +9,7 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { sendFrames } from "@/lib/bluetooth";
+import { isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import {
   DAYS,
   INTENSITIES,
@@ -19,11 +19,13 @@ import {
   formatHourRanges,
   formatSeconds,
   intensityPreset,
+  scheduleStatus,
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
 import { useIdentityStore } from "@/stores/identityStore";
+
 
 export const Route = createFileRoute("/home")({
   ssr: false,
