@@ -81,7 +81,7 @@ function Setup() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [name, setName] = useState(DEFAULT_NAME);
   const [room, setRoom] = useState("");
-  const [intensity, setIntensity] = useState<Intensity>("medium");
+  const [intensity, setIntensity] = useState<Intensity>("high");
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +93,7 @@ function Setup() {
     try {
       const device = await pairDiffuser({ preferBrume: existingCount === 0 });
       setDeviceId(device.deviceId);
-      setName(device.suggestedName || DEFAULT_NAME);
+      setName(DEFAULT_NAME);
       await sendFrames(device.deviceId, buildPushFrames(schedule, intensity).slice(0, 2));
       setPhase("paired");
     } catch (err) {
@@ -156,6 +156,7 @@ function Setup() {
       <div className="mx-auto max-w-2xl px-6 py-8">
         <AppHeader />
         <Steps phase={phase} />
+        <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section className="mt-8 border border-border bg-card p-7">
@@ -241,7 +242,7 @@ function Setup() {
                   onClick={() => setIntensity(option.value)}
                   className={`w-full border bg-background px-2 py-4 text-center text-sm uppercase tracking-[0.14em] transition-colors ${
                     intensity === option.value
-                      ? "border-foreground text-foreground"
+                      ? "border-gold text-gold"
                       : "border-border text-muted-foreground"
                   }`}
                 >
@@ -250,14 +251,10 @@ function Setup() {
               ))}
             </div>
 
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>{INTENSITIES.find((o) => o.value === intensity)?.blurb}</p>
-              <p className="border border-border p-4 text-xs">
-                Selected: spray {formatSeconds(preset.onSeconds)}, then stop{" "}
-                {formatSeconds(preset.offSeconds)} between sprays. Allow 30 minutes for the room to
-                adapt before judging the strength.
-              </p>
-            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Sprays {formatSeconds(preset.onSeconds)}, then stops {formatSeconds(preset.offSeconds)}{" "}
+              between sprays. Allow 30 minutes for the room to adapt before judging the strength.
+            </p>
 
             <StatusButton state="idle" icon={false} label="Next" onClick={() => void push("schedule")} />
           </section>
@@ -328,6 +325,7 @@ function Setup() {
             />
           </section>
         )}
+        </div>
       </div>
     </div>
   );
