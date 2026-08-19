@@ -85,3 +85,25 @@ export function weekdayBit(day: number) {
 export function toHex(frame: Uint8Array) {
   return [...frame].map((b) => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
 }
+
+export const FN_SET_MODULE_INFO = 0x52;
+
+/** Default identity bytes used by ScentLife single-Bluetooth diffusers. */
+const MANUFACTURER_ID = 0x5a53;
+const MODULE_TYPE = "A".charCodeAt(0); // Bluetooth only
+const DEVICE_TYPE = "001";
+
+/**
+ * 0x52 — set module info, including the BLE advertising (device) name.
+ * This is the only command in the protocol that renames the hardware.
+ */
+export function buildSetBroadcastName(name: string) {
+  const bytes = [...new TextEncoder().encode(name.slice(0, 24))];
+  return buildFrame(FN_SET_MODULE_INFO, [
+    ...u16(MANUFACTURER_ID),
+    MODULE_TYPE,
+    ...[...DEVICE_TYPE].map((c) => c.charCodeAt(0)),
+    ...u16(bytes.length),
+    ...bytes,
+  ]);
+}

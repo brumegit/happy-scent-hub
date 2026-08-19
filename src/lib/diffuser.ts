@@ -1,6 +1,7 @@
 import {
-  
+  buildModifyTimer,
   buildPower,
+  buildSetBroadcastName,
   buildSyncTimestamp,
   buildTimerList,
   weekdayBit,
@@ -126,63 +127,46 @@ export function activeDays(schedule: DaySchedule[]) {
   return schedule.filter((d) => d.active && d.hours.length > 0).map((d) => d.day);
 }
 
-/**
- * Turns the weekly schedule into device timer slots: days sharing the same hour
- * pattern are merged into one timer (weekday bitmask), each contiguous hour block
- * becomes a slot. Single-Bluetooth devices accept 5 timers, so we keep the first 5.
- */
+/** Single-Bluetooth devices expose 5 working modes (timers). */
 export const MAX_TIMERS = 5;
 
+/**
+ * The app drives working mode 1 only: every other mode is pushed as disabled so
+ * the device can never mix leftover factory programs with our schedule.
+ * The weekly schedule is collapsed into one window: the union of active days
+ * (weekday bitmask) and the earliest → latest selected hour.
+ */
 export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): TimerSlot[] {
   const preset = intensityPreset(intensity);
-  const groups = new Map<string, { mask: number; hours: number[] }>();
 
+  let mask = 0;
+  let startHour = 24;
+  let endHour = 0;
   for (const day of schedule) {
     if (!day.active || day.hours.length === 0) continue;
-    const key = [...new Set(day.hours)].sort((a, b) => a - b).join(",");
-    const group = groups.get(key) ?? { mask: 0, hours: day.hours };
-    group.mask |= weekdayBit(day.day);
-    groups.set(key, group);
+    mask |= weekdayBit(day.day);
+    startHour = Math.min(startHour, Math.min(...day.hours));
+    endHour = Math.max(endHour, Math.max(...day.hours) + 1);
   }
 
-  const slots: TimerSlot[] = [];
-  for (const group of groups.values()) {
-    for (const [start, end] of hourRanges(group.hours)) {
-      slots.push({
-        enabled: true,
-        index: slots.length + 1,
-        weekdayMask: group.mask,
-        startMinute: start * 60,
-        endMinute: Math.min(end * 60, 1440),
-        onSeconds: preset.onSeconds,
-        offSeconds: preset.offSeconds,
-      });
-    }
-  }
-  return slots.slice(0, MAX_TIMERS);
-}
+  const enabled = mask !== 0 && endHour > startHour;
 
-export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity) {
-  return buildTimerList(buildTimerSlots(schedule, intensity));
-}
+  const slots: TimerSlot[] = [
+    {
+      enabled,
+      index: 1,
+      weekdayMask: enabled ? mask : 0,
+      startMinute: enabled ? startHour * 60 : 0,
+      endMinute: enabled ? Math.min(endHour * 60, 1440) : 0,
+      onSeconds: preset.onSeconds,
+      offSeconds: preset.offSeconds,
+      timerId: 1,
+    },
+  ];
 
-/**
- * Push sequence per the ScentLife protocol: clock sync (0x06), the full timer
- * list (0x13), then power on (0x07 / 0x12).
- *
- * The timer list is a full replacement, so unused slots travel inside the same
- * 0x13 frame as disabled entries. We deliberately do NOT also replay every slot
- * through 0x14: repeating the same timers right after the list makes the
- * firmware reject the duplicates, which is what triggers the blue blink and the
- * burst of error beeps.
- */
-export function buildPushFrames(schedule: DaySchedule[], intensity: Intensity) {
-  const preset = intensityPreset(intensity);
-  const slots = buildTimerSlots(schedule, intensity);
-
-  const full: TimerSlot[] = [...slots];
-  for (let index = slots.length + 1; index <= MAX_TIMERS; index += 1) {
-    full.push({
+  // Working modes 2–5 are explicitly turned off.
+  for (let index = 2; index <= MAX_TIMERS; index += 1) {
+    slots.push({
       enabled: false,
       index,
       weekdayMask: 0,
@@ -190,10 +174,42 @@ export function buildPushFrames(schedule: DaySchedule[], intensity: Intensity) {
       endMinute: 0,
       onSeconds: preset.onSeconds,
       offSeconds: preset.offSeconds,
+      timerId: index,
     });
   }
 
-  return [buildSyncTimestamp(), buildTimerList(full), buildPower(true)];
+  return slots;
+}
+
+export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity) {
+  return buildTimerList(buildTimerSlots(schedule, intensity));
+}
+
+/** The hardware name we write to the module: "Device name - Room name". */
+export function hardwareName(name: string, room?: string) {
+  return room ? `${name} - ${room}` : name;
+}
+
+/**
+ * Push sequence per the ScentLife protocol:
+ * clock sync (0x06) → full timer list with mode 1 active and 2–5 off (0x13)
+ * → mode 1 confirmed individually (0x14) → power on (0x07 / 0x12)
+ * → optional module rename (0x52).
+ */
+export function buildPushFrames(
+  schedule: DaySchedule[],
+  intensity: Intensity,
+  deviceName?: string,
+) {
+  const slots = buildTimerSlots(schedule, intensity);
+  const frames = [
+    buildSyncTimestamp(),
+    buildTimerList(slots),
+    buildModifyTimer(slots[0]!),
+    buildPower(true),
+  ];
+  if (deviceName) frames.push(buildSetBroadcastName(deviceName));
+  return frames;
 }
 
 
