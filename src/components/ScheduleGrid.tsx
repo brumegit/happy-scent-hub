@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 
+import { TimeFormatToggle } from "@/components/TimeFormatToggle";
 import {
   DAYS,
   MAX_TIMERS,
@@ -11,7 +12,6 @@ import {
   type DaySchedule,
   type TimeBlock,
 } from "@/lib/diffuser";
-import { useClockStore } from "@/stores/clockStore";
 
 /**
  * Routine editor: the schedule is a list of routines, and one routine is
