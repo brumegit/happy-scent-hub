@@ -378,7 +378,12 @@ export function scheduleFromTimer(slot: TimerSlot): DaySchedule[] {
  */
 export function scheduleFromTimers(slots: TimerSlot[]): DaySchedule[] {
   const active = slots.filter((s) => s.enabled && s.endMinute > s.startMinute);
-  const schedule = DAYS.map((d) => ({ day: d.value, active: false, hours: [] as number[] }));
+  const schedule = DAYS.map((d) => ({
+    day: d.value,
+    active: false,
+    hours: [] as number[],
+    ranges: [] as [number, number][],
+  }));
 
   for (const slot of active) {
     const hours = hoursOfTimer(slot);
@@ -386,10 +391,22 @@ export function scheduleFromTimers(slots: TimerSlot[]): DaySchedule[] {
       if ((slot.weekdayMask & weekdayBit(day.day)) === 0) continue;
       day.active = true;
       day.hours = [...new Set([...day.hours, ...hours])].sort((a, b) => a - b);
+      // Minute-accurate window straight from the hardware timer.
+      day.ranges = [...day.ranges, [slot.startMinute, slot.endMinute] as [number, number]].sort(
+        (a, b) => a[0] - b[0],
+      );
     }
   }
 
-  return schedule.map((d) => ({ ...d, hours: d.hours.length ? d.hours : defaultHours() }));
+  return schedule.map((d) => {
+    const day: DaySchedule = {
+      day: d.day,
+      active: d.active,
+      hours: d.hours.length ? d.hours : defaultHours(),
+    };
+    if (d.ranges.length) day.ranges = d.ranges;
+    return day;
+  });
 }
 
 
