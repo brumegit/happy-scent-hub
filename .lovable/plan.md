@@ -1,73 +1,85 @@
-# Test the Brume app on a physical iPhone
+# Ship Brume to the App Store + Google Play
 
 ## Goal
-Get the Brume diffuser app running natively on your physical iPhone so the real
-Bluetooth hardware flow can be tested — not just the simulated web flow.
+Prepare both native store builds in parallel:
+- **Android**: scaffold, build the `.aab` here, document Play Console upload.
+- **iOS**: scaffold + permissions + store metadata here, document the Mac build
+  + App Store Connect upload (final build must run on a Mac).
 
-## Hard constraint (read first)
-Compiling and installing a native iOS app requires a **Mac with Xcode**. This
-cloud sandbox cannot produce an installable iOS app, and you cannot build it on
-the iPhone or on Windows. With a **free Apple ID**, the iPhone must be connected
-to that Mac (USB cable, or same Wi‑Fi using Xcode wireless debugging) for the
-first install, and you must "trust" your developer profile on the phone.
+## Accounts you must hold
+- Apple Developer Program: **$99/year** (required for App Store; free Apple ID
+  is NOT enough for distribution).
+- Google Play Developer: **$25 one-time**.
 
-You only need a Mac for the build/install step. Everything else is done here and
-handed to you ready to open.
+## Phase 1 — Native project scaffolding (done here)
 
-## What I will do from here (no Mac needed)
+1. Add Android + iOS native projects.
+   - `npx cap add android` → generates `android/`.
+   - `npx cap add ios` → generates `ios/`.
+   - Both inherit appId `me.brume.app`, appName `Brume`.
 
-1. Scaffold the native iOS project.
-   - Run `npx cap add ios` to generate the `ios/` Xcode project from
-     `capacitor.config.ts` (appId `me.brume.app`, appName `Brume`).
-   - This creates `ios/App/App.xcworkspace`, `Info.plist`, entitlements, etc.
+2. Bluetooth permissions (required or the app crashes on BLE).
+   - iOS `ios/App/App/Info.plist`:
+     - `NSBluetoothAlwaysUsageDescription`
+     - `NSBluetoothPeripheralUsageDescription`
+   - Android `android/app/src/main/AndroidManifest.xml`:
+     - `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT` (Android 12+),
+     - legacy `BLUETOOTH`, `BLUTOOTH_ADMIN`, `ACCESS_FINE_LOCATION`.
 
-2. Add the Bluetooth permission strings iOS requires.
-   - Edit `ios/App/App/Info.plist` to add:
-     - `NSBluetoothAlwaysUsageDescription` = "Brume uses Bluetooth to connect
-       to and configure your diffuser."
-     - `NSBluetoothPeripheralUsageDescription` (legacy, for older iOS).
-   - Without these keys, the app crashes the moment the BLE plugin runs.
+3. App icons + splash (store-ready).
+   - Generate 1024×1024 icon from the existing `src/assets/brume-logo.svg` mark.
+   - Run `@capacitor/assets` to populate `android/` and `ios/` icon/splash sets.
 
-3. Build the web assets and sync them into the native project.
-   - `bun run build` (produces `dist/`).
-   - `npx cap sync ios` (copies `dist/` into the iOS project, updates native
-     plugin pods).
+4. Build + sync web assets.
+   - `bun run build` → `dist/`.
+   - `npx cap sync android ios` → copies assets into both native projects.
 
-4. Write a short `IOS_TEST.md` runbook at the repo root with the exact Mac-side
-   steps (below), so you can follow them on any Mac without thinking.
+## Phase 2 — Android build (done here, no Mac)
 
-## What you do on a Mac (documented in IOS_TEST.md)
+5. Build the release bundle.
+   - Verify JDK + Android SDK are available in the sandbox; install the Android
+     command-line tools if missing.
+   - `cd android && ./gradlew bundleRelease` → produces
+     `android/app/build/outputs/bundle/release/app-release.aab`.
+   - The `.aab` is what you upload to Google Play; the store generates per-device
+     APKs from it.
 
-5. Open the project on a Mac with Xcode 15+.
-   - `open ios/App/App.xcworkspace` (use the workspace, not the .xcodeproj).
-   - Or run `npx cap open ios`.
+6. Sign the bundle.
+   - Generate a keystore (or you supply one), wire it into
+     `android/app/build.gradle` `signingConfigs`. Document that the keystore +
+     passwords must be kept forever (future updates must use the same key).
 
-6. Set up signing with your free Apple ID.
-   - Select the "App" target → Signing & Capabilities.
-   - Team: your Apple ID (add it under Xcode → Settings → Accounts if needed).
-   - Let Xcode generate a provisioning profile. Ignore the 7‑day expiry warning
-     (free profiles must be re-signed weekly).
+## Phase 3 — iOS build (documented; runs on a Mac)
 
-7. Connect your iPhone and Run.
-   - Plug the iPhone into the Mac (or pair via Window → Devices → enable
-     "Connect via network" for wireless).
-   - Select the iPhone as the run destination, press ⌘R.
-   - On the iPhone: Settings → General → VPN & Device Management → trust your
-     developer profile. The app will then launch.
+7. `IOS_RELEASE.md` runbook with the exact Mac steps:
+   - `open ios/App/App.xcworkspace`.
+   - Set team to your $99/yr Apple Developer account; enable "Automatically
+     manage signing".
+   - Increment build/version, Archive, "Distribute App → App Store Connect".
+   - App Store Connect: create the app record, upload, fill listing, submit for
+     review.
 
-8. Test the real Bluetooth flow.
-   - Put your diffuser in pairing mode, walk through onboarding — it will use
-     the native Capacitor BLE transport (auto‑selects devices named "BRUME"),
-     not the web fallback.
+## Phase 4 — Store listings (metadata, done here)
 
-## Rebuilding after changes
-- Code/UI changes I make here: I rebuild (`bun run build`) and re-sync
-  (`npx cap sync ios`); you pull on the Mac and ⌘R again.
-- Native config changes (permissions, capabilities): re-sync is required; a
-  pod install may be needed if a new native plugin is added.
+8. Prepare listing copy for both stores in `STORE_LISTINGS.md`:
+   - App name, subtitle, promotional text, description, keywords.
+   - Category, content rating, age rating answers.
+   - **Privacy policy URL** — required by both stores; I'll scaffold a public
+     `/privacy` route so you have a real URL to give them.
+   - Support URL + marketing URL.
+   - Note on screenshots: each store needs device-specific screenshots
+     (6.7", 6.5", 5.5" for iOS; phone/tablet for Android). I'll document sizes;
+     capturing them is a manual step (or from the built app).
+
+## Rebuild after changes
+- Web/UI changes: rebuild + `npx cap sync`, then rebuild the `.aab` here and
+  re-archive on Mac.
+- Native capability/permission changes: re-sync, pod install on iOS if a new
+  native plugin is added.
 
 ## Notes / limits
-- Free Apple ID: app runs for up to 7 days, then needs a rebuild. Not for
-  distribution — only your own device.
-- Real BLE testing is the whole point of the native path; on web/iOS Safari
-  there is no Web Bluetooth, so only the simulated flow works there.
+- Android `.aab` buildable on Linux (here). iOS `.ipa`/archive buildable ONLY on
+  a Mac — this is Apple's rule, not a tooling gap.
+- Keystore for Android must be preserved; losing it means you can never update
+  the app on the store.
+- Apple review and Google review both apply; allow ~1–2 days each.
