@@ -275,6 +275,57 @@ export function formatBlock(block: TimeBlock) {
   return `${formatDays(block.days)} · ${formatMinuteRanges([[block.start, block.end]])}`;
 }
 
+/**
+ * A routine never gets a numbered label ("Time block 1"). Its name is derived
+ * from what it actually is — the days it runs on and the part of the day it
+ * covers — so it reads back naturally the next time the user opens it. Names
+ * describe time only, never a place. Anything we can't characterise falls back
+ * to "My routine".
+ */
+function routineDayWord(days: number[]) {
+  const sorted = [...new Set(days)].sort((a, b) => a - b);
+  const key = sorted.join(",");
+  if (sorted.length === 7) return "Daily";
+  if (key === "1,2,3,4,5") return "Weekday";
+  if (key === "0,6") return "Weekend";
+  if (key === "5,6") return "Late-week";
+  if (key === "0,1,2,3,4") return "Early-week";
+  if (sorted.length === 1) return DAYS[sorted[0]!]?.long ?? "";
+  if (sorted.length === 2) return `${DAYS[sorted[0]!]?.long} & ${DAYS[sorted[1]!]?.long}`;
+  return "";
+}
+
+function routineTimeWord(start: number, end: number) {
+  const span = end - start;
+  if (start <= 5 && end >= 1435) return "all-day";
+  if (span <= 75) {
+    if (start < 300) return "night cap";
+    if (start < 660) return "morning boost";
+    if (start < 1020) return "afternoon boost";
+    return "evening boost";
+  }
+  if (start >= 1260 || start < 240) return "overnight";
+  if (start < 300) return "early morning";
+  if (start < 660 && end <= 900) return "morning";
+  if (start < 660 && end > 1140) return "all-waking-hours";
+  if (start < 660) return "daytime";
+  if (start < 810) return "midday";
+  if (start < 1020) return "afternoon";
+  if (start < 1260) return "evening";
+  return "late evening";
+}
+
+export function routineName(block: TimeBlock) {
+  const day = routineDayWord(block.days);
+  const time = routineTimeWord(block.start, block.end);
+  if (day === "Daily" && time === "all-day") return "Always-on routine";
+  if (!day && !time) return "My routine";
+  const label = `${day} ${time} routine`.trim().replace(/\s+/g, " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+
+
 
 /** Single-Bluetooth devices expose 5 working modes (timers). */
 export const MAX_TIMERS = 5;

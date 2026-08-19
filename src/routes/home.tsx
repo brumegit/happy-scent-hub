@@ -34,6 +34,8 @@ import {
 
   intensityPreset,
   scheduleStatus,
+  scheduleToBlocks,
+
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
@@ -497,7 +499,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
           <div className="mt-4 border border-border p-5">
             <p className="flex items-center gap-2 eyebrow text-muted-foreground">
               <CalendarClock className="size-4" aria-hidden />
-              Weekly schedule
+              {scheduleToBlocks(schedule).length > 1
+                ? "My diffusion routines"
+                : "My diffusion routine"}
             </p>
             <p className="mt-3 font-display text-xl">{formatDays(activeDays(schedule))}</p>
             <p className="text-sm text-muted-foreground">
@@ -517,7 +521,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                 <StatusButton
                   state="idle"
                   icon={false}
-                  label="Send schedule to diffuser"
+                  label="Send routine to diffuser"
                   onClick={() => void push(diffuser.intensity, schedule)}
                 />
               </div>

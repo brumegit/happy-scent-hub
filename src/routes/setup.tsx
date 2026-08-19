@@ -45,7 +45,7 @@ const DEFAULT_NAME = "The 24/7 Room Diffuser";
 
 type Phase = "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
 
-const STEPS = ["Connect", "Intensity", "Schedule"] as const;
+const STEPS = ["Connect", "Intensity", "Routine"] as const;
 
 function stepIndex(phase: Phase) {
   if (phase === "intensity") return 1;
@@ -389,12 +389,13 @@ function Setup() {
                 <ArrowLeft className="size-4" aria-hidden />
                 Back
               </button>
-              <h1 className="font-display text-4xl">Your schedule</h1>
+              <h1 className="font-display text-4xl">My diffusion routine</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Pick the days, then set the working hours.
               </p>
             </div>
-            <ScheduleGrid schedule={schedule} onChange={setSchedule} />
+            <ScheduleGrid schedule={schedule} onChange={setSchedule} showNames={false} />
+
             {simulated && (
               <p className="text-xs text-muted-foreground">
                 Demo connection. Commands are logged, not sent to hardware.
