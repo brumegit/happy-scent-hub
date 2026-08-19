@@ -82,7 +82,8 @@ function Setup() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [fading, setFading] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [name, setName] = useState(DEFAULT_NAME);
+  // The app-side device name is fixed; only the room is user provided.
+  const name = DEFAULT_NAME;
   const [room, setRoom] = useState("");
   const [roomTouched, setRoomTouched] = useState(false);
   const [intensity, setIntensity] = useState<Intensity>("high");
