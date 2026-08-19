@@ -25,7 +25,8 @@ export const useIdentityStore = create<IdentityState>()(
       hydrated: false,
       setMatched: ({ email, firstName, orderCount }) =>
         set({ email, firstName, orderCount, status: "matched" }),
-      setGuest: () => set({ email: null, firstName: null, orderCount: 0, status: "guest" }),
+      setGuest: (email) =>
+        set({ email: email?.trim() || null, firstName: null, orderCount: 0, status: "guest" }),
       reset: () => set({ email: null, firstName: null, orderCount: 0, status: "guest" }),
     }),
     {
