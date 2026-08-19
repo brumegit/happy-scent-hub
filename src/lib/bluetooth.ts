@@ -37,6 +37,8 @@ const CHUNK_DELAY_MS = 30;
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
   request: (frame: Uint8Array, responseFn: number) => Promise<Uint8Array>;
+  /** Waits for a reply with the given function code (used for batched writes). */
+  waitFor?: (fn: number) => Promise<Uint8Array>;
   simulated: boolean;
   /** True while the physical link is still up. */
   isLive?: () => Promise<boolean>;
@@ -189,6 +191,7 @@ async function attachLink(device: {
       await write(frame);
       return response;
     },
+    waitFor: (fn) => responses.waitFor(fn, 2500),
     isLive: async () => device.gatt?.connected !== false,
     close: async () => {
       // Physically drop the GATT link so the device LED stops showing connected.
@@ -230,6 +233,7 @@ export async function pairDiffuser(opts?: {
           await write(frame);
           return response;
         },
+        waitFor: (fn) => responses.waitFor(fn, 2500),
         isLive: () => isNativeConnected(found.deviceId),
       });
     }
@@ -354,6 +358,57 @@ export async function sendFrames(
 }
 
 /**
+ * Writes several protocol frames back-to-back as one continuous stream so the
+ * module treats them as a single push — the diffuser then beeps once instead of
+ * once per command. Acknowledgments are collected in parallel.
+ */
+export async function sendBatch(
+  deviceId: string | null,
+  frames: Uint8Array[],
+  onLog?: (line: string) => void,
+): Promise<FrameAck[]> {
+  const link = deviceId ? links.get(deviceId) : undefined;
+  if (!link || link.simulated) {
+    throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
+  }
+  if (link.isLive && !(await link.isLive())) {
+    links.delete(deviceId!);
+    throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
+  }
+
+  const fns = frames.map((frame) => frame[3] ?? 0);
+  const waiters = fns.map((fn) =>
+    link.waitFor ? link.waitFor((fn + 0x80) & 0xff).catch(() => null) : Promise.resolve(null),
+  );
+
+  for (const frame of frames) {
+    const hex = toHex(frame);
+    console.info("[ScentLife] TX", hex);
+    onLog?.(`TX ${hex}`);
+    await link.write(frame);
+  }
+
+  const responses = await Promise.all(waiters);
+  const acks: FrameAck[] = frames.map((frame, index) => {
+    const response = responses[index] ?? null;
+    if (response) onLog?.(`RX ${toHex(response)}`);
+    else onLog?.(`RX none for 0x${(fns[index] ?? 0).toString(16)}`);
+    return {
+      fn: fns[index] ?? 0,
+      acked: !!response,
+      code: response && response.length >= 6 ? (response[4] ?? null) : null,
+      hex: toHex(frame),
+    };
+  });
+
+  if (link.isLive && !(await link.isLive())) {
+    links.delete(deviceId!);
+    throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
+  }
+  return acks;
+}
+
+/**
  * Reads the timers (working modes) persisted on the device — used to verify a
  * push actually landed instead of trusting the acknowledgment alone.
  */
@@ -384,9 +439,18 @@ export async function queryTimers(
 export async function checkConnection(deviceId: string | null) {
   if (!deviceId) return false;
   if (await isNativePlatform()) {
-    if (await isNativeConnected(deviceId)) return true;
+    return await isNativeConnected(deviceId).catch(() => false);
   }
-  return isRealLink(deviceId);
+  const link = links.get(deviceId);
+  if (!link || link.simulated) return false;
+  // Ask the transport whether the physical GATT link is still up: a device that
+  // went out of range or was taken over by another phone must not read as
+  // connected just because we once paired with it.
+  if (link.isLive && !(await link.isLive().catch(() => false))) {
+    links.delete(deviceId);
+    return false;
+  }
+  return true;
 }
 
 /**
