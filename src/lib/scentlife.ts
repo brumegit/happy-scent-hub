@@ -140,8 +140,27 @@ export function sanitizeBroadcastName(name: string) {
     .replace(/[^A-Za-z0-9 _-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  return (ascii || "BRUME").slice(0, MAX_BROADCAST_NAME_BYTES);
+  return (ascii || "Brume").slice(0, MAX_BROADCAST_NAME_BYTES);
 }
+
+/** Characters the module accepts in a broadcast name. */
+export const BROADCAST_NAME_PATTERN = /^[A-Za-z0-9 _-]+$/;
+
+/**
+ * Validates a name against the module's specs: plain ASCII letters, digits,
+ * space, hyphen or underscore, 1–12 characters. Returns an error message or
+ * null when the name is compliant.
+ */
+export function validateBroadcastName(name: string): string | null {
+  const trimmed = name.trim();
+  if (!trimmed) return "Enter a name.";
+  if (!BROADCAST_NAME_PATTERN.test(trimmed))
+    return "Use letters, numbers, spaces, hyphens or underscores only — no accents or symbols.";
+  if (trimmed.length > MAX_BROADCAST_NAME_BYTES)
+    return `The diffuser only stores ${MAX_BROADCAST_NAME_BYTES} characters (currently ${trimmed.length}).`;
+  return null;
+}
+
 
 /**
  * 0x52 — set module info, including the BLE advertising (device) name.
