@@ -70,5 +70,24 @@ export function ScheduleGrid({
         }}
       />
     </div>
+
+      {overLimit && (
+        <div className="mt-3 border border-destructive p-4 text-xs text-destructive">
+          <p>
+            Your week needs {windows} different time windows, but the diffuser can only store{" "}
+            {MAX_TIMERS}. Reuse the same hours across days, or align every active day on one
+            pattern.
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange(unifySchedule(schedule))}
+            className="mt-3 border border-destructive bg-background px-3 py-2 uppercase tracking-[0.14em]"
+          >
+            Use the same hours every active day
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
+
