@@ -7,6 +7,13 @@
  * beeps when a whole timer-list frame is written at once.
  */
 import { toHex } from "@/lib/scentlife";
+import {
+  connectNative,
+  isNativeConnected,
+  isNativePlatform,
+  scanForDiffuser,
+  writeNative,
+} from "@/lib/native-ble";
 
 export type PairedDevice = { deviceId: string; suggestedName: string };
 
