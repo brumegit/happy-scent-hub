@@ -129,7 +129,7 @@ const DEVICE_TYPE = "001";
  * This is the only command in the protocol that renames the hardware.
  */
 export function buildSetBroadcastName(name: string) {
-  const bytes = [...new TextEncoder().encode(name.slice(0, 24))];
+  const bytes = [...new TextEncoder().encode(name)];
   return buildFrame(FN_SET_MODULE_INFO, [
     ...u16(MANUFACTURER_ID),
     MODULE_TYPE,
