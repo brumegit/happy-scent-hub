@@ -113,8 +113,8 @@
   /* Matched state, vivid green sibling of the guest red. */
   --success: oklch(0.7 0.17 150);
 
-  /* Pairing state — light blue, same vividness as the guest-bar red. */
-  --pairing: oklch(0.82 0.13 230);
+  /* Pairing state — deeper blue with strong contrast against pure black. */
+  --pairing: oklch(0.7 0.17 245);
 
   --gradient-warm: linear-gradient(140deg, oklch(0.08 0 0), oklch(0 0 0));
   --gradient-glow: radial-gradient(70% 55% at 50% 0%, oklch(1 0 0 / 0.08), transparent 72%);
