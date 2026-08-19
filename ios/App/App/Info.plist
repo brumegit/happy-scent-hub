@@ -66,5 +66,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Brume uses Bluetooth to connect to and configure your diffuser.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Brume uses Bluetooth to connect to and configure your diffuser.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Brume does not use the camera. This entry is required by some plugins.</string>
 </dict>
 </plist>
