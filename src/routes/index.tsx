@@ -63,12 +63,8 @@ function Landing() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg">
-                <Link to="/welcome">Get started</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
                 <Link to="/setup">Set up my diffuser</Link>
               </Button>
-
             </div>
           </div>
 

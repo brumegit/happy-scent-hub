@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
 
 import { useHydrated } from "@/hooks/useHydrated";
@@ -31,9 +30,7 @@ export function GuestBanner() {
           <Sparkles className="size-4" aria-hidden />
           You're in guest mode.
         </span>
-        <Link to="/welcome" className="font-semibold underline underline-offset-4">
-          Add your email
-        </Link>
+        <span className="font-semibold">Add your email</span>
         <span className="hidden sm:inline">for a tailored experience.</span>
       </div>
     </div>

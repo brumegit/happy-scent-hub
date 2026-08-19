@@ -430,7 +430,7 @@ function Setup() {
                 })
               }
             />
-            <div className="sticky bottom-2 z-40 bg-background">
+            <div className="sticky bottom-[5.25rem] z-40 bg-background">
               <TimeFormatToggle />
             </div>
           </section>
