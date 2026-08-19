@@ -282,7 +282,10 @@ function Setup() {
                 placeholder="Lounge"
                 onChange={(e) => setRoom(e.target.value)}
               />
-              {roomError && <p className="text-xs text-destructive">{roomError}</p>}
+              {/* Only surfaced once the user tries to continue — never up front. */}
+              {roomTouched && roomError && (
+                <p className="text-xs text-destructive">{roomError}</p>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               The diffuser broadcasts as "{combinedName}" — the room name must stay within{" "}
