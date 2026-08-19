@@ -88,6 +88,30 @@ export function formatHourLabel(hour: number, minutes = "00") {
   return `${displayHour}:${minutes} ${suffix}`;
 }
 
+/** Minutes-of-day → "8:30 AM" / "08:30" depending on the clock preference. */
+export function formatMinutes(minutes: number) {
+  const clamped = Math.max(0, Math.min(1439, Math.round(minutes)));
+  const hour = Math.floor(clamped / 60);
+  return formatHourLabel(hour, String(clamped % 60).padStart(2, "0"));
+}
+
+/** Minutes-of-day → "08:30", the value format of <input type="time">. */
+export function minutesToTimeValue(minutes: number) {
+  const clamped = Math.max(0, Math.min(1439, Math.round(minutes)));
+  return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
+}
+
+export function timeValueToMinutes(value: string) {
+  const [h = "0", m = "0"] = value.split(":");
+  return Math.max(0, Math.min(1439, Number(h) * 60 + Number(m)));
+}
+
+/** Minute windows of a day: the stored ranges, or the hours rounded up. */
+export function dayRanges(day: DaySchedule): [number, number][] {
+  if (day.ranges?.length) return day.ranges.map(([s, e]) => [s, e] as [number, number]);
+  return hourRanges(day.hours).map(([s, e]) => [s * 60, Math.min(e * 60, 1439)] as [number, number]);
+}
+
 export function defaultHours() {
   // Always on — every hour of the day.
   return Array.from({ length: 24 }, (_, i) => i);
