@@ -33,18 +33,6 @@ const steps = [
 ];
 
 function Landing() {
-  const navigate = useNavigate();
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/home", replace: true });
-      else setChecking(false);
-    });
-  }, [navigate]);
-
-  if (checking) return <div className="min-h-screen bg-background" />;
-
   return (
     <main className="relative min-h-screen overflow-hidden">
       <div
@@ -58,7 +46,7 @@ function Landing() {
             <BrandLogo className="h-7" />
           </span>
           <Button asChild variant="ghost">
-            <Link to="/auth">Sign in</Link>
+            <Link to="/shop">Shop</Link>
           </Button>
         </header>
 
@@ -71,16 +59,20 @@ function Landing() {
               scented on schedule.
             </h1>
             <p className="max-w-md text-lg text-muted-foreground">
-              Connect your Aura smart scent diffuser in under a minute, dial in the intensity and let it
-              run exactly when you want it to.
+              Connect your smart scent diffuser in under a minute, dial in the intensity and let it
+              run exactly when you want it to. No account needed.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg">
-                <Link to="/auth">Get started</Link>
+                <Link to="/welcome">Get started</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link to="/auth">I already have an account</Link>
+                <Link to="/setup">Set up my diffuser</Link>
               </Button>
+
+            </div>
+          </div>
+
 
             </div>
           </div>
