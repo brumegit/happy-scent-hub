@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatHourLabel, formatHourRanges } from "@/lib/diffuser";
+import { useClockStore } from "@/stores/clockStore";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -42,6 +43,8 @@ export function HourPicker({
   onConfirm: (hours: number[]) => void;
 }) {
   const [selected, setSelected] = useState<number[]>(hours);
+  const clockMode = useClockStore((s) => s.mode);
+  const setClockMode = useClockStore((s) => s.setMode);
 
   // Reset local state whenever a new day is opened.
   const lastKey = useRef("");
