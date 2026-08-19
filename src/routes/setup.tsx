@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 
+import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
@@ -170,6 +171,17 @@ function Setup() {
               </button>
             )}
             <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
+
+            <video
+              className="my-8 w-full object-cover"
+              style={{ borderRadius: "10px" }}
+              src={pairingVideo.url}
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+
             <p className="mt-3 text-sm text-muted-foreground">
               Double tap on the diffuser button to enter pairing mode. The LED should be blinking in
               blue.

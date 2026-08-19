@@ -32,6 +32,8 @@ const CHUNK_DELAY_MS = 30;
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
   simulated: boolean;
+  /** Drops the physical GATT link (web only; native goes through Capacitor). */
+  close?: () => Promise<void>;
 };
 
 const links = new Map<string, Link>();
@@ -71,7 +73,11 @@ type BluetoothLike = {
 
 async function attachLink(device: {
   id: string;
-  gatt?: { connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }> };
+  gatt?: {
+    connected?: boolean;
+    disconnect?: () => void;
+    connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }>;
+  };
 }) {
   const server = await device.gatt?.connect();
   if (!server) return false;
@@ -118,6 +124,11 @@ async function attachLink(device: {
         }
         await wait(CHUNK_DELAY_MS);
       }
+    },
+    close: async () => {
+      // Physically drop the GATT link so the device LED stops showing connected.
+      device.gatt?.disconnect?.();
+      await wait(150);
     },
   });
   return true;
@@ -226,6 +237,7 @@ export async function checkConnection(deviceId: string | null) {
  */
 export async function disconnect(deviceId: string | null) {
   if (!deviceId) return;
+  await links.get(deviceId)?.close?.().catch(() => {});
   if (await isNativePlatform()) {
     const { disconnectNative } = await import("@/lib/native-ble");
     await disconnectNative(deviceId).catch(() => {});
