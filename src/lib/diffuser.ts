@@ -1,5 +1,4 @@
 import {
-  buildModifyTimer,
   buildPower,
   buildSetBroadcastName,
   buildSyncTimestamp,
@@ -205,7 +204,6 @@ export function buildPushFrames(
   const frames = [
     buildSyncTimestamp(),
     buildTimerList(slots),
-    buildModifyTimer(slots[0]!),
     buildPower(true),
   ];
   if (deviceName) frames.push(buildSetBroadcastName(deviceName));

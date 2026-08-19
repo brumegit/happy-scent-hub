@@ -9,6 +9,7 @@ export const FN_SYNC_TIMESTAMP = 0x06;
 export const FN_SET_COMMAND = 0x07;
 export const FN_SYNC_TIMER_LIST = 0x13;
 export const FN_MODIFY_TIMER = 0x14;
+export const FN_GET_TIMERS = 0x08;
 
 /** Device On/Off sub-command of 0x07. */
 export const SET_POWER = 0x12;
@@ -51,7 +52,7 @@ export type TimerSlot = {
   timerId?: number;
 };
 
-function timerBytes(slot: TimerSlot) {
+export function timerBytes(slot: TimerSlot) {
   return [
     slot.enabled ? 1 : 0,
     slot.index & 0xff,
@@ -62,6 +63,36 @@ function timerBytes(slot: TimerSlot) {
     ...u16(slot.offSeconds),
     ...u32(slot.timerId ?? slot.index),
   ];
+}
+
+/** 0x08 — asks the device for its persisted working modes and real timer IDs. */
+export function buildGetTimers() {
+  return buildFrame(FN_GET_TIMERS);
+}
+
+export function parseTimerListResponse(frame: Uint8Array): TimerSlot[] {
+  if (frame[3] !== FN_GET_TIMERS + 0x80) throw new Error("Unexpected timer response.");
+  const count = (frame[4] ?? 0) | ((frame[5] ?? 0) << 8);
+  if (frame.length < 8 + count * 16) throw new Error("Incomplete timer response from diffuser.");
+  const read16 = (offset: number) => (frame[offset] ?? 0) | ((frame[offset + 1] ?? 0) << 8);
+  const read32 = (offset: number) =>
+    ((frame[offset] ?? 0) |
+      ((frame[offset + 1] ?? 0) << 8) |
+      ((frame[offset + 2] ?? 0) << 16) |
+      ((frame[offset + 3] ?? 0) << 24)) >>> 0;
+  return Array.from({ length: count }, (_, position) => {
+    const offset = 6 + position * 16;
+    return {
+      enabled: frame[offset] !== 0,
+      index: frame[offset + 1] ?? position + 1,
+      weekdayMask: read16(offset + 2),
+      startMinute: read16(offset + 4),
+      endMinute: read16(offset + 6),
+      onSeconds: read16(offset + 8),
+      offSeconds: read16(offset + 10),
+      timerId: read32(offset + 12),
+    };
+  });
 }
 
 /** 0x14 — add / modify a single timer. */
@@ -98,7 +129,7 @@ const DEVICE_TYPE = "001";
  * This is the only command in the protocol that renames the hardware.
  */
 export function buildSetBroadcastName(name: string) {
-  const bytes = [...new TextEncoder().encode(name.slice(0, 24))];
+  const bytes = [...new TextEncoder().encode(name)];
   return buildFrame(FN_SET_MODULE_INFO, [
     ...u16(MANUFACTURER_ID),
     MODULE_TYPE,

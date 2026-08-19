@@ -6,7 +6,14 @@
  * are silently dropped by these serial modules, which is why the device never
  * beeps when a whole timer-list frame is written at once.
  */
-import { toHex } from "@/lib/scentlife";
+import {
+  buildGetTimers,
+  buildModifyTimer,
+  buildTimerList,
+  parseTimerListResponse,
+  toHex,
+  type TimerSlot,
+} from "@/lib/scentlife";
 import {
   connectNative,
   isNativeConnected,
@@ -31,6 +38,7 @@ const CHUNK_DELAY_MS = 30;
 
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
+  request: (frame: Uint8Array, responseFn: number) => Promise<Uint8Array>;
   simulated: boolean;
   /** True while the physical link is still up. */
   isLive?: () => Promise<boolean>;
@@ -41,6 +49,48 @@ type Link = {
 const links = new Map<string, Link>();
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function createResponseChannel() {
+  let buffer = new Uint8Array();
+  const pending: { fn: number; resolve: (frame: Uint8Array) => void }[] = [];
+
+  const receive = (chunk: Uint8Array) => {
+    const joined = new Uint8Array(buffer.length + chunk.length);
+    joined.set(buffer);
+    joined.set(chunk, buffer.length);
+    buffer = joined;
+    while (buffer.length >= 6) {
+      const start = buffer.findIndex((byte, index) => byte === 0x55 && buffer[index + 1] === 0xaa);
+      if (start < 0) {
+        buffer = new Uint8Array();
+        return;
+      }
+      if (start > 0) buffer = buffer.slice(start);
+      const frameLength = (buffer[2] ?? 0) + 5;
+      if (buffer.length < frameLength) return;
+      const frame = buffer.slice(0, frameLength);
+      buffer = buffer.slice(frameLength);
+      console.info("[ScentLife] RX", toHex(frame));
+      const waiterIndex = pending.findIndex((entry) => entry.fn === frame[3]);
+      if (waiterIndex >= 0) pending.splice(waiterIndex, 1)[0]?.resolve(frame);
+    }
+  };
+
+  const waitFor = (fn: number, timeoutMs = 2500) =>
+    new Promise<Uint8Array>((resolve, reject) => {
+      const entry = { fn, resolve };
+      pending.push(entry);
+      setTimeout(() => {
+        const index = pending.indexOf(entry);
+        if (index >= 0) {
+          pending.splice(index, 1);
+          reject(new Error("The diffuser did not confirm the change. Reconnect and try again."));
+        }
+      }, timeoutMs);
+    });
+
+  return { receive, waitFor };
+}
 
 export function isBluetoothSupported() {
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
@@ -84,6 +134,7 @@ async function attachLink(device: {
   const server = await device.gatt?.connect();
   if (!server) return false;
   const services = await server.getPrimaryServices();
+  const responses = createResponseChannel();
 
   let writable: Char | undefined;
   for (const service of services) {
@@ -97,7 +148,7 @@ async function attachLink(device: {
         notify.addEventListener?.("characteristicvaluechanged", (event) => {
           const value = (event.target as unknown as { value?: DataView }).value;
           if (value) {
-            console.info("[ScentLife] RX", toHex(new Uint8Array(value.buffer)));
+            responses.receive(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
           }
         });
       } catch {
@@ -112,20 +163,26 @@ async function attachLink(device: {
 
   if (!writable) return false;
 
+  const write = async (frame: Uint8Array) => {
+    for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
+      const chunk = frame.slice(offset, offset + CHUNK_SIZE);
+      if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
+        await writable.writeValueWithoutResponse(chunk);
+      } else if (writable.writeValueWithResponse) {
+        await writable.writeValueWithResponse(chunk);
+      } else {
+        await writable.writeValue?.(chunk);
+      }
+      await wait(CHUNK_DELAY_MS);
+    }
+  };
   links.set(device.id, {
     simulated: false,
-    write: async (frame) => {
-      for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-        const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-        if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
-          await writable.writeValueWithoutResponse(chunk);
-        } else if (writable.writeValueWithResponse) {
-          await writable.writeValueWithResponse(chunk);
-        } else {
-          await writable.writeValue?.(chunk);
-        }
-        await wait(CHUNK_DELAY_MS);
-      }
+    write,
+    request: async (frame, responseFn) => {
+      const response = responses.waitFor(responseFn);
+      await write(frame);
+      return response;
     },
     isLive: async () => device.gatt?.connected !== false,
     close: async () => {
@@ -151,17 +208,22 @@ export async function pairDiffuser(opts?: {
     if (!found) {
       throw new Error("No diffuser found. Double-tap the button and try again.");
     }
-    const target = await connectNative(found.deviceId, (value) =>
-      console.info("[ScentLife] RX", toHex(value)),
-    );
+    const responses = createResponseChannel();
+    const target = await connectNative(found.deviceId, (value) => responses.receive(value));
     if (target) {
+      const write = async (frame: Uint8Array) => {
+        for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
+          await writeNative(found.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
+          await wait(CHUNK_DELAY_MS);
+        }
+      };
       links.set(found.deviceId, {
         simulated: false,
-        write: async (frame) => {
-          for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-            await writeNative(found.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
-            await wait(CHUNK_DELAY_MS);
-          }
+        write,
+        request: async (frame, responseFn) => {
+          const response = responses.waitFor(responseFn);
+          await write(frame);
+          return response;
         },
         isLive: () => isNativeConnected(found.deviceId),
       });
@@ -214,6 +276,9 @@ export async function pairDiffuser(opts?: {
       console.info("[ScentLife] TX (simulated)", toHex(frame));
       await wait(120);
     },
+    request: async () => {
+      throw new Error("A real Bluetooth connection is required.");
+    },
   });
   return {
     deviceId,
@@ -235,12 +300,54 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
     links.delete(deviceId!);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
-  for (const frame of frames) {
+  let outgoing = frames;
+  let expectedTimers: TimerSlot[] | null = null;
+  const timerListIndex = frames.findIndex((frame) => frame[3] === 0x13);
+  if (timerListIndex >= 0) {
+    console.info("[ScentLife] TX", toHex(buildGetTimers()));
+    const current = parseTimerListResponse(await link.request(buildGetTimers(), 0x88));
+    const requested = parseTimerListFrame(frames[timerListIndex] as Uint8Array);
+    const withRealIds = requested.map((slot) => ({
+      ...slot,
+      timerId: current.find((saved) => saved.index === slot.index)?.timerId ?? 0,
+    }));
+    expectedTimers = withRealIds;
+    // 0x14 is the documented phone-app downlink operation. Dispatch each
+    // working mode individually, retaining the IDs assigned by this device.
+    outgoing = [
+      ...frames.slice(0, timerListIndex),
+      ...withRealIds.map(buildModifyTimer),
+      ...frames.slice(timerListIndex + 1),
+    ];
+  }
+  for (const frame of outgoing) {
     console.info("[ScentLife] TX", toHex(frame));
-    await link.write(frame);
-    // Inter-frame gap: the module needs to process before the next command.
+    const response = await link.request(frame, ((frame[3] ?? 0) + 0x80) & 0xff);
+    if (response.length === 7 && response[4] !== 0) {
+      throw new Error(`The diffuser rejected command 0x${(frame[3] ?? 0).toString(16)} (error ${response[4]}).`);
+    }
     await wait(150);
   }
+  if (expectedTimers) {
+    const saved = parseTimerListResponse(await link.request(buildGetTimers(), 0x88));
+    const matches = expectedTimers.every((slot) => {
+      const actual = saved.find((candidate) => candidate.index === slot.index);
+      return actual && sameTimerSettings(actual, slot);
+    });
+    if (!matches) throw new Error("The diffuser responded but did not save the new working modes. Reconnect and try again.");
+  }
+}
+
+function parseTimerListFrame(frame: Uint8Array): TimerSlot[] {
+  const synthetic = new Uint8Array(frame);
+  synthetic[3] = 0x88;
+  return parseTimerListResponse(synthetic);
+}
+
+function sameTimerSettings(a: TimerSlot, b: TimerSlot) {
+  return a.enabled === b.enabled && a.index === b.index && a.weekdayMask === b.weekdayMask &&
+    a.startMinute === b.startMinute && a.endMinute === b.endMinute &&
+    a.onSeconds === b.onSeconds && a.offSeconds === b.offSeconds;
 }
 
 /**
