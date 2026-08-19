@@ -73,7 +73,11 @@ type BluetoothLike = {
 
 async function attachLink(device: {
   id: string;
-  gatt?: { connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }> };
+  gatt?: {
+    connected?: boolean;
+    disconnect?: () => void;
+    connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }>;
+  };
 }) {
   const server = await device.gatt?.connect();
   if (!server) return false;
