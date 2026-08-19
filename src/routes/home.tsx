@@ -5,7 +5,7 @@ import { Bluetooth, CalendarClock, Gauge, Plus } from "lucide-react";
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
-import { StatusCircle, type CircleState } from "@/components/StatusCircle";
+import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -14,7 +14,7 @@ import {
   DAYS,
   INTENSITIES,
   activeDays,
-  buildScheduleFrame,
+  buildPushFrames,
   formatDays,
   formatHourRanges,
   formatSeconds,
@@ -22,7 +22,6 @@ import {
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
-import { buildSyncTimestamp } from "@/lib/scentlife";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
 import { useIdentityStore } from "@/stores/identityStore";
 
@@ -55,15 +54,18 @@ function Home() {
         <AppHeader />
 
         {empty ? (
-          <section className="mt-16">
-            <StatusCircle
-              state="idle"
-              label="Start now"
-              onClick={() => navigate({ to: "/setup", search: { start: true } })}
-            />
-            <p className="text-center text-sm text-muted-foreground">
+          <section className="mt-10 border border-border bg-card p-7">
+            <h1 className="font-display text-4xl uppercase leading-tight">Connect your diffuser</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
               Pair your diffuser to set its intensity and weekly schedule.
             </p>
+            <div className="mt-7">
+              <StatusButton
+                state="idle"
+                label="Start now"
+                onClick={() => navigate({ to: "/setup", search: { start: true } })}
+              />
+            </div>
           </section>
         ) : (
           <>
@@ -113,10 +115,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setResult("idle");
     setError(null);
     try {
-      await sendFrames(diffuser.device_id, [
-        buildSyncTimestamp(),
-        buildScheduleFrame(nextSchedule, nextIntensity),
-      ]);
+      await sendFrames(diffuser.device_id, buildPushFrames(nextSchedule, nextIntensity));
       updateDiffuser(diffuser.id, { intensity: nextIntensity, schedule: nextSchedule });
       setDraft(null);
       setResult("success");
@@ -137,10 +136,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   if (pushing) {
     return (
       <article className="border border-border bg-card p-7">
-        <StatusCircle
+        <StatusButton
           state={result === "idle" ? "pairing" : result}
+          icon={result !== "idle"}
           label={result === "success" ? "OK" : result === "error" ? "Error" : "Sending"}
-          position="top"
         />
         {result === "error" && error && (
           <p className="mt-4 text-center text-sm text-destructive">{error}</p>
@@ -229,9 +228,14 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         </div>
 
         {dirty && (
-          <Button className="mt-4 w-full" onClick={() => push(diffuser.intensity, schedule)}>
-            Send schedule to diffuser
-          </Button>
+          <div className="mt-4">
+            <StatusButton
+              state="idle"
+              icon={false}
+              label="Send schedule to diffuser"
+              onClick={() => void push(diffuser.intensity, schedule)}
+            />
+          </div>
         )}
       </div>
     </article>

@@ -1,4 +1,11 @@
-import { buildTimerList, weekdayBit, type TimerSlot } from "@/lib/scentlife";
+import {
+  buildModifyTimer,
+  buildPower,
+  buildSyncTimestamp,
+  buildTimerList,
+  weekdayBit,
+  type TimerSlot,
+} from "@/lib/scentlife";
 
 export type Intensity = "low" | "medium" | "high";
 
@@ -161,3 +168,34 @@ export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): 
 export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity) {
   return buildTimerList(buildTimerSlots(schedule, intensity));
 }
+
+/**
+ * Full push sequence the device acknowledges (and beeps for): clock sync, power
+ * on, the whole timer list, then each timer individually via 0x14 — some
+ * firmware only applies (and beeps for) the per-timer command. Unused slots are
+ * explicitly disabled so old schedules do not linger on the device.
+ */
+export function buildPushFrames(schedule: DaySchedule[], intensity: Intensity) {
+  const preset = intensityPreset(intensity);
+  const slots = buildTimerSlots(schedule, intensity);
+  const frames = [buildSyncTimestamp(), buildPower(true), buildTimerList(slots)];
+
+  for (const slot of slots) frames.push(buildModifyTimer(slot));
+
+  for (let index = slots.length + 1; index <= MAX_TIMERS; index += 1) {
+    frames.push(
+      buildModifyTimer({
+        enabled: false,
+        index,
+        weekdayMask: 0,
+        startMinute: 0,
+        endMinute: 0,
+        onSeconds: preset.onSeconds,
+        offSeconds: preset.offSeconds,
+      }),
+    );
+  }
+
+  return frames;
+}
+
