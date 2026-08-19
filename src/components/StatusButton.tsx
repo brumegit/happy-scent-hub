@@ -41,8 +41,8 @@ export function StatusButton({
         className={`relative flex w-full items-center justify-center gap-3 overflow-hidden border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
       >
         {state === "pairing" && (
-          <span className="pointer-events-none absolute inset-px overflow-hidden">
-            <span className="absolute bottom-0 left-0 h-px w-1/3 animate-[slide-in-right_1.6s_ease-in-out_infinite] bg-pairing" />
+          <span className="pointer-events-none absolute inset-0 overflow-hidden">
+            <span className="absolute inset-y-0 left-0 w-1/3 animate-[slide-in-right_1.6s_ease-in-out_infinite] bg-[linear-gradient(90deg,transparent,var(--pairing),transparent)] opacity-15" />
           </span>
         )}
         {icon && state === "idle" && <Bluetooth className="size-4" aria-hidden />}

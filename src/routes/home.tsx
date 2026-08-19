@@ -344,7 +344,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
-            label={connecting ? "Connecting" : "Tap to edit"}
+            label={connecting ? "Searching" : "Tap to edit"}
             onClick={() => void connect()}
           />
           {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}

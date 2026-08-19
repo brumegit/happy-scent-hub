@@ -180,7 +180,7 @@ function Setup() {
               <StatusButton
                 state={phase === "idle" ? "idle" : phase === "pairing" ? "pairing" : "success"}
                 label={
-                  phase === "idle" ? "Scan for my diffuser" : phase === "pairing" ? "Pairing" : "OK"
+                  phase === "idle" ? "Scan for my diffuser" : phase === "pairing" ? "Searching" : "OK"
                 }
                 fading={fading}
                 {...(phase === "idle" ? { onClick: handlePair } : {})}
