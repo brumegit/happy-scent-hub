@@ -32,7 +32,7 @@ export function GuestBanner() {
           You're in guest mode.
         </span>
         <Link to="/welcome" className="font-semibold underline underline-offset-4">
-          Add the email used for your order
+          Add your email
         </Link>
         <span className="hidden sm:inline">for a tailored experience.</span>
       </div>

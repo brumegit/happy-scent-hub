@@ -234,9 +234,9 @@ function Setup() {
                 <h1 className="font-display text-4xl leading-tight">Start pairing</h1>
 
                 <video
-                  // Never crop: the video scales down to fit the space left once the
-                  // headings, CTA and the fixed guest bar (5rem) are accounted for.
-                  className="mx-auto my-8 w-4/5 h-auto max-h-[clamp(6rem,calc(100vh-41rem),26rem)] object-contain"
+                  // Cropped from the top (gravity north) so the frame keeps its
+                  // size instead of shrinking on short screens.
+                  className="mx-auto my-8 w-4/5 h-[clamp(8rem,calc(100vh-24rem),26rem)] object-cover object-top"
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
@@ -273,16 +273,12 @@ function Setup() {
         {phase === "name" && (
           <section className="mt-8 space-y-6 border border-border bg-card p-7 animate-fade-in">
             <div>
-              <h1 className="font-display text-4xl">Give it a name</h1>
+              <h1 className="font-display text-4xl">Where's it going?</h1>
               <p className="mt-2 text-sm text-muted-foreground">Your diffuser is connected.</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="name">Device name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="room">Room name (required)</Label>
+              <Label htmlFor="room">Room name</Label>
               <Input
                 id="room"
                 value={room}
@@ -395,7 +391,7 @@ function Setup() {
               </button>
               <h1 className="font-display text-4xl">When?</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Start about 30 minutes early so the scent has time to fill the room.
+                Start about 30 minutes early to fill the room.
               </p>
 
             </div>
