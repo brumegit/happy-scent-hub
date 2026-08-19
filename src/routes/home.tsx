@@ -107,10 +107,36 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [pushing, setPushing] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [showLast, setShowLast] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setConnected(isRealLink(diffuser.device_id));
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, [diffuser.device_id]);
 
   const schedule = draft ?? diffuser.schedule;
   const preset = intensityPreset(diffuser.intensity);
   const dirty = draft !== null;
+
+  async function connect() {
+    setConnecting(true);
+    setError(null);
+    try {
+      const paired = await pairDiffuser();
+      updateDiffuser(diffuser.id, { device_id: paired.deviceId });
+      setConnected(isRealLink(paired.deviceId));
+    } catch (err) {
+      setError((err as Error).message || "Could not connect to the diffuser.");
+    } finally {
+      setConnecting(false);
+    }
+  }
+
 
   async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
     setPushing(true);
