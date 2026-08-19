@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { CartDrawer } from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
