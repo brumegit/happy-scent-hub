@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 
 import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
@@ -41,7 +41,7 @@ export const Route = createFileRoute("/setup")({
   component: Setup,
 });
 
-const DEFAULT_NAME = "Brume";
+const DEFAULT_NAME = "The 24/7 Room Diffuser";
 
 type Phase = "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
 
@@ -162,7 +162,7 @@ function Setup() {
     }
   }
 
-  const combinedName = `${name.trim()} ${room.trim()}`.trim();
+  const combinedName = hardwareName(name, room.trim());
   const nameError = validateBroadcastName(name);
   const roomError = room.trim().length === 0 ? "Enter a room name." : validateBroadcastName(room);
   const combinedError = nameError || roomError ? null : validateBroadcastName(combinedName);
@@ -186,13 +186,31 @@ function Setup() {
           >
             {phase === "paired" ? (
               // Once connected, everything else is hidden and only the success
-              // confirmation stays, centered, while the tile fades to black.
+              // animation stays, centered, while the tile fades to black.
               <div className="flex min-h-[18rem] items-center justify-center">
-                <div className="w-full space-y-4 text-center">
-                  <p className="text-sm text-emerald-400">
+                <div className="w-full space-y-6 text-center">
+                  <div className="relative mx-auto size-20">
+                    <span className="success-ring" />
+                    <span className="success-ring" style={{ animationDelay: "0.7s" }} />
+                    <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-emerald-400">
+                      <svg
+                        className="success-check size-9 text-emerald-400"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path className="text-emerald-400" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
+                      </svg>
+                    </span>
+                  </div>
+                  <p className="success-pop flex items-center justify-center gap-2 text-sm text-emerald-400">
+                    <Check className="size-4" aria-hidden />
                     Diffuser paired successfully
                   </p>
-                  <StatusButton state="success" label="OK" />
                 </div>
               </div>
             ) : (
@@ -265,7 +283,7 @@ function Setup() {
               {roomError && <p className="text-xs text-destructive">{roomError}</p>}
             </div>
             <p className="text-xs text-muted-foreground">
-              The diffuser stores "{combinedName}" ({MAX_BROADCAST_NAME_BYTES} characters max,
+              The diffuser broadcasts as "{combinedName}" ({MAX_BROADCAST_NAME_BYTES} characters max,
               letters, numbers, spaces, hyphens and underscores only).
               {combinedError && <span className="block text-destructive">{combinedError}</span>}
             </p>
