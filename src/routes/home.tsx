@@ -290,10 +290,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               onChange={(e) => setNameDraft(e.target.value)}
               className="mt-2"
             />
-            {nameDraftError && <p className="mt-2 text-xs text-destructive">{nameDraftError}</p>}
             <p className="mt-3 text-xs text-muted-foreground">
-              The diffuser stores "{hardwareName(nameDraft, roomDraft)}" ({MAX_BROADCAST_NAME_BYTES}{" "}
-              characters max, letters, numbers, spaces, hyphens and underscores only).
+              The diffuser broadcasts as "{hardwareName(nameDraft, roomDraft)}" — the room name must
+              stay within {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens
+              and underscores only.
               {combinedDraftError && (
                 <span className="block text-destructive">{combinedDraftError}</span>
               )}
@@ -302,8 +302,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               <Button variant="secondary" className="flex-1" onClick={() => setEditingName(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={() => void saveNames()} disabled={!!nameDraftError || !!roomDraftError || !!combinedDraftError}>
+              <Button className="flex-1" onClick={() => void saveNames()} disabled={!!roomDraftError || !!combinedDraftError}>
                 Save
+
               </Button>
             </div>
           </div>
