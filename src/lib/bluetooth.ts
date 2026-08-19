@@ -6,7 +6,12 @@
  * are silently dropped by these serial modules, which is why the device never
  * beeps when a whole timer-list frame is written at once.
  */
-import { toHex } from "@/lib/scentlife";
+import {
+  buildGetTimers,
+  parseTimerListResponse,
+  toHex,
+  type TimerSlot,
+} from "@/lib/scentlife";
 import {
   connectNative,
   isNativeConnected,
