@@ -74,8 +74,10 @@ export function formatTime(value: string) {
 }
 
 export function formatHourLabel(hour: number, minutes = "00") {
-  const suffix = hour >= 12 && hour < 24 ? "PM" : "AM";
-  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  const normalized = ((hour % 24) + 24) % 24;
+  if (is24Hour()) return `${String(normalized).padStart(2, "0")}:${minutes}`;
+  const suffix = normalized >= 12 ? "PM" : "AM";
+  const displayHour = normalized % 12 === 0 ? 12 : normalized % 12;
   return `${displayHour}:${minutes} ${suffix}`;
 }
 
