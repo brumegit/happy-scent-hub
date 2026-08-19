@@ -170,8 +170,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
    * Renames the diffuser inside the app. The ScentLife protocol has no
    * set name command, so nothing is written over Bluetooth here.
    */
-  function renameDevice(next: string) {
-    updateDiffuser(diffuser.id, { name: next });
+  function saveNames() {
+    const name = nameDraft.trim();
+    const room = roomDraft.trim();
+    if (!name || !room) return;
+    updateDiffuser(diffuser.id, { name, room });
+    setEditingName(false);
   }
 
   async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
