@@ -224,29 +224,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          {editingName ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={nameDraft}
-                aria-label="Diffuser name"
-                onChange={(e) => setNameDraft(e.target.value)}
-                className="h-9 w-56"
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  const next = nameDraft.trim();
-                  if (next) void renameDevice(next);
-                  setEditingName(false);
-                }}
-              >
-                Save
-              </Button>
-            </div>
-          ) : (
-            <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
-          )}
+          <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
           <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
           {connected && (
             <p className="mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
