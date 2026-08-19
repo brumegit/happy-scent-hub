@@ -1,18 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
-
 export type Intensity = "low" | "medium" | "high";
 
-export type Diffuser = {
-  id: string;
-  user_id: string;
-  name: string;
-  device_id: string | null;
-  intensity: Intensity;
-  schedule_days: number[];
-  start_time: string;
-  end_time: string;
-  schedule_active: boolean;
-};
 
 export const DAYS = [
   { value: 0, short: "Sun", long: "Sunday" },
@@ -47,11 +34,3 @@ export function formatDays(days: number[]) {
   return sorted.map((d) => DAYS[d]?.short).filter(Boolean).join(" · ");
 }
 
-export async function fetchMyDiffusers(): Promise<Diffuser[]> {
-  const { data, error } = await supabase
-    .from("diffusers")
-    .select("*")
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as Diffuser[];
-}

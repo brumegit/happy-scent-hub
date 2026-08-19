@@ -1,24 +1,25 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Bluetooth, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppHeader } from "@/components/AppHeader";
+import { GuestBanner } from "@/components/GuestBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { pairDiffuser, isBluetoothSupported } from "@/lib/bluetooth";
 import { DAYS, INTENSITIES, type Intensity } from "@/lib/diffuser";
+import { useDiffuserStore } from "@/stores/diffuserStore";
 
-export const Route = createFileRoute("/_authenticated/setup")({
+export const Route = createFileRoute("/setup")({
+  ssr: false,
   head: () => ({
     meta: [
-      { title: "Set up your diffuser — Aura" },
-      { name: "description", content: "Pair your Aura diffuser, choose an intensity and set its schedule." },
-      { property: "og:title", content: "Set up your diffuser — Aura" },
-      { property: "og:description", content: "Three quick steps to get your Aura diffuser running." },
+      { title: "Set up your diffuser — Brume" },
+      { name: "description", content: "Pair your Brume diffuser, choose an intensity and set its schedule." },
+      { property: "og:title", content: "Set up your diffuser — Brume" },
+      { property: "og:description", content: "Three quick steps to get your Brume diffuser running." },
     ],
   }),
   component: Setup,
@@ -28,7 +29,7 @@ const STEP_LABELS = ["Connect", "Intensity", "Schedule"];
 
 function Setup() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const addDiffuser = useDiffuserStore((s) => s.addDiffuser);
 
   const [step, setStep] = useState(0);
   const [pairing, setPairing] = useState(false);
@@ -53,30 +54,19 @@ function Setup() {
     }
   }
 
-  const save = useMutation({
-    mutationFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-      if (!userId) throw new Error("You need to be signed in.");
-      const { error } = await supabase.from("diffusers").insert({
-        user_id: userId,
-        name: name.trim(),
-        device_id: deviceId,
-        intensity,
-        schedule_days: days,
-        start_time: startTime,
-        end_time: endTime,
-        schedule_active: true,
-      });
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["diffusers"] });
-      toast.success("Your diffuser is ready");
-      navigate({ to: "/home", replace: true });
-    },
-    onError: (error) => toast.error((error as Error).message),
-  });
+  function finish() {
+    addDiffuser({
+      name: name.trim(),
+      device_id: deviceId,
+      intensity,
+      schedule_days: days,
+      start_time: startTime,
+      end_time: endTime,
+      schedule_active: true,
+    });
+    toast.success("Your diffuser is ready");
+    navigate({ to: "/home", replace: true });
+  }
 
   function toggleDay(value: number) {
     setDays((current) =>
@@ -86,35 +76,28 @@ function Setup() {
 
   return (
     <div className="min-h-screen">
+      <GuestBanner />
       <div className="mx-auto max-w-2xl px-6 py-8">
         <AppHeader />
 
         <div className="mt-10 flex items-center gap-3">
           {STEP_LABELS.map((label, index) => (
             <div key={label} className="flex flex-1 flex-col gap-2">
-              <div
-                className={`h-1 rounded-full ${index <= step ? "bg-primary" : "bg-muted"}`}
-                aria-hidden
-              />
-              <span
-                className={`text-xs ${index <= step ? "text-primary" : "text-muted-foreground"}`}
-              >
+              <div className={`h-1 ${index <= step ? "bg-primary" : "bg-muted"}`} aria-hidden />
+              <span className={`text-xs ${index <= step ? "text-foreground" : "text-muted-foreground"}`}>
                 {label}
               </span>
             </div>
           ))}
         </div>
 
-        <div
-          className="mt-8 rounded-none border border-border bg-card p-8"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
+        <div className="mt-8 border border-border bg-card p-8" style={{ boxShadow: "var(--shadow-soft)" }}>
           {step === 0 && (
             <section className="space-y-6">
               <div>
                 <h1 className="font-display text-3xl uppercase">Connect your diffuser</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Turn your Aura on, hold the button until the light pulses, then pair over Bluetooth.
+                  Turn your diffuser on, hold the button until the light pulses, then pair over Bluetooth.
                 </p>
               </div>
 
@@ -130,13 +113,13 @@ function Setup() {
               {!isBluetoothSupported() && (
                 <p className="text-xs text-muted-foreground">
                   This browser doesn't support Bluetooth pairing — we'll set up a demo connection so you can
-                  finish. Use Chrome or the Aura mobile app for a real pairing.
+                  finish. Use Chrome or the mobile app for a real pairing.
                 </p>
               )}
 
               {deviceId && (
-                <div className="space-y-4 rounded-none border border-border bg-secondary/40 p-5">
-                  <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-accent">
+                <div className="space-y-4 border border-border bg-secondary/40 p-5">
+                  <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
                     <Check className="size-4" aria-hidden />
                     Device found
                   </p>
@@ -176,7 +159,7 @@ function Setup() {
                     key={option.value}
                     type="button"
                     onClick={() => setIntensity(option.value)}
-                    className={`w-full rounded-none border p-5 text-left transition-colors ${
+                    className={`w-full border p-5 text-left transition-colors ${
                       intensity === option.value
                         ? "border-primary bg-secondary/60"
                         : "border-border hover:bg-secondary/30"
@@ -184,7 +167,7 @@ function Setup() {
                   >
                     <span className="flex items-center justify-between">
                       <span className="font-semibold">{option.label}</span>
-                      {intensity === option.value && <Check className="size-4 text-primary" aria-hidden />}
+                      {intensity === option.value && <Check className="size-4" aria-hidden />}
                     </span>
                     <span className="mt-1 block text-sm text-muted-foreground">{option.blurb}</span>
                   </button>
@@ -220,7 +203,7 @@ function Setup() {
                       type="button"
                       aria-pressed={days.includes(day.value)}
                       onClick={() => toggleDay(day.value)}
-                      className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                      className={`border px-4 py-2 text-sm transition-colors ${
                         days.includes(day.value)
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-border text-muted-foreground hover:bg-secondary/40"
@@ -257,13 +240,8 @@ function Setup() {
                 <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep(1)}>
                   Back
                 </Button>
-                <Button
-                  size="lg"
-                  className="flex-1"
-                  disabled={days.length === 0 || save.isPending}
-                  onClick={() => save.mutate()}
-                >
-                  {save.isPending ? "Saving…" : "Finish setup"}
+                <Button size="lg" className="flex-1" disabled={days.length === 0} onClick={finish}>
+                  Finish setup
                 </Button>
               </div>
             </section>

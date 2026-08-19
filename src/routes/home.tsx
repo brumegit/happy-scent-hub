@@ -1,29 +1,23 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Bluetooth, CalendarClock, Gauge, Plus } from "lucide-react";
-import { toast } from "sonner";
 
 import { AppHeader } from "@/components/AppHeader";
+import { GuestBanner } from "@/components/GuestBanner";
+import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  DAYS,
-  INTENSITIES,
-  fetchMyDiffusers,
-  formatDays,
-  formatTime,
-  type Diffuser,
-  type Intensity,
-} from "@/lib/diffuser";
+import { DAYS, INTENSITIES, formatDays, formatTime, type Intensity } from "@/lib/diffuser";
+import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
+import { useIdentityStore } from "@/stores/identityStore";
 
-export const Route = createFileRoute("/_authenticated/home")({
+export const Route = createFileRoute("/home")({
+  ssr: false,
   head: () => ({
     meta: [
-      { title: "My diffusers — Aura" },
-      { name: "description", content: "See your Aura diffuser, its intensity and its active schedule." },
-      { property: "og:title", content: "My diffusers — Aura" },
+      { title: "My diffusers — Brume" },
+      { name: "description", content: "See your Brume diffuser, its intensity and its active schedule." },
+      { property: "og:title", content: "My diffusers — Brume" },
       { property: "og:description", content: "Your diffuser, intensity and active schedule at a glance." },
     ],
   }),
@@ -32,27 +26,26 @@ export const Route = createFileRoute("/_authenticated/home")({
 
 function Home() {
   const navigate = useNavigate();
-  const { data, isLoading } = useQuery({ queryKey: ["diffusers"], queryFn: fetchMyDiffusers });
+  const diffusers = useDiffuserStore((s) => s.diffusers);
+  const hydrated = useHydrated();
+  const firstName = useIdentityStore((s) => s.firstName);
+  const status = useIdentityStore((s) => s.status);
 
   useEffect(() => {
-    if (!isLoading && data && data.length === 0) {
-      navigate({ to: "/setup", replace: true });
-    }
-  }, [isLoading, data, navigate]);
+    if (hydrated && diffusers.length === 0) navigate({ to: "/setup", replace: true });
+  }, [hydrated, diffusers.length, navigate]);
 
   return (
     <div className="relative min-h-screen">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "var(--gradient-glow)" }}
-        aria-hidden
-      />
+      <GuestBanner />
       <div className="relative mx-auto max-w-3xl px-6 py-8">
         <AppHeader />
 
         <div className="mt-10 flex items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-4xl uppercase">Your diffusers</h1>
+            <h1 className="font-display text-4xl uppercase">
+              {status === "matched" && firstName ? `${firstName}'s diffusers` : "Your diffusers"}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Intensity and schedule, always one tap away.
             </p>
@@ -66,8 +59,10 @@ function Home() {
         </div>
 
         <div className="mt-8 space-y-5">
-          {isLoading && <div className="h-52 animate-pulse rounded-none border border-border bg-card" />}
-          {data?.map((diffuser) => <DiffuserCard key={diffuser.id} diffuser={diffuser} />)}
+          {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
+          {diffusers.map((diffuser) => (
+            <DiffuserCard key={diffuser.id} diffuser={diffuser} />
+          ))}
         </div>
       </div>
     </div>
@@ -75,26 +70,14 @@ function Home() {
 }
 
 function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
-  const queryClient = useQueryClient();
-
-  const update = useMutation({
-    mutationFn: async (patch: Partial<Diffuser>) => {
-      const { error } = await supabase.from("diffusers").update(patch).eq("id", diffuser.id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["diffusers"] }),
-    onError: (error) => toast.error((error as Error).message),
-  });
+  const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
 
   return (
-    <article
-      className="rounded-none border border-border bg-card p-7"
-      style={{ boxShadow: "var(--shadow-soft)" }}
-    >
+    <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl uppercase tracking-wide">{diffuser.name}</h2>
-          <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-accent">
+          <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
             <Bluetooth className="size-4" aria-hidden />
             Connected
           </p>
@@ -106,12 +89,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
           <Switch
             checked={diffuser.schedule_active}
             aria-label="Toggle schedule"
-            onCheckedChange={(checked) => update.mutate({ schedule_active: checked })}
+            onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
           />
         </div>
       </div>
 
-      <div className="mt-6 rounded-none border border-border bg-secondary/30 p-5">
+      <div className="mt-6 border border-border bg-secondary/30 p-5">
         <p className="flex items-center gap-2 eyebrow text-muted-foreground">
           <Gauge className="size-4" aria-hidden />
           Intensity
@@ -122,8 +105,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               key={option.value}
               type="button"
               aria-pressed={diffuser.intensity === option.value}
-              onClick={() => update.mutate({ intensity: option.value as Intensity })}
-              className={`flex-1 rounded-none border px-3 py-2 text-sm transition-colors ${
+              onClick={() => updateDiffuser(diffuser.id, { intensity: option.value as Intensity })}
+              className={`flex-1 border px-3 py-2 text-sm transition-colors ${
                 diffuser.intensity === option.value
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border text-muted-foreground hover:bg-secondary/60"
@@ -135,7 +118,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         </div>
       </div>
 
-      <div className="mt-4 rounded-none border border-border bg-secondary/30 p-5">
+      <div className="mt-4 border border-border bg-secondary/30 p-5">
         <p className="flex items-center gap-2 eyebrow text-muted-foreground">
           <CalendarClock className="size-4" aria-hidden />
           Active schedule
@@ -148,9 +131,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
           {DAYS.map((day) => (
             <span
               key={day.value}
-              className={`rounded-full border px-3 py-1 text-xs ${
+              className={`border px-3 py-1 text-xs ${
                 diffuser.schedule_days.includes(day.value)
-                  ? "border-primary/60 text-primary"
+                  ? "border-foreground/60 text-foreground"
                   : "border-border text-muted-foreground/60"
               }`}
             >

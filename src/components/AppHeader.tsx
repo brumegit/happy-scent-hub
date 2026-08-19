@@ -1,22 +1,14 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { LogOut } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { UserRound } from "lucide-react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { CartDrawer } from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { useIdentityStore } from "@/stores/identityStore";
 
 export function AppHeader() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  async function signOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
+  const email = useIdentityStore((s) => s.email);
+  const status = useIdentityStore((s) => s.status);
 
   return (
     <header className="flex items-center justify-between border-b border-border pb-5">
@@ -28,9 +20,13 @@ export function AppHeader() {
           <Link to="/shop">Shop</Link>
         </Button>
         <CartDrawer />
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          <LogOut className="size-4" aria-hidden />
-          Sign out
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/welcome">
+            <UserRound className="size-4" aria-hidden />
+            <span className="max-w-[10rem] truncate">
+              {status === "matched" && email ? email : "Guest"}
+            </span>
+          </Link>
         </Button>
       </div>
     </header>

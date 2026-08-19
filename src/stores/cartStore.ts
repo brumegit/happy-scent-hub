@@ -86,9 +86,8 @@ function isCartNotFoundError(userErrors: UserErrors): boolean {
 // so their order lands on their existing Shopify customer account.
 async function getAccountEmail(): Promise<string | null> {
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data } = await supabase.auth.getSession();
-    return data.session?.user.email ?? null;
+    const { getIdentityEmail } = await import("@/stores/identityStore");
+    return getIdentityEmail();
   } catch {
     return null;
   }
