@@ -18,11 +18,9 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { checkConnection, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import { buildSetDeviceName } from "@/lib/scentlife";
 import {
-  DAYS,
   INTENSITIES,
   activeDays,
   buildPushFrames,
