@@ -197,11 +197,12 @@ export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity
 }
 
 /**
- * The hardware name we write to the module: "Device Room", no separator, kept
- * inside the module's 12 plain-ASCII byte limit.
+ * The BLE advertising name written to the module: always "Brume <Room>", so the
+ * hardware is recognisable in any Bluetooth list whatever the in-app device
+ * name is. Kept inside the module's plain-ASCII byte limit.
  */
-export function hardwareName(name: string, room?: string) {
-  return sanitizeBroadcastName([name, room].filter(Boolean).join(" "));
+export function hardwareName(_name: string, room?: string) {
+  return sanitizeBroadcastName(["Brume", room].filter(Boolean).join(" "));
 }
 
 /** Reverse of buildTimerSlots: the intensity whose spray duration matches. */
