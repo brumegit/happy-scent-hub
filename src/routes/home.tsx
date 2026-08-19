@@ -58,9 +58,9 @@ function Home() {
   const empty = hydrated && diffusers.length === 0;
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen flex flex-col">
       <GuestBanner />
-      <div className="relative mx-auto max-w-3xl px-6 py-8">
+      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-8">
         <AppHeader />
 
         {empty ? (
