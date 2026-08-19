@@ -41,10 +41,10 @@ export function StatusButton({
         className={`relative flex w-full items-center justify-center gap-3 overflow-hidden border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
       >
         {state === "pairing" && (
-          <span className="drip-layer absolute inset-0 overflow-hidden">
-            <span style={{ left: "16%", animationDelay: "0s" }} />
-            <span style={{ left: "44%", animationDelay: "0.8s" }} />
-            <span style={{ left: "72%", animationDelay: "1.6s" }} />
+          <span className="drip-layer absolute inset-0">
+            <span style={{ animationDelay: "0s" }} />
+            <span style={{ animationDelay: "0.8s" }} />
+            <span style={{ animationDelay: "1.6s" }} />
           </span>
         )}
         {(state === "idle" || state === "pairing") && icon && (
