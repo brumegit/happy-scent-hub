@@ -19,7 +19,6 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { checkConnection, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
-import { buildSetDeviceName } from "@/lib/scentlife";
 import {
   INTENSITIES,
   activeDays,
@@ -158,28 +157,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
 
-  /** Renames locally and pushes the new name to the diffuser over Bluetooth. */
-  async function renameDevice(next: string) {
+  /**
+   * Renames the diffuser inside the app. The ScentLife protocol has no
+   * set name command, so nothing is written over Bluetooth here.
+   */
+  function renameDevice(next: string) {
     updateDiffuser(diffuser.id, { name: next });
-    setPushing(true);
-    setResult("idle");
-    setError(null);
-    try {
-      await sendFrames(diffuser.device_id, [buildSetDeviceName(next)]);
-      updateDiffuser(diffuser.id, { last_pushed_at: new Date().toISOString() });
-      setResult("success");
-      setTimeout(() => {
-        setResult("idle");
-        setPushing(false);
-      }, 1400);
-    } catch (err) {
-      setError((err as Error).message || "Could not rename the diffuser.");
-      setResult("error");
-      setTimeout(() => {
-        setResult("idle");
-        setPushing(false);
-      }, 2400);
-    }
   }
 
   async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {

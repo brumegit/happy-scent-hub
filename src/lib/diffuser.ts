@@ -1,5 +1,5 @@
 import {
-  buildModifyTimer,
+  
   buildPower,
   buildSyncTimestamp,
   buildTimerList,
@@ -167,33 +167,33 @@ export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity
 }
 
 /**
- * Full push sequence the device acknowledges (and beeps for): clock sync, power
- * on, the whole timer list, then each timer individually via 0x14 — some
- * firmware only applies (and beeps for) the per-timer command. Unused slots are
- * explicitly disabled so old schedules do not linger on the device.
+ * Push sequence per the ScentLife protocol: clock sync (0x06), the full timer
+ * list (0x13), then power on (0x07 / 0x12).
+ *
+ * The timer list is a full replacement, so unused slots travel inside the same
+ * 0x13 frame as disabled entries. We deliberately do NOT also replay every slot
+ * through 0x14: repeating the same timers right after the list makes the
+ * firmware reject the duplicates, which is what triggers the blue blink and the
+ * burst of error beeps.
  */
 export function buildPushFrames(schedule: DaySchedule[], intensity: Intensity) {
   const preset = intensityPreset(intensity);
   const slots = buildTimerSlots(schedule, intensity);
-  const frames = [buildSyncTimestamp(), buildPower(true), buildTimerList(slots)];
 
-  for (const slot of slots) frames.push(buildModifyTimer(slot));
-
+  const full: TimerSlot[] = [...slots];
   for (let index = slots.length + 1; index <= MAX_TIMERS; index += 1) {
-    frames.push(
-      buildModifyTimer({
-        enabled: false,
-        index,
-        weekdayMask: 0,
-        startMinute: 0,
-        endMinute: 0,
-        onSeconds: preset.onSeconds,
-        offSeconds: preset.offSeconds,
-      }),
-    );
+    full.push({
+      enabled: false,
+      index,
+      weekdayMask: 0,
+      startMinute: 0,
+      endMinute: 0,
+      onSeconds: preset.onSeconds,
+      offSeconds: preset.offSeconds,
+    });
   }
 
-  return frames;
+  return [buildSyncTimestamp(), buildTimerList(full), buildPower(true)];
 }
 
 
