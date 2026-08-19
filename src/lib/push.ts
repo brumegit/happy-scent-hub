@@ -111,10 +111,13 @@ function verify(readback: TimerSlot[], wanted: TimerSlot) {
     `device spray ${mode1.onSeconds}s / pause ${mode1.offSeconds}s · sent ${wanted.onSeconds}s / ${wanted.offSeconds}s`,
   );
 
+  // The firmware normalises end-of-day: 1439 (23:59) comes back as 1440.
+  const sameMinute = (a: number, b: number) =>
+    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
   const scheduleOk =
     mode1.weekdayMask === wanted.weekdayMask &&
-    mode1.startMinute === wanted.startMinute &&
-    mode1.endMinute === wanted.endMinute;
+    sameMinute(mode1.startMinute, wanted.startMinute) &&
+    sameMinute(mode1.endMinute, wanted.endMinute);
   debug.set(
     "schedule",
     scheduleOk ? "ok" : "fail",
