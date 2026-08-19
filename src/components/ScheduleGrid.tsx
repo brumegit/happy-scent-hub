@@ -67,7 +67,7 @@ export function ScheduleGrid({
               <>
                 <div className="flex min-h-6 items-center justify-between">
                   <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    {named ? routineName(block) : ""}
+                    {routineName(block)}
                   </span>
                   {blocks.length > 1 && (
                     <button
