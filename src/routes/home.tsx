@@ -524,9 +524,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                 />
               </div>
             )}
-
-              </div>
-            )}
           </div>
           </>
           )}
