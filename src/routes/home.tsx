@@ -542,7 +542,10 @@ function LastSettings({
   open: boolean;
   onToggle: () => void;
 }) {
-  const preset = intensityPreset(diffuser.intensity);
+  // Report exactly what was last written to the hardware, not the current draft.
+  const pushedSchedule = diffuser.last_pushed_schedule ?? diffuser.schedule;
+  const preset = intensityPreset(diffuser.last_pushed_intensity ?? diffuser.intensity);
+  const lines = formatScheduleLines(pushedSchedule);
   return (
     <div className="border border-border">
       <button
@@ -575,16 +578,19 @@ function LastSettings({
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">Days</dt>
-            <dd>{formatDays(activeDays(diffuser.schedule))}</dd>
+            <dd>{formatDays(activeDays(pushedSchedule))}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Hours</dt>
-            <dd className="text-right">
-              {formatHourRanges(diffuser.schedule.find((d) => d.active)?.hours ?? [])}
+            <dt className="shrink-0 text-muted-foreground">Hours</dt>
+            <dd className="space-y-1 text-right">
+              {lines.map((line) => (
+                <div key={line}>{line}</div>
+              ))}
             </dd>
           </div>
         </dl>
       )}
+
     </div>
   );
 }
