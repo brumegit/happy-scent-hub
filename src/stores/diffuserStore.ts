@@ -6,10 +6,12 @@ import { defaultSchedule, type DaySchedule, type Intensity } from "@/lib/diffuse
 export type Diffuser = {
   id: string;
   name: string;
+  room: string;
   device_id: string | null;
   intensity: Intensity;
   schedule: DaySchedule[];
   schedule_active: boolean;
+  last_pushed_at: string | null;
 };
 
 interface DiffuserState {
@@ -44,18 +46,21 @@ export const useDiffuserStore = create<DiffuserState>()(
     }),
     {
       name: "brume-diffusers",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ diffusers: state.diffusers }),
       migrate: (persisted) => {
         const state = persisted as { diffusers?: LegacyDiffuser[] } | undefined;
         return {
           diffusers: (state?.diffusers ?? []).map((d) => {
-            if (Array.isArray(d.schedule)) return d;
+            if (Array.isArray(d.schedule))
+              return { room: d.room ?? "Living room", last_pushed_at: d.last_pushed_at ?? null, ...d };
             const start = Number(d.start_time?.split(":")[0] ?? 8);
             const end = Number(d.end_time?.split(":")[0] ?? 23);
             const hours = Array.from({ length: Math.max(end - start, 1) }, (_, i) => start + i);
             return {
+              room: d.room ?? "Living room",
+              last_pushed_at: d.last_pushed_at ?? null,
               ...d,
               schedule: defaultSchedule().map((day) => ({
                 ...day,
