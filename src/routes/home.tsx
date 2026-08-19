@@ -254,9 +254,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               </Button>
             </div>
           ) : (
-            <h2 className="font-display text-2xl tracking-wide">{diffuser.name}</h2>
+            <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
           )}
-          <p className="mt-1 text-sm text-gold">{diffuser.room}</p>
+          <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
           {connected && (
             <p className="mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
               <Bluetooth className="size-4" aria-hidden />
@@ -407,7 +407,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                   onClick={() => push(option.value, schedule)}
                   className={`flex-1 border px-3 py-2 text-sm transition-colors ${
                     diffuser.intensity === option.value
-                      ? "border-foreground bg-background text-foreground"
+                      ? "border-gold bg-background text-gold"
                       : "border-border bg-background text-muted-foreground hover:text-foreground"
                   }`}
                 >
