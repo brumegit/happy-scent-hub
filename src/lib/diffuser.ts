@@ -212,16 +212,35 @@ export function intensityFromTimer(slot: TimerSlot): Intensity {
   return closest.value;
 }
 
-/** Reverse of buildTimerSlots: the weekly schedule stored in working mode 1. */
-export function scheduleFromTimer(slot: TimerSlot): DaySchedule[] {
+function hoursOfTimer(slot: TimerSlot) {
   const startHour = Math.max(0, Math.min(23, Math.floor(slot.startMinute / 60)));
   const endHour = slot.endMinute >= 1439 ? 24 : Math.max(startHour + 1, Math.ceil(slot.endMinute / 60));
-  const hours = Array.from({ length: Math.min(24, endHour) - startHour }, (_, i) => startHour + i);
-  return DAYS.map((d) => ({
-    day: d.value,
-    active: slot.enabled && (slot.weekdayMask & weekdayBit(d.value)) !== 0,
-    hours: hours.length ? hours : defaultHours(),
-  }));
+  return Array.from({ length: Math.min(24, endHour) - startHour }, (_, i) => startHour + i);
+}
+
+/** Reverse of buildTimerSlots: the weekly schedule stored in working mode 1. */
+export function scheduleFromTimer(slot: TimerSlot): DaySchedule[] {
+  return scheduleFromTimers([slot]);
+}
+
+/**
+ * Reverse of buildTimerSlots: merges every enabled working mode back into one
+ * weekly schedule, each mode contributing its hours to the days it covers.
+ */
+export function scheduleFromTimers(slots: TimerSlot[]): DaySchedule[] {
+  const active = slots.filter((s) => s.enabled && s.endMinute > s.startMinute);
+  const schedule = DAYS.map((d) => ({ day: d.value, active: false, hours: [] as number[] }));
+
+  for (const slot of active) {
+    const hours = hoursOfTimer(slot);
+    for (const day of schedule) {
+      if ((slot.weekdayMask & weekdayBit(day.day)) === 0) continue;
+      day.active = true;
+      day.hours = [...new Set([...day.hours, ...hours])].sort((a, b) => a - b);
+    }
+  }
+
+  return schedule.map((d) => ({ ...d, hours: d.hours.length ? d.hours : defaultHours() }));
 }
 
 
