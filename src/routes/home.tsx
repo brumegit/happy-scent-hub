@@ -73,7 +73,7 @@ function Home() {
           <>
             <div className="mt-10 flex items-end justify-between gap-4">
               <div>
-                <h1 className="font-display text-4xl uppercase">
+                <h1 className="font-display text-4xl">
                   {status === "matched" && firstName ? `${firstName}'s diffusers` : "Your diffusers"}
                 </h1>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -93,6 +93,14 @@ function Home() {
               {diffusers.map((diffuser) => (
                 <DiffuserCard key={diffuser.id} diffuser={diffuser} />
               ))}
+              {hydrated && diffusers.length > 0 && (
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/setup" search={{ start: false }}>
+                    <Plus className="size-4" aria-hidden />
+                    Add a diffuser
+                  </Link>
+                </Button>
+              )}
             </div>
           </>
         )}
