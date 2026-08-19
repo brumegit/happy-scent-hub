@@ -12,7 +12,11 @@ export type Diffuser = {
   schedule: DaySchedule[];
   schedule_active: boolean;
   last_pushed_at: string | null;
+  /** Exact settings acknowledged by the hardware on the last push. */
+  last_pushed_intensity?: Intensity;
+  last_pushed_schedule?: DaySchedule[];
 };
+
 
 interface DiffuserState {
   diffusers: Diffuser[];
