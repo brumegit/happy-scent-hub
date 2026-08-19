@@ -32,6 +32,8 @@ const CHUNK_DELAY_MS = 30;
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
   simulated: boolean;
+  /** Drops the physical GATT link (web only; native goes through Capacitor). */
+  close?: () => Promise<void>;
 };
 
 const links = new Map<string, Link>();
