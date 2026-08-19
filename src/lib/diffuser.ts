@@ -260,12 +260,13 @@ export function blocksToSchedule(blocks: TimeBlock[]): DaySchedule[] {
         }),
       ),
     ].sort((a, b) => a - b);
-    return {
+    const day: DaySchedule = {
       day: d.value,
       active: ranges.length > 0,
       hours: hours.length ? hours : defaultHours(),
-      ranges: ranges.length ? ranges : undefined,
-    } satisfies DaySchedule;
+    };
+    if (ranges.length) day.ranges = ranges;
+    return day;
   });
 }
 
