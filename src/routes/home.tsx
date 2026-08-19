@@ -61,23 +61,25 @@ function Home() {
   return (
     <div className="relative min-h-screen flex flex-col">
       <GuestBanner />
-      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-8">
+      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-8">
         <AppHeader />
 
         {empty ? (
-          <section className="mt-10 border border-border bg-card p-7">
-            <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Pair your diffuser to set its intensity and weekly schedule.
-            </p>
-            <div className="mt-7">
-              <StatusButton
-                state="idle"
-                label="Start now"
-                onClick={() => navigate({ to: "/setup", search: { start: true } })}
-              />
-            </div>
-          </section>
+          <div className="flex flex-1 flex-col justify-center">
+            <section className="border border-border bg-card p-7">
+              <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Pair your diffuser to set its intensity and weekly schedule.
+              </p>
+              <div className="mt-7">
+                <StatusButton
+                  state="idle"
+                  label="Start now"
+                  onClick={() => navigate({ to: "/setup", search: { start: true } })}
+                />
+              </div>
+            </section>
+          </div>
         ) : (
           <>
             <div className="mt-10 flex items-end justify-between gap-4">
@@ -94,19 +96,21 @@ function Home() {
               </Button>
             </div>
 
-            <div className="mt-8 space-y-5">
-              {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
-              {diffusers.map((diffuser) => (
-                <DiffuserCard key={diffuser.id} diffuser={diffuser} />
-              ))}
-              {hydrated && diffusers.length > 0 && (
-                <Button asChild variant="secondary" className="w-full">
-                  <Link to="/setup" search={{ start: false }}>
-                    <Plus className="size-4" aria-hidden />
-                    Add a diffuser
-                  </Link>
-                </Button>
-              )}
+            <div className="flex flex-1 flex-col justify-center">
+              <div className="space-y-5 py-8">
+                {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
+                {diffusers.map((diffuser) => (
+                  <DiffuserCard key={diffuser.id} diffuser={diffuser} />
+                ))}
+                {hydrated && diffusers.length > 0 && (
+                  <Button asChild variant="secondary" className="w-full">
+                    <Link to="/setup" search={{ start: false }}>
+                      <Plus className="size-4" aria-hidden />
+                      Add a diffuser
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -130,6 +134,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(diffuser.name);
+  const [roomDraft, setRoomDraft] = useState(diffuser.room);
   const [editingSettings, setEditingSettings] = useState(false);
 
   useEffect(() => {
@@ -169,8 +174,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
    * Renames the diffuser inside the app. The ScentLife protocol has no
    * set name command, so nothing is written over Bluetooth here.
    */
-  function renameDevice(next: string) {
-    updateDiffuser(diffuser.id, { name: next });
+  function saveNames() {
+    const name = nameDraft.trim();
+    const room = roomDraft.trim();
+    if (!name || !room) return;
+    updateDiffuser(diffuser.id, { name, room });
+    setEditingName(false);
   }
 
   async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
@@ -217,31 +226,46 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
   return (
     <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          {editingName ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={nameDraft}
-                aria-label="Diffuser name"
-                onChange={(e) => setNameDraft(e.target.value)}
-                className="h-9 w-56"
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  const next = nameDraft.trim();
-                  if (next) void renameDevice(next);
-                  setEditingName(false);
-                }}
-              >
+      {editingName && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
+          <div
+            role="dialog"
+            aria-label="Edit diffuser"
+            className="w-full max-w-sm border border-border bg-card p-6"
+          >
+            <h3 className="font-display text-2xl">Edit diffuser</h3>
+            <label className="mt-5 block text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Room name
+            </label>
+            <Input
+              value={roomDraft}
+              aria-label="Room name"
+              onChange={(e) => setRoomDraft(e.target.value)}
+              className="mt-2"
+            />
+            <label className="mt-4 block text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Diffuser name
+            </label>
+            <Input
+              value={nameDraft}
+              aria-label="Diffuser name"
+              onChange={(e) => setNameDraft(e.target.value)}
+              className="mt-2"
+            />
+            <div className="mt-6 flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={() => setEditingName(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={saveNames} disabled={!nameDraft.trim() || !roomDraft.trim()}>
                 Save
               </Button>
             </div>
-          ) : (
-            <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
-          )}
+          </div>
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
           <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
           {connected && (
             <p className="mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
@@ -318,6 +342,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:text-muted-foreground"
                       onClick={() => {
                         setNameDraft(diffuser.name);
+                        setRoomDraft(diffuser.room);
                         setEditingName(true);
                         setMenuOpen(false);
                       }}
