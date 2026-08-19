@@ -2,7 +2,14 @@ import { useState } from "react";
 
 import { HourPicker } from "@/components/HourPicker";
 import { Switch } from "@/components/ui/switch";
-import { DAYS, formatHourRanges, type DaySchedule } from "@/lib/diffuser";
+import {
+  DAYS,
+  MAX_TIMERS,
+  formatHourRanges,
+  timerWindowCount,
+  unifySchedule,
+  type DaySchedule,
+} from "@/lib/diffuser";
 
 /** 7 rows: day / active / working hours. */
 export function ScheduleGrid({
@@ -14,13 +21,18 @@ export function ScheduleGrid({
 }) {
   const [editing, setEditing] = useState<number | null>(null);
   const editingDay = schedule.find((d) => d.day === editing);
+  // The hardware stores 5 working modes; each distinct time window needs one.
+  const windows = timerWindowCount(schedule);
+  const overLimit = windows > MAX_TIMERS;
 
   function patch(day: number, value: Partial<DaySchedule>) {
     onChange(schedule.map((d) => (d.day === day ? { ...d, ...value } : d)));
   }
 
   return (
+    <div>
     <div className="border border-border">
+
       {schedule.map((day) => (
         <div
           key={day.day}
@@ -58,5 +70,24 @@ export function ScheduleGrid({
         }}
       />
     </div>
+
+      {overLimit && (
+        <div className="mt-3 border border-destructive p-4 text-xs text-destructive">
+          <p>
+            Your week needs {windows} different time windows, but the diffuser can only store{" "}
+            {MAX_TIMERS}. Reuse the same hours across days, or align every active day on one
+            pattern.
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange(unifySchedule(schedule))}
+            className="mt-3 border border-destructive bg-background px-3 py-2 uppercase tracking-[0.14em]"
+          >
+            Use the same hours every active day
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
+

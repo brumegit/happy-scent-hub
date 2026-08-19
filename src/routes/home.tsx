@@ -28,7 +28,9 @@ import {
   hardwareName,
   formatDays,
   formatHourRanges,
+  formatScheduleLines,
   formatSeconds,
+
   intensityPreset,
   scheduleStatus,
   type DaySchedule,
@@ -138,12 +140,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [nameDraft, setNameDraft] = useState(diffuser.name);
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
   const [editingSettings, setEditingSettings] = useState(false);
-  const nameDraftError = validateBroadcastName(nameDraft);
+  // Only the room name is broadcast over Bluetooth, so only it is validated.
   const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
-  const combinedDraftError =
-    nameDraftError || roomDraftError
-      ? null
-      : validateBroadcastName(`${nameDraft.trim()} ${roomDraft.trim()}`);
+  const combinedDraftError = roomDraftError
+    ? null
+    : validateBroadcastName(hardwareName(nameDraft, roomDraft));
+
 
   useEffect(() => {
     let cancelled = false;
@@ -229,7 +231,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         intensity: nextIntensity,
         schedule: nextSchedule,
         last_pushed_at: new Date().toISOString(),
+        last_pushed_intensity: nextIntensity,
+        last_pushed_schedule: nextSchedule,
       });
+
       setDraft(null);
       setResult("success");
       setTimeout(() => {
@@ -290,10 +295,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               onChange={(e) => setNameDraft(e.target.value)}
               className="mt-2"
             />
-            {nameDraftError && <p className="mt-2 text-xs text-destructive">{nameDraftError}</p>}
             <p className="mt-3 text-xs text-muted-foreground">
-              The diffuser stores "{hardwareName(nameDraft, roomDraft)}" ({MAX_BROADCAST_NAME_BYTES}{" "}
-              characters max, letters, numbers, spaces, hyphens and underscores only).
+              The diffuser broadcasts as "{hardwareName(nameDraft, roomDraft)}" — the room name must
+              stay within {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens
+              and underscores only.
               {combinedDraftError && (
                 <span className="block text-destructive">{combinedDraftError}</span>
               )}
@@ -302,8 +307,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               <Button variant="secondary" className="flex-1" onClick={() => setEditingName(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={() => void saveNames()} disabled={!!nameDraftError || !!roomDraftError || !!combinedDraftError}>
+              <Button className="flex-1" onClick={() => void saveNames()} disabled={!!roomDraftError || !!combinedDraftError}>
                 Save
+
               </Button>
             </div>
           </div>
@@ -538,7 +544,10 @@ function LastSettings({
   open: boolean;
   onToggle: () => void;
 }) {
-  const preset = intensityPreset(diffuser.intensity);
+  // Report exactly what was last written to the hardware, not the current draft.
+  const pushedSchedule = diffuser.last_pushed_schedule ?? diffuser.schedule;
+  const preset = intensityPreset(diffuser.last_pushed_intensity ?? diffuser.intensity);
+  const lines = formatScheduleLines(pushedSchedule);
   return (
     <div className="border border-border">
       <button
@@ -571,16 +580,19 @@ function LastSettings({
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">Days</dt>
-            <dd>{formatDays(activeDays(diffuser.schedule))}</dd>
+            <dd>{formatDays(activeDays(pushedSchedule))}</dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Hours</dt>
-            <dd className="text-right">
-              {formatHourRanges(diffuser.schedule.find((d) => d.active)?.hours ?? [])}
+            <dt className="shrink-0 text-muted-foreground">Hours</dt>
+            <dd className="space-y-1 text-right">
+              {lines.map((line) => (
+                <div key={line}>{line}</div>
+              ))}
             </dd>
           </div>
         </dl>
       )}
+
     </div>
   );
 }

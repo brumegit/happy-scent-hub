@@ -163,9 +163,12 @@ function Setup() {
   }
 
   const combinedName = hardwareName(name, room.trim());
-  const nameError = validateBroadcastName(name);
+  // The device name stays in the app only — never broadcast — so it is free
+  // form. Only the room name ends up in the Bluetooth label and is validated.
   const roomError = room.trim().length === 0 ? "Enter a room name." : validateBroadcastName(room);
-  const combinedError = nameError || roomError ? null : validateBroadcastName(combinedName);
+  const combinedError = roomError ? null : validateBroadcastName(combinedName);
+
+
 
   const preset = intensityPreset(intensity);
   const simulated = deviceId !== null && !isRealLink(deviceId);
@@ -270,8 +273,8 @@ function Setup() {
             <div className="space-y-2">
               <Label htmlFor="name">Device name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-              {nameError && <p className="text-xs text-destructive">{nameError}</p>}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="room">Room name (required)</Label>
               <Input
@@ -283,14 +286,16 @@ function Setup() {
               {roomError && <p className="text-xs text-destructive">{roomError}</p>}
             </div>
             <p className="text-xs text-muted-foreground">
-              The diffuser broadcasts as "{combinedName}" ({MAX_BROADCAST_NAME_BYTES} characters max,
-              letters, numbers, spaces, hyphens and underscores only).
+              The diffuser broadcasts as "{combinedName}" — the room name must stay within{" "}
+              {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens and
+              underscores only.
               {combinedError && <span className="block text-destructive">{combinedError}</span>}
             </p>
             <Button
               size="lg"
               className="w-full"
-              disabled={!!nameError || !!roomError || !!combinedError}
+              disabled={!!roomError || !!combinedError}
+
               onClick={() => {
                 setPhase("intensity");
               }}
@@ -401,6 +406,9 @@ function Setup() {
                     schedule,
                     schedule_active: true,
                     last_pushed_at: new Date().toISOString(),
+                    last_pushed_intensity: intensity,
+                    last_pushed_schedule: schedule,
+
                   });
                   navigate({ to: "/home", replace: true });
                 })
