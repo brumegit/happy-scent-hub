@@ -186,13 +186,31 @@ function Setup() {
           >
             {phase === "paired" ? (
               // Once connected, everything else is hidden and only the success
-              // confirmation stays, centered, while the tile fades to black.
+              // animation stays, centered, while the tile fades to black.
               <div className="flex min-h-[18rem] items-center justify-center">
-                <div className="w-full space-y-4 text-center">
-                  <p className="text-sm text-emerald-400">
+                <div className="w-full space-y-6 text-center">
+                  <div className="relative mx-auto size-20">
+                    <span className="success-ring" />
+                    <span className="success-ring" style={{ animationDelay: "0.7s" }} />
+                    <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-emerald-400">
+                      <svg
+                        className="success-check size-9"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path className="text-emerald-400" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
+                      </svg>
+                    </span>
+                  </div>
+                  <p className="success-pop flex items-center justify-center gap-2 text-sm text-emerald-400">
+                    <Check className="size-4" aria-hidden />
                     Diffuser paired successfully
                   </p>
-                  <StatusButton state="success" label="OK" />
                 </div>
               </div>
             ) : (
