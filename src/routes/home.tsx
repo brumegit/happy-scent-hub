@@ -301,6 +301,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:text-muted-foreground"
                       onClick={() => {
                         setNameDraft(diffuser.name);
+                        setRoomDraft(diffuser.room);
                         setEditingName(true);
                         setMenuOpen(false);
                       }}
