@@ -15,8 +15,13 @@ export type DaySchedule = {
   /** 0 = Sunday … 6 = Saturday */
   day: number;
   active: boolean;
-  /** Selected hours of the day, 0–23. */
+  /** Selected hours of the day, 0–23 (kept for legacy/coarse views). */
   hours: number[];
+  /**
+   * Minute-precision windows [startMinute, endMinute) within the day, 0–1439.
+   * When present this is the source of truth; `hours` is a rounded mirror.
+   */
+  ranges?: [number, number][];
 };
 
 export const DAYS = [
@@ -83,6 +88,30 @@ export function formatHourLabel(hour: number, minutes = "00") {
   return `${displayHour}:${minutes} ${suffix}`;
 }
 
+/** Minutes-of-day → "8:30 AM" / "08:30" depending on the clock preference. */
+export function formatMinutes(minutes: number) {
+  const clamped = Math.max(0, Math.min(1439, Math.round(minutes)));
+  const hour = Math.floor(clamped / 60);
+  return formatHourLabel(hour, String(clamped % 60).padStart(2, "0"));
+}
+
+/** Minutes-of-day → "08:30", the value format of <input type="time">. */
+export function minutesToTimeValue(minutes: number) {
+  const clamped = Math.max(0, Math.min(1439, Math.round(minutes)));
+  return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
+}
+
+export function timeValueToMinutes(value: string) {
+  const [h = "0", m = "0"] = value.split(":");
+  return Math.max(0, Math.min(1439, Number(h) * 60 + Number(m)));
+}
+
+/** Minute windows of a day: the stored ranges, or the hours rounded up. */
+export function dayRanges(day: DaySchedule): [number, number][] {
+  if (day.ranges?.length) return day.ranges.map(([s, e]) => [s, e] as [number, number]);
+  return hourRanges(day.hours).map(([s, e]) => [s * 60, Math.min(e * 60, 1439)] as [number, number]);
+}
+
 export function defaultHours() {
   // Always on — every hour of the day.
   return Array.from({ length: 24 }, (_, i) => i);
@@ -130,25 +159,35 @@ export function activeDays(schedule: DaySchedule[]) {
   return schedule.filter((d) => d.active && d.hours.length > 0).map((d) => d.day);
 }
 
-/** Active days grouped by the exact set of hours they share. */
+/** Active days grouped by the exact set of minute windows they share. */
 export function scheduleWindows(schedule: DaySchedule[]) {
-  const groups = new Map<string, { days: number[]; hours: number[] }>();
+  const groups = new Map<string, { days: number[]; ranges: [number, number][] }>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    const hours = [...new Set(day.hours)].sort((a, b) => a - b);
-    const key = hours.join(",");
+    if (!day.active) continue;
+    const ranges = dayRanges(day).sort((a, b) => a[0] - b[0]);
+    if (ranges.length === 0) continue;
+    const key = ranges.map((r) => r.join("-")).join(",");
     const existing = groups.get(key);
     if (existing) existing.days.push(day.day);
-    else groups.set(key, { days: [day.day], hours });
+    else groups.set(key, { days: [day.day], ranges });
   }
   return [...groups.values()];
 }
 
-/** One human line per group of days sharing the same hours. */
+/** "8:00 AM to 8:30 PM · 10:00 PM to 11:00 PM" for a list of minute windows. */
+export function formatMinuteRanges(ranges: [number, number][]) {
+  if (ranges.length === 0) return "No hours selected";
+  if (ranges.length === 1 && ranges[0]![0] === 0 && ranges[0]![1] >= 1439) return "Always on";
+  return ranges
+    .map(([start, end]) => `${formatMinutes(start)} to ${formatMinutes(end)}`)
+    .join(" · ");
+}
+
+/** One human line per group of days sharing the same windows. */
 export function formatScheduleLines(schedule: DaySchedule[]) {
   const groups = scheduleWindows(schedule);
   if (groups.length === 0) return ["No days scheduled"];
-  return groups.map((g) => `${formatDays(g.days)} · ${formatHourRanges(g.hours)}`);
+  return groups.map((g) => `${formatDays(g.days)} · ${formatMinuteRanges(g.ranges)}`);
 }
 
 /**
@@ -158,8 +197,8 @@ export function formatScheduleLines(schedule: DaySchedule[]) {
 export function timerWindowCount(schedule: DaySchedule[]) {
   const windows = new Set<string>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    for (const [start, end] of hourRanges(day.hours)) windows.add(`${start}-${end}`);
+    if (!day.active) continue;
+    for (const [start, end] of dayRanges(day)) windows.add(`${start}-${end}`);
   }
   return windows.size;
 }
@@ -178,8 +217,10 @@ export function unifySchedule(schedule: DaySchedule[]): DaySchedule[] {
 
 /**
  * A time block is exactly one hardware working mode: one contiguous window
- * (end exclusive, 1–24) applied to a set of weekdays. The schedule editor works
- * in blocks so the 5-mode hardware limit is a UI limit, never an error.
+ * expressed in MINUTES of the day (`start`, `end` exclusive, 0–1439) applied to
+ * a set of weekdays. Minute granularity matches the ScentLife protocol, whose
+ * timer slots carry startMinute / endMinute. The schedule editor works in
+ * blocks so the 5-mode hardware limit is a UI limit, never an error.
  */
 export type TimeBlock = { start: number; end: number; days: number[] };
 
@@ -187,8 +228,8 @@ export type TimeBlock = { start: number; end: number; days: number[] };
 export function scheduleToBlocks(schedule: DaySchedule[]): TimeBlock[] {
   const map = new Map<string, TimeBlock>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    for (const [start, end] of hourRanges(day.hours)) {
+    if (!day.active) continue;
+    for (const [start, end] of dayRanges(day)) {
       const key = `${start}-${end}`;
       const existing = map.get(key);
       if (existing) existing.days.push(day.day);
@@ -201,26 +242,37 @@ export function scheduleToBlocks(schedule: DaySchedule[]): TimeBlock[] {
 /** Rebuilds the weekly schedule from blocks. */
 export function blocksFromSchedule(schedule: DaySchedule[]): TimeBlock[] {
   const blocks = scheduleToBlocks(schedule);
-  return blocks.length ? blocks : [{ start: 0, end: 24, days: DAYS.map((d) => d.value) }];
+  return blocks.length ? blocks : [{ start: 0, end: 1439, days: DAYS.map((d) => d.value) }];
 }
 
 export function blocksToSchedule(blocks: TimeBlock[]): DaySchedule[] {
   return DAYS.map((d) => {
+    const ranges = blocks
+      .filter((b) => b.days.includes(d.value) && b.end > b.start)
+      .map((b) => [b.start, b.end] as [number, number])
+      .sort((a, b) => a[0] - b[0]);
     const hours = [
       ...new Set(
-        blocks
-          .filter((b) => b.days.includes(d.value) && b.end > b.start)
-          .flatMap((b) => Array.from({ length: b.end - b.start }, (_, i) => b.start + i)),
+        ranges.flatMap(([start, end]) => {
+          const from = Math.floor(start / 60);
+          const to = Math.min(24, Math.ceil(end / 60));
+          return Array.from({ length: Math.max(1, to - from) }, (_, i) => from + i);
+        }),
       ),
     ].sort((a, b) => a - b);
-    return { day: d.value, active: hours.length > 0, hours: hours.length ? hours : defaultHours() };
+    const day: DaySchedule = {
+      day: d.value,
+      active: ranges.length > 0,
+      hours: hours.length ? hours : defaultHours(),
+    };
+    if (ranges.length) day.ranges = ranges;
+    return day;
   });
 }
 
-/** Human label for one block, e.g. "Mon · Tue · 8:00 AM to 8:00 PM". */
+/** Human label for one block, e.g. "Mon · Tue · 8:00 AM to 8:30 PM". */
 export function formatBlock(block: TimeBlock) {
-  const hours = Array.from({ length: Math.max(0, block.end - block.start) }, (_, i) => block.start + i);
-  return `${formatDays(block.days)} · ${formatHourRanges(hours)}`;
+  return `${formatDays(block.days)} · ${formatMinuteRanges([[block.start, block.end]])}`;
 }
 
 
@@ -243,11 +295,11 @@ export const MAX_TIMERS = 5;
 export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): TimerSlot[] {
   const preset = intensityPreset(intensity);
 
-  // window key → weekday mask
+  // window key (minutes of the day) → weekday mask
   const windows = new Map<string, { start: number; end: number; mask: number }>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    for (const [start, end] of hourRanges(day.hours)) {
+    if (!day.active) continue;
+    for (const [start, end] of dayRanges(day)) {
       const key = `${start}-${end}`;
       const existing = windows.get(key);
       if (existing) existing.mask |= weekdayBit(day.day);
@@ -277,9 +329,10 @@ export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): 
       enabled,
       index,
       weekdayMask: enabled ? window!.mask : 0,
-      startMinute: enabled ? window!.start * 60 : 0,
+      // Windows are already minutes of the day (minute granularity, 0–1439).
+      startMinute: enabled ? Math.max(0, Math.min(1439, Math.round(window!.start))) : 0,
       // The device rejects/clamps 1440, so a full day ends at 23:59.
-      endMinute: enabled ? Math.min(window!.end * 60, 1439) : 0,
+      endMinute: enabled ? Math.max(0, Math.min(1439, Math.round(window!.end))) : 0,
       onSeconds: preset.onSeconds,
       offSeconds: preset.offSeconds,
       timerId: index,
@@ -325,7 +378,12 @@ export function scheduleFromTimer(slot: TimerSlot): DaySchedule[] {
  */
 export function scheduleFromTimers(slots: TimerSlot[]): DaySchedule[] {
   const active = slots.filter((s) => s.enabled && s.endMinute > s.startMinute);
-  const schedule = DAYS.map((d) => ({ day: d.value, active: false, hours: [] as number[] }));
+  const schedule = DAYS.map((d) => ({
+    day: d.value,
+    active: false,
+    hours: [] as number[],
+    ranges: [] as [number, number][],
+  }));
 
   for (const slot of active) {
     const hours = hoursOfTimer(slot);
@@ -333,10 +391,22 @@ export function scheduleFromTimers(slots: TimerSlot[]): DaySchedule[] {
       if ((slot.weekdayMask & weekdayBit(day.day)) === 0) continue;
       day.active = true;
       day.hours = [...new Set([...day.hours, ...hours])].sort((a, b) => a - b);
+      // Minute-accurate window straight from the hardware timer.
+      day.ranges = [...day.ranges, [slot.startMinute, slot.endMinute] as [number, number]].sort(
+        (a, b) => a[0] - b[0],
+      );
     }
   }
 
-  return schedule.map((d) => ({ ...d, hours: d.hours.length ? d.hours : defaultHours() }));
+  return schedule.map((d) => {
+    const day: DaySchedule = {
+      day: d.day,
+      active: d.active,
+      hours: d.hours.length ? d.hours : defaultHours(),
+    };
+    if (d.ranges.length) day.ranges = d.ranges;
+    return day;
+  });
 }
 
 
@@ -372,20 +442,23 @@ export function scheduleStatus(
   const level = intensityLabel ? ` at ${intensityLabel.toLowerCase()} intensity` : "";
   if (!scheduleActive) return "The schedule is paused. The diffuser will not spray until you turn it back on.";
 
-  const isOn = (day: number, hour: number) =>
-    !!schedule.find((d) => d.day === day && d.active)?.hours.includes(hour);
+  // Minute-accurate: a day is on when the minute falls inside one of its windows.
+  const isOn = (dayIndex: number, minute: number) => {
+    const entry = schedule.find((d) => d.day === dayIndex && d.active);
+    if (!entry) return false;
+    return dayRanges(entry).some(([start, end]) => minute >= start && minute < Math.max(end, start + 1));
+  };
 
   const day = now.getDay();
-  const hour = now.getHours();
-  const running = isOn(day, hour);
+  const running = isOn(day, now.getHours() * 60 + now.getMinutes());
 
-  // Walk forward hour by hour (up to a week) to find the next state change.
-  for (let step = 1; step <= 24 * 7; step += 1) {
+  // Walk forward minute by minute (up to a week) to find the next state change.
+  for (let step = 1; step <= 60 * 24 * 7; step += 1) {
     const next = new Date(now.getTime());
-    next.setMinutes(0, 0, 0);
-    next.setHours(next.getHours() + step);
-    if (isOn(next.getDay(), next.getHours()) !== running) {
-      const when = formatHourLabel(next.getHours());
+    next.setSeconds(0, 0);
+    next.setMinutes(next.getMinutes() + step);
+    if (isOn(next.getDay(), next.getHours() * 60 + next.getMinutes()) !== running) {
+      const when = formatMinutes(next.getHours() * 60 + next.getMinutes());
       const dayLabel = next.getDay() === day ? "" : ` on ${DAYS[next.getDay()]?.long}`;
       return running
         ? `The diffuser is programmed to be running${level} and scheduled to pause at ${when}${dayLabel}.`

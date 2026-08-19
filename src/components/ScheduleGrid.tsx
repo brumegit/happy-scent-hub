@@ -5,18 +5,21 @@ import {
   MAX_TIMERS,
   blocksFromSchedule,
   blocksToSchedule,
-  formatHourLabel,
+  minutesToTimeValue,
+  timeValueToMinutes,
   type DaySchedule,
   type TimeBlock,
 } from "@/lib/diffuser";
 import { useClockStore } from "@/stores/clockStore";
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-
 /**
  * Block editor: the schedule is a list of time blocks, and one block is exactly
  * one hardware working mode. The device stores 5, so the editor caps the list at
  * 5 — the limit is a design constraint, never a validation error.
+ *
+ * Times are minute-accurate (0–1439 minutes of the day): the native time input
+ * lets the user pick any minute, and the ScentLife timer frames carry
+ * startMinute / endMinute straight through, so 07:45 → 20:10 is pushed as is.
  */
 export function ScheduleGrid({
   schedule,
@@ -67,7 +70,39 @@ export function ScheduleGrid({
             )}
           </div>
 
-          <div className="mt-3 grid grid-cols-7 gap-1">
+          <div className="mt-3 h-px w-full bg-border" />
+
+          {/* Times first — minute granularity through the device's native picker. */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <label className="space-y-1 text-xs text-muted-foreground">
+              <span>Start</span>
+              <input
+                type="time"
+                step={60}
+                value={minutesToTimeValue(block.start)}
+                onChange={(e) => {
+                  const start = timeValueToMinutes(e.target.value);
+                  patch(index, { start, end: Math.max(block.end, Math.min(1439, start + 1)) });
+                }}
+                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-muted-foreground">
+              <span>End</span>
+              <input
+                type="time"
+                step={60}
+                value={minutesToTimeValue(block.end)}
+                onChange={(e) => {
+                  const end = timeValueToMinutes(e.target.value);
+                  patch(index, { end, start: Math.min(block.start, Math.max(0, end - 1)) });
+                }}
+                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 grid grid-cols-7 gap-1">
             {DAYS.map((day) => {
               const on = block.days.includes(day.value);
               return (
@@ -86,52 +121,13 @@ export function ScheduleGrid({
               );
             })}
           </div>
-
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="space-y-1 text-xs text-muted-foreground">
-              <span>Start</span>
-              <select
-                value={block.start}
-                onChange={(e) => {
-                  const start = Number(e.target.value);
-                  patch(index, { start, end: Math.max(block.end, start + 1) });
-                }}
-                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground"
-              >
-                {HOURS.map((h) => (
-                  <option key={h} value={h}>
-                    {formatHourLabel(h)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
-              <span>End</span>
-              <select
-                value={block.end}
-                onChange={(e) => {
-                  const end = Number(e.target.value);
-                  patch(index, { end, start: Math.min(block.start, end - 1) });
-                }}
-                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground"
-              >
-                {HOURS.slice(1)
-                  .concat(24)
-                  .map((h) => (
-                    <option key={h} value={h}>
-                      {formatHourLabel(h)}
-                    </option>
-                  ))}
-              </select>
-            </label>
-          </div>
         </div>
       ))}
 
       {blocks.length < MAX_TIMERS ? (
         <button
           type="button"
-          onClick={() => commit([...blocks, { start: 8, end: 20, days: [1, 2, 3, 4, 5] }])}
+          onClick={() => commit([...blocks, { start: 8 * 60, end: 20 * 60, days: [1, 2, 3, 4, 5] }])}
           className="flex w-full items-center justify-center gap-2 border border-border bg-background px-3 py-3 text-xs uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
         >
           <Plus className="size-4" aria-hidden />
@@ -152,7 +148,9 @@ export function ScheduleGrid({
             aria-pressed={clockMode === option}
             onClick={() => setClockMode(option)}
             className={`border bg-background px-2 py-1 transition-colors ${
-              clockMode === option ? "border-gold text-gold" : "border-border text-muted-foreground"
+              clockMode === option
+                ? "border-muted-foreground text-foreground"
+                : "border-border text-muted-foreground"
             }`}
           >
             {option === "auto" ? "Auto" : option === "12" ? "12 h" : "24 h"}

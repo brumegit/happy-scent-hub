@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
@@ -83,6 +83,7 @@ function Setup() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [name, setName] = useState(DEFAULT_NAME);
   const [room, setRoom] = useState("");
+  const [roomTouched, setRoomTouched] = useState(false);
   const [intensity, setIntensity] = useState<Intensity>("high");
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule);
   const [result, setResult] = useState<CircleState>("idle");
@@ -210,8 +211,7 @@ function Setup() {
                       </svg>
                     </span>
                   </div>
-                  <p className="success-pop flex items-center justify-center gap-2 text-sm text-emerald-400">
-                    <Check className="size-4" aria-hidden />
+                  <p className="success-pop text-center text-sm text-emerald-400">
                     Diffuser paired successfully
                   </p>
                 </div>
@@ -283,20 +283,27 @@ function Setup() {
                 placeholder="Lounge"
                 onChange={(e) => setRoom(e.target.value)}
               />
-              {roomError && <p className="text-xs text-destructive">{roomError}</p>}
+              {/* Only surfaced once the user tries to continue — never up front. */}
+              {roomTouched && roomError && (
+                <p className="text-xs text-destructive">{roomError}</p>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               The diffuser broadcasts as "{combinedName}" — the room name must stay within{" "}
               {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens and
               underscores only.
-              {combinedError && <span className="block text-destructive">{combinedError}</span>}
+              {roomTouched && combinedError && (
+                <span className="block text-destructive">{combinedError}</span>
+              )}
             </p>
             <Button
               size="lg"
               className="w-full"
-              disabled={!!roomError || !!combinedError}
-
               onClick={() => {
+                if (roomError || combinedError) {
+                  setRoomTouched(true);
+                  return;
+                }
                 setPhase("intensity");
               }}
             >
