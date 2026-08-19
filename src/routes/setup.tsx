@@ -7,6 +7,7 @@ import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
+import { TimeFormatToggle } from "@/components/TimeFormatToggle";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,7 +270,7 @@ function Setup() {
         {phase === "name" && (
           <section className="mt-8 space-y-6 border border-border bg-card p-7 animate-fade-in">
             <div>
-              <h1 className="font-display text-4xl">Name your diffuser</h1>
+              <h1 className="font-display text-4xl">Give it a name</h1>
               <p className="mt-2 text-sm text-muted-foreground">Your diffuser is connected.</p>
             </div>
             <div className="space-y-2">
@@ -323,7 +324,7 @@ function Setup() {
               <ArrowLeft className="size-4" aria-hidden />
               Back
             </button>
-            <h1 className="font-display text-4xl">Choose your intensity</h1>
+            <h1 className="font-display text-4xl">How intense?</h1>
 
 
             <div className="grid grid-cols-3 gap-2">
@@ -389,12 +390,18 @@ function Setup() {
                 <ArrowLeft className="size-4" aria-hidden />
                 Back
               </button>
-              <h1 className="font-display text-4xl">My diffusion routine</h1>
+              <h1 className="font-display text-4xl">When?</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pick the days, then set the working hours.
+                Add routines to choose when the diffuser runs. Start about 30 minutes early so the
+                scent has time to fill the room.
               </p>
             </div>
-            <ScheduleGrid schedule={schedule} onChange={setSchedule} showNames={false} />
+            <ScheduleGrid
+              schedule={schedule}
+              onChange={setSchedule}
+              showNames={false}
+              showTimeFormat={false}
+            />
 
             {simulated && (
               <p className="text-xs text-muted-foreground">
@@ -423,6 +430,9 @@ function Setup() {
                 })
               }
             />
+            <div className="sticky bottom-2 z-40 bg-background">
+              <TimeFormatToggle />
+            </div>
           </section>
         )}
         </div>

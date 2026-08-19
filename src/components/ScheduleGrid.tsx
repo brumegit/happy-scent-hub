@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from "lucide-react";
 
+import { TimeFormatToggle } from "@/components/TimeFormatToggle";
 import {
   DAYS,
   MAX_TIMERS,
@@ -11,7 +12,6 @@ import {
   type DaySchedule,
   type TimeBlock,
 } from "@/lib/diffuser";
-import { useClockStore } from "@/stores/clockStore";
 
 /**
  * Routine editor: the schedule is a list of routines, and one routine is
@@ -30,14 +30,14 @@ export function ScheduleGrid({
   schedule,
   onChange,
   showNames = true,
+  showTimeFormat = true,
 }: {
   schedule: DaySchedule[];
   onChange: (schedule: DaySchedule[]) => void;
   showNames?: boolean;
+  showTimeFormat?: boolean;
 }) {
   const blocks = blocksFromSchedule(schedule);
-  const clockMode = useClockStore((s) => s.mode);
-  const setClockMode = useClockStore((s) => s.setMode);
 
   function commit(next: TimeBlock[]) {
     onChange(blocksToSchedule(next.filter((b) => b.days.length > 0 && b.end > b.start)));
@@ -67,7 +67,7 @@ export function ScheduleGrid({
               <>
                 <div className="flex min-h-6 items-center justify-between">
                   <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    {named ? routineName(block) : ""}
+                    {routineName(block)}
                   </span>
                   {blocks.length > 1 && (
                     <button
@@ -141,7 +141,7 @@ export function ScheduleGrid({
         <button
           type="button"
           onClick={() => commit([...blocks, { start: 8 * 60, end: 20 * 60, days: [1, 2, 3, 4, 5] }])}
-          className="flex w-full items-center justify-center gap-3 border border-foreground bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] text-foreground transition-colors hover:border-muted-foreground"
+          className="flex w-full items-center justify-center gap-3 border border-border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
         >
           <Plus className="size-4" aria-hidden />
           Add a routine
@@ -152,24 +152,11 @@ export function ScheduleGrid({
         </p>
       )}
 
-      <div className="sticky bottom-[5.5rem] z-40 flex items-center justify-center gap-2 bg-background py-3 text-[11px] text-muted-foreground">
-        <span>Time format</span>
-        {(["auto", "12", "24"] as const).map((option) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={clockMode === option}
-            onClick={() => setClockMode(option)}
-            className={`border bg-background px-2 py-1 transition-colors ${
-              clockMode === option
-                ? "border-muted-foreground text-foreground"
-                : "border-border text-muted-foreground"
-            }`}
-          >
-            {option === "auto" ? "Auto" : option === "12" ? "12 h" : "24 h"}
-          </button>
-        ))}
-      </div>
+      {showTimeFormat && (
+        <div className="sticky bottom-[5.5rem] z-40 bg-background">
+          <TimeFormatToggle />
+        </div>
+      )}
     </div>
   );
 }
