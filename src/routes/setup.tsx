@@ -389,12 +389,18 @@ function Setup() {
                 <ArrowLeft className="size-4" aria-hidden />
                 Back
               </button>
-              <h1 className="font-display text-4xl">My diffusion routine</h1>
+              <h1 className="font-display text-4xl">When?</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pick the days, then set the working hours.
+                Add routines to choose when the diffuser runs. Start about 30 minutes early so the
+                scent has time to fill the room.
               </p>
             </div>
-            <ScheduleGrid schedule={schedule} onChange={setSchedule} showNames={false} />
+            <ScheduleGrid
+              schedule={schedule}
+              onChange={setSchedule}
+              showNames={false}
+              showTimeFormat={false}
+            />
 
             {simulated && (
               <p className="text-xs text-muted-foreground">
@@ -423,6 +429,9 @@ function Setup() {
                 })
               }
             />
+            <div className="sticky bottom-2 z-40 bg-background">
+              <TimeFormatToggle />
+            </div>
           </section>
         )}
         </div>
