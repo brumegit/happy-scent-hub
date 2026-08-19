@@ -20,7 +20,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
-import { checkConnection, disconnect, isRealLink, pairDiffuser } from "@/lib/bluetooth";
+import { checkConnection, disconnect, pairDiffuser } from "@/lib/bluetooth";
 import { pushName, pushSettings } from "@/lib/push";
 import {
   INTENSITIES,
@@ -146,10 +146,26 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       : validateBroadcastName(`${nameDraft.trim()} ${roomDraft.trim()}`);
 
   useEffect(() => {
-    void checkConnection(diffuser.device_id).then(setConnected);
+    let cancelled = false;
+    const refresh = () => {
+      void checkConnection(diffuser.device_id).then((live) => {
+        if (!cancelled) setConnected(live);
+      });
+    };
+    refresh();
     setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
+    // Re-check the physical link often: a diffuser that went out of range or was
+    // taken over by another phone must stop showing as connected.
+    const link = setInterval(refresh, 4000);
+    const clock = setInterval(() => setNow(new Date()), 60_000);
+    const onVisible = () => document.visibilityState === "visible" && refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      clearInterval(link);
+      clearInterval(clock);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [diffuser.device_id]);
 
   const schedule = draft ?? diffuser.schedule;
@@ -165,7 +181,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         preferName: hardwareName(diffuser.name, diffuser.room),
       });
       updateDiffuser(diffuser.id, { device_id: paired.deviceId });
-      setConnected(isRealLink(paired.deviceId));
+      setConnected(await checkConnection(paired.deviceId));
     } catch (err) {
       setError((err as Error).message || "Could not connect to the diffuser.");
     } finally {
