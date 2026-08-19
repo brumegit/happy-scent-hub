@@ -127,6 +127,7 @@ async function attachLink(device: {
         await wait(CHUNK_DELAY_MS);
       }
     },
+    isLive: async () => device.gatt?.connected !== false,
     close: async () => {
       // Physically drop the GATT link so the device LED stops showing connected.
       device.gatt?.disconnect?.();
