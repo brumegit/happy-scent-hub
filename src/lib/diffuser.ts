@@ -47,13 +47,13 @@ export const INTENSITIES: {
   {
     value: "low",
     label: "Low",
-    onSeconds: 5,
+    onSeconds: 12,
     offSeconds: 600,
   },
   {
     value: "medium",
     label: "Medium",
-    onSeconds: 12,
+    onSeconds: 20,
     offSeconds: 240,
   },
   {
