@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import { useIdentityStore } from "@/stores/identityStore";
 
 export function GuestBanner() {
   const status = useIdentityStore((s) => s.status);
-  const hydrated = useIdentityStore((s) => s.hydrated);
+  const hydrated = useHydrated();
 
   if (!hydrated || status === "matched") return null;
 

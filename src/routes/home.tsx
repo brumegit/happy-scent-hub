@@ -4,6 +4,7 @@ import { Bluetooth, CalendarClock, Gauge, Plus } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
+import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DAYS, INTENSITIES, formatDays, formatTime, type Intensity } from "@/lib/diffuser";
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/home")({
 function Home() {
   const navigate = useNavigate();
   const diffusers = useDiffuserStore((s) => s.diffusers);
-  const hydrated = useDiffuserStore((s) => s.hydrated);
+  const hydrated = useHydrated();
   const firstName = useIdentityStore((s) => s.firstName);
   const status = useIdentityStore((s) => s.status);
 
