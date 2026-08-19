@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
 
 import { useHydrated } from "@/hooks/useHydrated";
