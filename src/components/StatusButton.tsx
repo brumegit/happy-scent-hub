@@ -38,7 +38,7 @@ export function StatusButton({
     >
       <Tag
         {...(Tag === "button" ? { type: "button" as const, onClick } : {})}
-        className={`relative flex w-full items-center justify-center gap-3 overflow-hidden border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
+        className={`relative flex w-full items-center justify-center gap-3 border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
       >
         {state === "pairing" && (
           <span className="drip-layer absolute inset-0">
