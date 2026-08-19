@@ -30,9 +30,9 @@ export const Route = createFileRoute("/setup")({
   }),
   head: () => ({
     meta: [
-      { title: "Set up your diffuser — Brume" },
+      { title: "Set up your diffuser | Brume" },
       { name: "description", content: "Pair your Brume diffuser, choose an intensity and paint its weekly schedule." },
-      { property: "og:title", content: "Set up your diffuser — Brume" },
+      { property: "og:title", content: "Set up your diffuser | Brume" },
       { property: "og:description", content: "Pair, choose an intensity, paint your hours." },
     ],
   }),
@@ -189,7 +189,7 @@ function Setup() {
 
             {phase === "idle" && !isBluetoothSupported() && (
               <p className="mt-5 text-xs text-muted-foreground">
-                This browser doesn't support Bluetooth pairing — we'll set up a demo connection so
+                This browser doesn't support Bluetooth pairing, so we'll set up a demo connection so
                 you can finish. Use Chrome or the mobile app for a real pairing.
               </p>
             )}
@@ -266,7 +266,7 @@ function Setup() {
           <section className="mt-8 border border-border bg-card p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Keep the diffuser nearby — it beeps once each command is accepted.
+              Keep the diffuser nearby. It beeps once each command is accepted.
             </p>
             <div className="mt-7">
               <StatusButton
@@ -303,7 +303,7 @@ function Setup() {
             <ScheduleGrid schedule={schedule} onChange={setSchedule} />
             {simulated && (
               <p className="text-xs text-muted-foreground">
-                Demo connection — commands are logged, not sent to hardware.
+                Demo connection. Commands are logged, not sent to hardware.
               </p>
             )}
             <StatusButton

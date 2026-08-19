@@ -109,7 +109,7 @@ export function formatHourRanges(hours: number[]) {
   if (ranges.length === 0) return "No hours selected";
   if (ranges.length === 1 && ranges[0]![0] === 0 && ranges[0]![1] === 24) return "Always on";
   return ranges
-    .map(([start, end]) => `${formatHourLabel(start)} – ${formatHourLabel(end % 24)}`)
+    .map(([start, end]) => `${formatHourLabel(start)} to ${formatHourLabel(end % 24)}`)
     .join(" · ");
 }
 
@@ -205,7 +205,7 @@ export function scheduleStatus(
   intensityLabel = "",
 ) {
   const level = intensityLabel ? ` at ${intensityLabel.toLowerCase()} intensity` : "";
-  if (!scheduleActive) return "The schedule is paused — the diffuser will not spray until you turn it back on.";
+  if (!scheduleActive) return "The schedule is paused. The diffuser will not spray until you turn it back on.";
 
   const isOn = (day: number, hour: number) =>
     !!schedule.find((d) => d.day === day && d.active)?.hours.includes(hour);
@@ -230,5 +230,5 @@ export function scheduleStatus(
 
   return running
     ? `The diffuser is programmed to run continuously${level}.`
-    : "No hours are scheduled — the diffuser stays in pause.";
+    : "No hours are scheduled, so the diffuser stays in pause.";
 }

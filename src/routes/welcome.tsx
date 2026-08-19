@@ -15,13 +15,13 @@ export const Route = createFileRoute("/welcome")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Find your orders — Brume" },
+      { title: "Find your orders | Brume" },
       {
         name: "description",
         content:
           "Enter the email you used for your Brume order to unlock a tailored experience, or continue as a guest.",
       },
-      { property: "og:title", content: "Find your orders — Brume" },
+      { property: "og:title", content: "Find your orders | Brume" },
       { property: "og:description", content: "Match your purchase history with the email you ordered with." },
     ],
   }),
@@ -54,7 +54,7 @@ function Welcome() {
         );
       } else {
         setGuest();
-        toast.message("No orders found for that email — continuing as a guest.");
+        toast.message("No orders found for that email. Continuing as a guest.");
       }
       goNext();
     } catch (error) {
@@ -106,7 +106,7 @@ function Welcome() {
             onClick={continueAsGuest}
             className="mt-6 w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
           >
-            Skip — continue as guest
+            Skip and continue as guest
           </button>
         </div>
       </div>

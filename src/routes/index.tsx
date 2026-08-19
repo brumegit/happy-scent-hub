@@ -9,13 +9,13 @@ import heroImage from "@/assets/diffuser-hero.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Aura — Control Your Smart Scent Diffuser" },
+      { title: "Aura: Control Your Smart Scent Diffuser" },
       {
         name: "description",
         content:
           "Pair your Aura diffuser over Bluetooth, pick an intensity and set the hours it runs. Available across the USA.",
       },
-      { property: "og:title", content: "Aura — Control Your Smart Scent Diffuser" },
+      { property: "og:title", content: "Aura: Control Your Smart Scent Diffuser" },
       {
         property: "og:description",
         content: "Pair over Bluetooth, choose your intensity and schedule your scent.",
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
 
 const steps = [
   { icon: Bluetooth, title: "Pair over Bluetooth", copy: "Find your diffuser and give it a name." },
-  { icon: Gauge, title: "Pick an intensity", copy: "Low, medium or high — change it anytime." },
+  { icon: Gauge, title: "Pick an intensity", copy: "Low, medium or high. Change it anytime." },
   { icon: CalendarClock, title: "Set your schedule", copy: "Choose the days and hours it runs." },
 ];
 

@@ -6,15 +6,15 @@ import { GuestBanner } from "@/components/GuestBanner";
 export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
-      { title: "Shop refills & diffusers — Brume" },
+      { title: "Shop refills & diffusers | Brume" },
       {
         name: "description",
-        content: "Browse and order from the live Brume store — refills and the 24/7 room diffuser.",
+        content: "Browse and order from the live Brume store: refills and the 24/7 room diffuser.",
       },
-      { property: "og:title", content: "Shop refills & diffusers — Brume" },
+      { property: "og:title", content: "Shop refills & diffusers | Brume" },
       {
         property: "og:description",
-        content: "Browse and order from the live Brume store — refills and the 24/7 room diffuser.",
+        content: "Browse and order from the live Brume store: refills and the 24/7 room diffuser.",
       },
     ],
   }),

@@ -40,9 +40,9 @@ export const Route = createFileRoute("/home")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "My diffusers — Brume" },
+      { title: "My diffusers | Brume" },
       { name: "description", content: "See your Brume diffuser, its intensity and its weekly schedule." },
-      { property: "og:title", content: "My diffusers — Brume" },
+      { property: "og:title", content: "My diffusers | Brume" },
       { property: "og:description", content: "Your diffuser, intensity and weekly schedule at a glance." },
     ],
   }),

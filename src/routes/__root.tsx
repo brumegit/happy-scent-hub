@@ -79,10 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Aura — Smart Scent Diffuser" },
+      { title: "Aura Smart Scent Diffuser" },
       { name: "description", content: "Pair, tune and schedule your Aura smart scent diffuser." },
       { name: "author", content: "Aura" },
-      { property: "og:title", content: "Aura — Smart Scent Diffuser" },
+      { property: "og:title", content: "Aura Smart Scent Diffuser" },
       { property: "og:description", content: "Pair, tune and schedule your Aura smart scent diffuser." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
