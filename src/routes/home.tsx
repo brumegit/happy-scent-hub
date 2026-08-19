@@ -426,20 +426,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               <ScheduleGrid schedule={schedule} onChange={setDraft} />
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {DAYS.map((day) => (
-                <span
-                  key={day.value}
-                  className={`border px-3 py-1 text-xs ${
-                    schedule.find((d) => d.day === day.value)?.active
-                      ? "border-foreground/60 text-foreground"
-                      : "border-border text-muted-foreground/60"
-                  }`}
-                >
-                  {day.short}
-                </span>
-              ))}
-            </div>
 
             {dirty && (
               <div className="mt-4">
