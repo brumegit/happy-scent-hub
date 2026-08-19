@@ -266,7 +266,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               <Button variant="secondary" className="flex-1" onClick={() => setEditingName(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={saveNames} disabled={!nameDraft.trim() || !roomDraft.trim()}>
+              <Button className="flex-1" onClick={() => void saveNames()} disabled={!nameDraft.trim() || !roomDraft.trim()}>
                 Save
               </Button>
             </div>
