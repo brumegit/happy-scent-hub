@@ -6,6 +6,7 @@ import {
   blocksFromSchedule,
   blocksToSchedule,
   minutesToTimeValue,
+  routineName,
   timeValueToMinutes,
   type DaySchedule,
   type TimeBlock,
@@ -13,9 +14,13 @@ import {
 import { useClockStore } from "@/stores/clockStore";
 
 /**
- * Block editor: the schedule is a list of time blocks, and one block is exactly
- * one hardware working mode. The device stores 5, so the editor caps the list at
- * 5 — the limit is a design constraint, never a validation error.
+ * Routine editor: the schedule is a list of routines, and one routine is
+ * exactly one hardware working mode. The device stores 5, so the editor caps
+ * the list at 5 — the limit is a design constraint, never a validation error.
+ *
+ * Routines are never numbered. Once a configuration is confirmed, each routine
+ * is named from what it is (days + part of the day) so it reads back naturally
+ * the next time it's opened.
  *
  * Times are minute-accurate (0–1439 minutes of the day): the native time input
  * lets the user pick any minute, and the ScentLife timer frames carry
@@ -24,9 +29,11 @@ import { useClockStore } from "@/stores/clockStore";
 export function ScheduleGrid({
   schedule,
   onChange,
+  showNames = true,
 }: {
   schedule: DaySchedule[];
   onChange: (schedule: DaySchedule[]) => void;
+  showNames?: boolean;
 }) {
   const blocks = blocksFromSchedule(schedule);
   const clockMode = useClockStore((s) => s.mode);
@@ -45,101 +52,107 @@ export function ScheduleGrid({
     const days = block.days.includes(day)
       ? block.days.filter((d) => d !== day)
       : [...block.days, day].sort((a, b) => a - b);
-    // A block with no day left would silently vanish; keep at least one.
+    // A routine with no day left would silently vanish; keep at least one.
     if (days.length === 0) return;
     patch(index, { days });
   }
 
   return (
     <div className="space-y-3">
-      {blocks.map((block, index) => (
-        <div key={index} className="border border-border p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-              Time block {index + 1}
-            </span>
-            {blocks.length > 1 && (
-              <button
-                type="button"
-                aria-label={`Remove time block ${index + 1}`}
-                onClick={() => commit(blocks.filter((_, i) => i !== index))}
-                className="text-muted-foreground transition-colors hover:text-destructive"
-              >
-                <Trash2 className="size-4" aria-hidden />
-              </button>
+      {blocks.map((block, index) => {
+        const named = showNames;
+        return (
+          <div key={index} className="border border-border p-4">
+            {(named || blocks.length > 1) && (
+              <>
+                <div className="flex min-h-6 items-center justify-between">
+                  <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                    {named ? routineName(block) : ""}
+                  </span>
+                  {blocks.length > 1 && (
+                    <button
+                      type="button"
+                      aria-label={`Remove ${named ? routineName(block) : "this routine"}`}
+                      onClick={() => commit(blocks.filter((_, i) => i !== index))}
+                      className="text-muted-foreground transition-colors hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </button>
+                  )}
+                </div>
+                <div className="mt-3 h-px w-full bg-border" />
+              </>
             )}
-          </div>
 
-          <div className="mt-3 h-px w-full bg-border" />
+            {/* Times first — minute granularity through the device's native picker. */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="block text-xs text-muted-foreground">
+                <span className="mb-[10px] block">Starts</span>
+                <input
+                  type="time"
+                  step={60}
+                  value={minutesToTimeValue(block.start)}
+                  onChange={(e) => {
+                    const start = timeValueToMinutes(e.target.value);
+                    patch(index, { start, end: Math.max(block.end, Math.min(1439, start + 1)) });
+                  }}
+                  className="h-14 w-full border border-border bg-background px-3 text-sm text-foreground"
+                />
+              </label>
+              <label className="block text-xs text-muted-foreground">
+                <span className="mb-[10px] block">Stops</span>
+                <input
+                  type="time"
+                  step={60}
+                  value={minutesToTimeValue(block.end)}
+                  onChange={(e) => {
+                    const end = timeValueToMinutes(e.target.value);
+                    patch(index, { end, start: Math.min(block.start, Math.max(0, end - 1)) });
+                  }}
+                  className="h-14 w-full border border-border bg-background px-3 text-sm text-foreground"
+                />
+              </label>
+            </div>
 
-          {/* Times first — minute granularity through the device's native picker. */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="space-y-1 text-xs text-muted-foreground">
-              <span>Start</span>
-              <input
-                type="time"
-                step={60}
-                value={minutesToTimeValue(block.start)}
-                onChange={(e) => {
-                  const start = timeValueToMinutes(e.target.value);
-                  patch(index, { start, end: Math.max(block.end, Math.min(1439, start + 1)) });
-                }}
-                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
-            </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
-              <span>End</span>
-              <input
-                type="time"
-                step={60}
-                value={minutesToTimeValue(block.end)}
-                onChange={(e) => {
-                  const end = timeValueToMinutes(e.target.value);
-                  patch(index, { end, start: Math.min(block.start, Math.max(0, end - 1)) });
-                }}
-                className="w-full border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
-            </label>
+            <div className="mt-4 grid grid-cols-7 gap-1">
+              {DAYS.map((day) => {
+                const on = block.days.includes(day.value);
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    aria-pressed={on}
+                    aria-label={day.long}
+                    onClick={() => toggleDay(index, day.value)}
+                    className={`h-14 border bg-background text-[11px] transition-colors ${
+                      on ? "border-gold text-gold" : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    {day.short}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-
-          <div className="mt-4 grid grid-cols-7 gap-1">
-            {DAYS.map((day) => {
-              const on = block.days.includes(day.value);
-              return (
-                <button
-                  key={day.value}
-                  type="button"
-                  aria-pressed={on}
-                  aria-label={day.long}
-                  onClick={() => toggleDay(index, day.value)}
-                  className={`border bg-background py-2 text-[11px] transition-colors ${
-                    on ? "border-gold text-gold" : "border-border text-muted-foreground"
-                  }`}
-                >
-                  {day.short}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
       {blocks.length < MAX_TIMERS ? (
         <button
           type="button"
           onClick={() => commit([...blocks, { start: 8 * 60, end: 20 * 60, days: [1, 2, 3, 4, 5] }])}
-          className="flex w-full items-center justify-center gap-2 border border-border bg-background px-3 py-3 text-xs uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+          className="flex w-full items-center justify-center gap-3 border border-foreground bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] text-foreground transition-colors hover:border-muted-foreground"
         >
           <Plus className="size-4" aria-hidden />
-          Add a time block
+          Add a routine
         </button>
       ) : (
         <p className="text-center text-xs text-muted-foreground">
-          Your diffuser stores {MAX_TIMERS} time blocks — the maximum is reached.
+          Your diffuser stores {MAX_TIMERS} routines — the maximum is reached.
         </p>
       )}
 
-      <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+      <div className="sticky bottom-[5.5rem] z-40 flex items-center justify-center gap-2 bg-background py-3 text-[11px] text-muted-foreground">
         <span>Time format</span>
         {(["auto", "12", "24"] as const).map((option) => (
           <button
