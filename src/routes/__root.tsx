@@ -137,7 +137,7 @@ function RootComponent() {
       {/* Ambient background video sitting above the black base layer. */}
       <div className="pointer-events-none fixed inset-0 -z-10 bg-background">
         <video
-          className="h-full w-full object-cover opacity-60"
+          className="h-full w-full object-cover opacity-20"
           src={bgVideo.url}
           autoPlay
           muted

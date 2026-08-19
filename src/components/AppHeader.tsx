@@ -11,7 +11,7 @@ export function AppHeader() {
     status === "matched" && firstName ? `${firstName}'s Diffusers` : "My Diffusers";
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-border pb-5">
+    <header className="flex items-center justify-between gap-4 pb-5">
       <Link to="/home" className="flex items-center">
         <BrandLogo className="h-5" />
       </Link>
