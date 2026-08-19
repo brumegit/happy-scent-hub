@@ -188,14 +188,16 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </p>
           )}
         </div>
-        <Switch
-          checked={diffuser.schedule_active}
-          aria-label="Toggle schedule"
-          onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
-        />
+        {connected && (
+          <Switch
+            checked={diffuser.schedule_active}
+            aria-label="Toggle schedule"
+            onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
+          />
+        )}
       </div>
 
-      {!connected && (
+      {!connected ? (
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
@@ -204,122 +206,123 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
           />
           {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
         </div>
-      )}
+      ) : (
+        <>
+          <p className="mt-5 border-l-2 border-gold pl-3 text-sm text-muted-foreground">
+            {now
+              ? scheduleStatus(diffuser.schedule, diffuser.schedule_active, now)
+              : "Checking the current schedule…"}
+          </p>
 
-      <p className="mt-5 border-l-2 border-gold pl-3 text-sm text-muted-foreground">
-        {now
-          ? scheduleStatus(diffuser.schedule, diffuser.schedule_active, now)
-          : "Checking the current schedule…"}
-      </p>
-
-      <div className="mt-4 border border-border">
-        <button
-          type="button"
-          onClick={() => setShowLast((v) => !v)}
-          aria-expanded={showLast}
-          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground hover:bg-secondary/40"
-        >
-          Last active settings
-          <ChevronDown
-            className={`size-4 transition-transform ${showLast ? "rotate-180" : ""}`}
-            aria-hidden
-          />
-        </button>
-        {showLast && (
-          <dl className="space-y-2 border-t border-border px-4 py-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Intensity</dt>
-              <dd>{intensityPreset(diffuser.intensity).label}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Spray / pause</dt>
-              <dd>
-                {formatSeconds(preset.onSeconds)} / {formatSeconds(preset.offSeconds)}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Days</dt>
-              <dd>{formatDays(activeDays(diffuser.schedule))}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Hours</dt>
-              <dd className="text-right">
-                {formatHourRanges(diffuser.schedule.find((d) => d.active)?.hours ?? [])}
-              </dd>
-            </div>
-          </dl>
-        )}
-      </div>
-
-
-      <div className="mt-6 border border-border bg-secondary/30 p-5">
-        <p className="flex items-center gap-2 eyebrow text-muted-foreground">
-          <Gauge className="size-4" aria-hidden />
-          Intensity
-        </p>
-        <div className="mt-3 flex gap-2">
-          {INTENSITIES.map((option) => (
+          <div className="mt-4 border border-border">
             <button
-              key={option.value}
               type="button"
-              aria-pressed={diffuser.intensity === option.value}
-              onClick={() => push(option.value, schedule)}
-              className={`flex-1 border px-3 py-2 text-sm transition-colors ${
-                diffuser.intensity === option.value
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-muted-foreground hover:bg-secondary/60"
-              }`}
+              onClick={() => setShowLast((v) => !v)}
+              aria-expanded={showLast}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground hover:bg-secondary/40"
             >
-              {option.label}
+              Last active settings
+              <ChevronDown
+                className={`size-4 transition-transform ${showLast ? "rotate-180" : ""}`}
+                aria-hidden
+              />
             </button>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Spray {formatSeconds(preset.onSeconds)} · Pause {formatSeconds(preset.offSeconds)} — allow
-          30 minutes for the room to adapt.
-        </p>
-      </div>
-
-      <div className="mt-4 border border-border bg-secondary/30 p-5">
-        <p className="flex items-center gap-2 eyebrow text-muted-foreground">
-          <CalendarClock className="size-4" aria-hidden />
-          Weekly schedule
-        </p>
-        <p className="mt-3 font-display text-xl">{formatDays(activeDays(schedule))}</p>
-        <p className="text-sm text-muted-foreground">
-          {formatHourRanges(schedule.find((d) => d.active)?.hours ?? [])}
-        </p>
-
-        <div className="mt-4">
-          <ScheduleGrid schedule={schedule} onChange={setDraft} />
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {DAYS.map((day) => (
-            <span
-              key={day.value}
-              className={`border px-3 py-1 text-xs ${
-                schedule.find((d) => d.day === day.value)?.active
-                  ? "border-foreground/60 text-foreground"
-                  : "border-border text-muted-foreground/60"
-              }`}
-            >
-              {day.short}
-            </span>
-          ))}
-        </div>
-
-        {dirty && (
-          <div className="mt-4">
-            <StatusButton
-              state="idle"
-              icon={false}
-              label="Send schedule to diffuser"
-              onClick={() => void push(diffuser.intensity, schedule)}
-            />
+            {showLast && (
+              <dl className="space-y-2 border-t border-border px-4 py-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Intensity</dt>
+                  <dd>{intensityPreset(diffuser.intensity).label}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Spray / pause</dt>
+                  <dd>
+                    {formatSeconds(preset.onSeconds)} / {formatSeconds(preset.offSeconds)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Days</dt>
+                  <dd>{formatDays(activeDays(diffuser.schedule))}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Hours</dt>
+                  <dd className="text-right">
+                    {formatHourRanges(diffuser.schedule.find((d) => d.active)?.hours ?? [])}
+                  </dd>
+                </div>
+              </dl>
+            )}
           </div>
-        )}
-      </div>
+
+          <div className="mt-6 border border-border bg-secondary/30 p-5">
+            <p className="flex items-center gap-2 eyebrow text-muted-foreground">
+              <Gauge className="size-4" aria-hidden />
+              Intensity
+            </p>
+            <div className="mt-3 flex gap-2">
+              {INTENSITIES.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={diffuser.intensity === option.value}
+                  onClick={() => push(option.value, schedule)}
+                  className={`flex-1 border px-3 py-2 text-sm transition-colors ${
+                    diffuser.intensity === option.value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:bg-secondary/60"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Spray {formatSeconds(preset.onSeconds)} · Pause {formatSeconds(preset.offSeconds)} — allow
+              30 minutes for the room to adapt.
+            </p>
+          </div>
+
+          <div className="mt-4 border border-border bg-secondary/30 p-5">
+            <p className="flex items-center gap-2 eyebrow text-muted-foreground">
+              <CalendarClock className="size-4" aria-hidden />
+              Weekly schedule
+            </p>
+            <p className="mt-3 font-display text-xl">{formatDays(activeDays(schedule))}</p>
+            <p className="text-sm text-muted-foreground">
+              {formatHourRanges(schedule.find((d) => d.active)?.hours ?? [])}
+            </p>
+
+            <div className="mt-4">
+              <ScheduleGrid schedule={schedule} onChange={setDraft} />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {DAYS.map((day) => (
+                <span
+                  key={day.value}
+                  className={`border px-3 py-1 text-xs ${
+                    schedule.find((d) => d.day === day.value)?.active
+                      ? "border-foreground/60 text-foreground"
+                      : "border-border text-muted-foreground/60"
+                  }`}
+                >
+                  {day.short}
+                </span>
+              ))}
+            </div>
+
+            {dirty && (
+              <div className="mt-4">
+                <StatusButton
+                  state="idle"
+                  icon={false}
+                  label="Send schedule to diffuser"
+                  onClick={() => void push(diffuser.intensity, schedule)}
+                />
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </article>
   );
 }
