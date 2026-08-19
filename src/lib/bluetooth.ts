@@ -174,7 +174,7 @@ export async function pairDiffuser(opts?: {
     try {
       // Re-connecting to a known diffuser: narrow the chooser to its hardware label.
       // Otherwise show every nearby device.
-      let device: BluetoothDeviceLike | null = null;
+      let device: Awaited<ReturnType<BluetoothLike["requestDevice"]>> | null = null;
       if (preferName) {
         device = await nav.bluetooth
           .requestDevice({
