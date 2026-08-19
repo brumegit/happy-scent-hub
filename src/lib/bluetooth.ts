@@ -116,14 +116,35 @@ async function attachLink(device: {
   return true;
 }
 
-export async function pairDiffuser(): Promise<PairedDevice> {
+export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<PairedDevice> {
+  const preferBrume = opts?.preferBrume ?? false;
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
-      const device = await nav.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: SERVICE_UUIDS,
-      });
+      // When pairing the first diffuser, narrow the chooser to devices whose
+      // advertised name contains "BRUME" so a Brume diffuser is auto-selected
+      // from the list. If none matches (or the user cancels), fall back to an
+      // open scan so pairing still works.
+      let device: Awaited<ReturnType<BluetoothLike["requestDevice"]>>;
+      if (preferBrume) {
+        try {
+          device = await nav.bluetooth.requestDevice({
+            filters: [{ namePrefix: "BRUME" }],
+            optionalServices: SERVICE_UUIDS,
+          });
+        } catch (error) {
+          if ((error as Error)?.name !== "NotFoundError") throw error;
+          device = await nav.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: SERVICE_UUIDS,
+          });
+        }
+      } else {
+        device = await nav.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: SERVICE_UUIDS,
+        });
+      }
 
       try {
         await attachLink(device);
@@ -131,7 +152,8 @@ export async function pairDiffuser(): Promise<PairedDevice> {
         // GATT unavailable — commands fall back to the simulated link.
       }
 
-      return { deviceId: device.id, suggestedName: device.name || "The 24/7 Room Diffuser" };
+      const suggested = device.name || (preferBrume ? "BRUME Room Diffuser" : "The 24/7 Room Diffuser");
+      return { deviceId: device.id, suggestedName: suggested };
     } catch (error) {
       if ((error as Error)?.name === "NotFoundError") {
         throw new Error("No device selected. Double-tap the button and try again.");
@@ -149,7 +171,10 @@ export async function pairDiffuser(): Promise<PairedDevice> {
       await wait(120);
     },
   });
-  return { deviceId, suggestedName: "The 24/7 Room Diffuser" };
+  return {
+    deviceId,
+    suggestedName: preferBrume ? "BRUME Room Diffuser" : "The 24/7 Room Diffuser",
+  };
 }
 
 /**

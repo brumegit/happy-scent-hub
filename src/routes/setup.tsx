@@ -72,6 +72,7 @@ function Setup() {
   const navigate = useNavigate();
   const { start } = Route.useSearch();
   const addDiffuser = useDiffuserStore((s) => s.addDiffuser);
+  const existingCount = useDiffuserStore((s) => s.diffusers.length);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [fading, setFading] = useState(false);
@@ -87,7 +88,7 @@ function Setup() {
     setPhase("pairing");
     setError(null);
     try {
-      const device = await pairDiffuser();
+      const device = await pairDiffuser({ preferBrume: existingCount === 0 });
       setDeviceId(device.deviceId);
       setName(device.suggestedName || DEFAULT_NAME);
       await sendFrames(device.deviceId, buildPushFrames(schedule, intensity).slice(0, 2));
