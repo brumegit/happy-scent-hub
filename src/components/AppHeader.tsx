@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { CartDrawer } from "@/components/CartDrawer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,10 +23,16 @@ export function AppHeader() {
       <Link to="/home" className="flex items-center">
         <BrandLogo className="h-5" />
       </Link>
-      <Button variant="ghost" size="sm" onClick={signOut}>
-        <LogOut className="size-4" aria-hidden />
-        Sign out
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/shop">Shop</Link>
+        </Button>
+        <CartDrawer />
+        <Button variant="ghost" size="sm" onClick={signOut}>
+          <LogOut className="size-4" aria-hidden />
+          Sign out
+        </Button>
+      </div>
     </header>
   );
 }
