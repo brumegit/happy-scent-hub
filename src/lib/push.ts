@@ -1,9 +1,6 @@
 import { isRealLink, queryTimers, sendBatch, sendFrames } from "@/lib/bluetooth";
 import {
-  buildModifyTimer,
-  buildPower,
   buildSetBroadcastName,
-  buildSyncTimestamp,
   buildTimerList,
   MODULE_TYPES,
   sanitizeBroadcastName,
@@ -25,8 +22,9 @@ import { readDebug } from "@/stores/readDebugStore";
  * Pushes the full configuration to the diffuser and reports, per area, what the
  * hardware acknowledged and what it actually persisted (read back with 0x08).
  *
- * Frame order matters: clock first, then the module name (0x52), then the full
- * timer list with working mode 1 active and 2–5 disabled (0x13), then power on.
+ * A settings confirmation emits one timer-list command (0x13). The module
+ * signals each parsed protocol command, so concatenating clock/name/power
+ * commands into the same BLE stream still causes repeated beeps.
  */
 export async function pushSettings(opts: {
   deviceId: string | null;
@@ -52,34 +50,17 @@ export async function pushSettings(opts: {
       }
     }
 
-    // Everything the device must persist goes out as ONE continuous write:
-    // clock, module name, timer list and power. The diffuser then beeps once
-    // for the whole push instead of once per command.
+    // One user action, one protocol command, one hardware confirmation sound.
+    // Name changes are sent separately at the moment the user saves the name.
     const label = opts.hardwareName ? sanitizeBroadcastName(opts.hardwareName) : null;
     const acks = await sendBatch(
       opts.deviceId,
-      [
-        buildSyncTimestamp(),
-        ...(label ? [buildSetBroadcastName(label, MODULE_TYPES[0])] : []),
-        buildTimerList(slots),
-        buildPower(true),
-      ],
+      [buildTimerList(slots)],
       log,
     );
     const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
 
-    if (!label) {
-      debug.set("name", "idle", "not sent");
-    } else {
-      const nameAck = ackFor(0x52);
-      if (nameAck?.acked && nameAck.code === 0) debug.set("name", "ok", `"${label}" · ack 0xD2`);
-      else
-        debug.set(
-          "name",
-          "unconfirmed",
-          `"${label}" · ${nameAck?.acked ? `ack 0xD2 error ${nameAck.code}` : "no 0xD2 reply"}`,
-        );
-    }
+    debug.set("name", "idle", label ? `"${label}" · unchanged by settings push` : "not sent");
 
     const timerAck = ackFor(0x13);
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
@@ -89,16 +70,10 @@ export async function pushSettings(opts: {
     // Read back the persisted working modes — the only real proof.
     let readback = await queryTimers(opts.deviceId, log);
 
-    // 0x13 is the server-sync command; several firmwares only honour it inside
-    // the sync handshake. Fallback: one batched burst of 0x14 modify-timer.
+    // Never auto-send a second command after verification: that retry was the
+    // source of another confirmation beep. Surface a mismatch instead.
     if (!readback || !matches(readback, slots)) {
-      log("Timer list not applied — retrying with 0x14 modify-timer per mode");
-      await sendBatch(
-        opts.deviceId,
-        slots.map((slot) => buildModifyTimer(slot)),
-        log,
-      );
-      readback = await queryTimers(opts.deviceId, log);
+      log("Timer list did not match after the single settings command");
     }
 
     if (!readback) {
@@ -212,18 +187,16 @@ export async function renameModule(
 ) {
   const debug = pushDebug();
   const label = sanitizeBroadcastName(hardwareName);
-  let last = "";
-  for (const moduleType of MODULE_TYPES) {
-    const acks = await sendFrames(deviceId, [buildSetBroadcastName(label, moduleType)], log);
-    const ack = acks[0];
-    if (ack?.acked && ack.code === 0) {
-      debug.set("name", "ok", `"${label}" · ack 0xD2 (module type ${moduleType})`);
-      return true;
-    }
-    last = ack?.acked
-      ? `ack 0xD2 error ${ack.code} (module type ${moduleType})`
-      : `no 0xD2 reply (module type ${moduleType})`;
+  const moduleType = MODULE_TYPES[0] ?? 0;
+  const acks = await sendFrames(deviceId, [buildSetBroadcastName(label, moduleType)], log);
+  const ack = acks[0];
+  if (ack?.acked && ack.code === 0) {
+    debug.set("name", "ok", `"${label}" · ack 0xD2 (module type ${moduleType})`);
+    return true;
   }
+  const last = ack?.acked
+    ? `ack 0xD2 error ${ack.code} (module type ${moduleType})`
+    : `no 0xD2 reply (module type ${moduleType})`;
   debug.set("name", "unconfirmed", `"${label}" · ${last}`);
   return false;
 }

@@ -358,9 +358,9 @@ export async function sendFrames(
 }
 
 /**
- * Writes several protocol frames back-to-back as one continuous stream so the
- * module treats them as a single push — the diffuser then beeps once instead of
- * once per command. Acknowledgments are collected in parallel.
+ * Writes protocol frames as one continuous stream and collects acknowledgments.
+ * The diffuser signals each protocol command, regardless of BLE write count;
+ * callers that require one confirmation sound must pass exactly one frame.
  */
 export async function sendBatch(
   deviceId: string | null,
@@ -381,9 +381,7 @@ export async function sendBatch(
     link.waitFor ? link.waitFor((fn + 0x80) & 0xff).catch(() => null) : Promise.resolve(null),
   );
 
-  // All frames are concatenated into ONE continuous byte stream before being
-  // chunked, so the module parses them inside a single serial burst and beeps
-  // once for the whole push instead of once per command.
+  // Concatenate before transport chunking so frame bytes remain contiguous.
   const total = frames.reduce((sum, frame) => sum + frame.length, 0);
   const stream = new Uint8Array(total);
   let offset = 0;

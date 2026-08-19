@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
-import { pushSettings, readSettings } from "@/lib/push";
+import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
 import {
   INTENSITIES,
@@ -60,7 +60,7 @@ function Steps({ phase }: { phase: Phase }) {
     <div className="mt-8 grid grid-cols-3 gap-4">
       {STEPS.map((step, index) => (
         <div key={step}>
-          <div className={`h-0.5 ${index <= current ? "bg-foreground" : "bg-border"}`} />
+          <div className={`h-0.5 ${index <= current ? "bg-gold" : "bg-border"}`} />
           <p
             className={`mt-3 text-sm ${index <= current ? "text-foreground" : "text-muted-foreground"}`}
           >
@@ -184,8 +184,10 @@ function Setup() {
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
-            className={`mt-8 border border-border bg-card p-7 transition-all duration-[3000ms] ${
-              phase === "paired" && fading ? "border-transparent bg-black opacity-0" : "opacity-100"
+            className={`mt-8 bg-card p-7 transition-all duration-[3000ms] ${
+              phase === "paired"
+                ? `border border-transparent ${fading ? "bg-background opacity-0" : "opacity-100"}`
+                : "border border-border opacity-100"
             }`}
           >
             {phase === "paired" ? (
@@ -299,7 +301,11 @@ function Setup() {
                   setRoomTouched(true);
                   return;
                 }
-                setPhase("intensity");
+                // Renaming is its own single hardware command. Keeping it out
+                // of the settings push prevents several beeps on Confirm.
+                void pushName(deviceId, hardwareName(name.trim() || DEFAULT_NAME, room.trim()))
+                  .catch(() => undefined)
+                  .finally(() => setPhase("intensity"));
               }}
             >
               Continue
