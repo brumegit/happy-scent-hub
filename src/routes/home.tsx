@@ -34,6 +34,8 @@ import {
 
   intensityPreset,
   scheduleStatus,
+  scheduleToBlocks,
+
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
