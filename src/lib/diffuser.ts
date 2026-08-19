@@ -130,8 +130,55 @@ export function activeDays(schedule: DaySchedule[]) {
   return schedule.filter((d) => d.active && d.hours.length > 0).map((d) => d.day);
 }
 
+/** Active days grouped by the exact set of hours they share. */
+export function scheduleWindows(schedule: DaySchedule[]) {
+  const groups = new Map<string, { days: number[]; hours: number[] }>();
+  for (const day of schedule) {
+    if (!day.active || day.hours.length === 0) continue;
+    const hours = [...new Set(day.hours)].sort((a, b) => a - b);
+    const key = hours.join(",");
+    const existing = groups.get(key);
+    if (existing) existing.days.push(day.day);
+    else groups.set(key, { days: [day.day], hours });
+  }
+  return [...groups.values()];
+}
+
+/** One human line per group of days sharing the same hours. */
+export function formatScheduleLines(schedule: DaySchedule[]) {
+  const groups = scheduleWindows(schedule);
+  if (groups.length === 0) return ["No days scheduled"];
+  return groups.map((g) => `${formatDays(g.days)} · ${formatHourRanges(g.hours)}`);
+}
+
+/**
+ * Number of hardware working modes a schedule needs: one per distinct
+ * contiguous time window (days sharing a window are merged into one mode).
+ */
+export function timerWindowCount(schedule: DaySchedule[]) {
+  const windows = new Set<string>();
+  for (const day of schedule) {
+    if (!day.active || day.hours.length === 0) continue;
+    for (const [start, end] of hourRanges(day.hours)) windows.add(`${start}-${end}`);
+  }
+  return windows.size;
+}
+
+/**
+ * Collapses the schedule so it always fits the hardware: every active day gets
+ * the same hours (the union of what is selected today).
+ */
+export function unifySchedule(schedule: DaySchedule[]): DaySchedule[] {
+  const union = [...new Set(schedule.filter((d) => d.active).flatMap((d) => d.hours))].sort(
+    (a, b) => a - b,
+  );
+  const hours = union.length ? union : defaultHours();
+  return schedule.map((d) => (d.active ? { ...d, hours } : d));
+}
+
 /** Single-Bluetooth devices expose 5 working modes (timers). */
 export const MAX_TIMERS = 5;
+
 
 /**
  * A hardware working mode holds ONE time window (start → end) plus the set of
