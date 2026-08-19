@@ -1,4 +1,4 @@
-import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
+import { isRealLink, queryTimers, sendBatch, sendFrames } from "@/lib/bluetooth";
 import {
   buildModifyTimer,
   buildPower,
@@ -41,17 +41,9 @@ export async function pushSettings(opts: {
   const slots = buildTimerSlots(opts.schedule, opts.intensity);
 
   try {
-    // Rename first, on its own, retrying the two module-type bytes: modules
-    // ignore a 0x52 whose module-type byte doesn't match their own firmware.
-    if (!opts.hardwareName) {
-      debug.set("name", "idle", "not sent");
-    } else {
-      await renameModule(opts.deviceId, opts.hardwareName, log);
-    }
-
     // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes
     // the firmware keep its old working modes (with their old hours) alongside
-    // ours, which is why the device still showed a stale end time.
+    // ours. This is a read (0x08) — it does not make the device beep.
     const existing = await queryTimers(opts.deviceId, log).catch(() => null);
     if (existing?.length) {
       for (const slot of slots) {
@@ -60,12 +52,34 @@ export async function pushSettings(opts: {
       }
     }
 
-    const acks = await sendFrames(
+    // Everything the device must persist goes out as ONE continuous write:
+    // clock, module name, timer list and power. The diffuser then beeps once
+    // for the whole push instead of once per command.
+    const label = opts.hardwareName ? sanitizeBroadcastName(opts.hardwareName) : null;
+    const acks = await sendBatch(
       opts.deviceId,
-      [buildSyncTimestamp(), buildTimerList(slots), buildPower(true)],
+      [
+        buildSyncTimestamp(),
+        ...(label ? [buildSetBroadcastName(label, MODULE_TYPES[0])] : []),
+        buildTimerList(slots),
+        buildPower(true),
+      ],
       log,
     );
     const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
+
+    if (!label) {
+      debug.set("name", "idle", "not sent");
+    } else {
+      const nameAck = ackFor(0x52);
+      if (nameAck?.acked && nameAck.code === 0) debug.set("name", "ok", `"${label}" · ack 0xD2`);
+      else
+        debug.set(
+          "name",
+          "unconfirmed",
+          `"${label}" · ${nameAck?.acked ? `ack 0xD2 error ${nameAck.code}` : "no 0xD2 reply"}`,
+        );
+    }
 
     const timerAck = ackFor(0x13);
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
@@ -76,11 +90,10 @@ export async function pushSettings(opts: {
     let readback = await queryTimers(opts.deviceId, log);
 
     // 0x13 is the server-sync command; several firmwares only honour it inside
-    // the sync handshake and silently keep their old modes. The app-initiated
-    // path in the protocol is 0x14 (modify timer), one frame per working mode.
+    // the sync handshake. Fallback: one batched burst of 0x14 modify-timer.
     if (!readback || !matches(readback, slots)) {
       log("Timer list not applied — retrying with 0x14 modify-timer per mode");
-      await sendFrames(
+      await sendBatch(
         opts.deviceId,
         slots.map((slot) => buildModifyTimer(slot)),
         log,
