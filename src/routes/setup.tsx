@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { pushSettings } from "@/lib/push";
+import { buildSyncTimestamp } from "@/lib/scentlife";
 import {
   INTENSITIES,
-  buildPushFrames,
   hardwareName,
   defaultSchedule,
   formatSeconds,
