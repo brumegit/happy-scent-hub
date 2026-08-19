@@ -210,8 +210,7 @@ function Setup() {
                       </svg>
                     </span>
                   </div>
-                  <p className="success-pop flex items-center justify-center gap-2 text-sm text-emerald-400">
-                    <Check className="size-4" aria-hidden />
+                  <p className="success-pop text-center text-sm text-emerald-400">
                     Diffuser paired successfully
                   </p>
                 </div>
