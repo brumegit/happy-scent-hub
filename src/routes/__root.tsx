@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PushDebugStrip } from "@/components/PushDebugStrip";
 import { ReadDebugStrip } from "@/components/ReadDebugStrip";
 import { useCartSync } from "@/hooks/useCartSync";
+import bgVideo from "@/assets/app-background.mp4.asset.json";
 
 function NotFoundComponent() {
   return (
@@ -133,6 +134,17 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Ambient background video sitting above the black base layer. */}
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-background">
+        <video
+          className="h-full w-full object-cover opacity-60"
+          src={bgVideo.url}
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      </div>
       {/* Development strip: what the diffuser confirmed on the last push. */}
       <PushDebugStrip />
       <ReadDebugStrip />
