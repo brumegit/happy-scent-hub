@@ -6,6 +6,7 @@ import {
   weekdayBit,
   type TimerSlot,
 } from "@/lib/scentlife";
+import { is24Hour } from "@/stores/clockStore";
 
 export type Intensity = "low" | "medium" | "high";
 
@@ -74,8 +75,10 @@ export function formatTime(value: string) {
 }
 
 export function formatHourLabel(hour: number, minutes = "00") {
-  const suffix = hour >= 12 && hour < 24 ? "PM" : "AM";
-  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  const normalized = ((hour % 24) + 24) % 24;
+  if (is24Hour()) return `${String(normalized).padStart(2, "0")}:${minutes}`;
+  const suffix = normalized >= 12 ? "PM" : "AM";
+  const displayHour = normalized % 12 === 0 ? 12 : normalized % 12;
   return `${displayHour}:${minutes} ${suffix}`;
 }
 
@@ -156,7 +159,8 @@ export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): 
       index: 1,
       weekdayMask: enabled ? mask : 0,
       startMinute: enabled ? startHour * 60 : 0,
-      endMinute: enabled ? Math.min(endHour * 60, 1440) : 0,
+      // The device rejects/clamps 1440, so a full day ends at 23:59.
+      endMinute: enabled ? Math.min(endHour * 60, 1439) : 0,
       onSeconds: preset.onSeconds,
       offSeconds: preset.offSeconds,
       timerId: 1,

@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatHourLabel, formatHourRanges } from "@/lib/diffuser";
+import { useClockStore } from "@/stores/clockStore";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -42,6 +43,8 @@ export function HourPicker({
   onConfirm: (hours: number[]) => void;
 }) {
   const [selected, setSelected] = useState<number[]>(hours);
+  const clockMode = useClockStore((s) => s.mode);
+  const setClockMode = useClockStore((s) => s.setMode);
 
   // Reset local state whenever a new day is opened.
   const lastKey = useRef("");
@@ -119,7 +122,7 @@ export function HourPicker({
             >
               {HOURS.slice(1).concat(24).map((h) => (
                 <option key={h} value={h}>
-                  {h === 24 ? "12:00 AM" : formatHourLabel(h)}
+                  {formatHourLabel(h)}
                 </option>
               ))}
             </select>
@@ -147,6 +150,24 @@ export function HourPicker({
         </div>
 
         <p className="text-center text-sm text-muted-foreground">{formatHourRanges(selected)}</p>
+
+        <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+          <span>Time format</span>
+          {(["auto", "12", "24"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={clockMode === option}
+              onClick={() => setClockMode(option)}
+              className={`border bg-background px-2 py-1 transition-colors ${
+                clockMode === option ? "border-gold text-gold" : "border-border text-muted-foreground"
+              }`}
+            >
+              {option === "auto" ? "Auto" : option === "12" ? "12 h" : "24 h"}
+            </button>
+          ))}
+        </div>
+
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
