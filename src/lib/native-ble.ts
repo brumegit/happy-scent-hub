@@ -112,3 +112,9 @@ export async function isNativeConnected(deviceId: string) {
     return false;
   }
 }
+
+/** Disconnects the GATT link on a native build. */
+export async function disconnectNative(deviceId: string) {
+  const ble = await client();
+  await ble.disconnect(deviceId);
+}
