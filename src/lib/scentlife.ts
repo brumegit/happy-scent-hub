@@ -127,24 +127,25 @@ const DEVICE_TYPE = "001";
 export const MODULE_TYPES = ["A", "B"] as const;
 
 /**
- * The 0x52 example in the protocol carries a 12-character ASCII broadcast name,
- * and modules reject longer or non-ASCII names silently (no 0xD2 reply), so the
- * label is sanitised down to plain ASCII and capped at 12 bytes.
+ * 0x52 carries an explicit length field, so the name is not limited to the
+ * 12 characters of the protocol example. The real ceiling is the BLE
+ * advertising payload: a complete local name fits in 29 bytes, and modules
+ * silently drop non-ASCII, so we sanitise to ASCII and cap at 24 bytes.
  */
-export const MAX_BROADCAST_NAME_BYTES = 12;
+export const MAX_BROADCAST_NAME_BYTES = 24;
 
 export function sanitizeBroadcastName(name: string) {
   const ascii = name
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^A-Za-z0-9 _-]/g, "")
+    .replace(/[^A-Za-z0-9 '._-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
   return (ascii || "Brume").slice(0, MAX_BROADCAST_NAME_BYTES);
 }
 
 /** Characters the module accepts in a broadcast name. */
-export const BROADCAST_NAME_PATTERN = /^[A-Za-z0-9 _-]+$/;
+export const BROADCAST_NAME_PATTERN = /^[A-Za-z0-9 '._-]+$/;
 
 /**
  * Validates a name against the module's specs: plain ASCII letters, digits,
