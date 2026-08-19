@@ -292,7 +292,9 @@ function Setup() {
               The diffuser broadcasts as "{combinedName}" — the room name must stay within{" "}
               {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens and
               underscores only.
-              {combinedError && <span className="block text-destructive">{combinedError}</span>}
+              {roomTouched && combinedError && (
+                <span className="block text-destructive">{combinedError}</span>
+              )}
             </p>
             <Button
               size="lg"
