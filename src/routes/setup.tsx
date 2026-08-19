@@ -83,6 +83,7 @@ function Setup() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [name, setName] = useState(DEFAULT_NAME);
   const [room, setRoom] = useState("");
+  const [roomTouched, setRoomTouched] = useState(false);
   const [intensity, setIntensity] = useState<Intensity>("high");
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule);
   const [result, setResult] = useState<CircleState>("idle");
