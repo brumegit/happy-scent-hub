@@ -74,8 +74,6 @@ function Landing() {
           </div>
 
 
-            </div>
-          </div>
 
           <div className="relative">
             <img
