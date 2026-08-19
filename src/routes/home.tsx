@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Bluetooth, CalendarClock, Gauge, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bluetooth, CalendarClock, ChevronDown, Gauge, Plus } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
@@ -9,7 +9,7 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { sendFrames } from "@/lib/bluetooth";
+import { isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import {
   DAYS,
   INTENSITIES,
@@ -19,11 +19,13 @@ import {
   formatHourRanges,
   formatSeconds,
   intensityPreset,
+  scheduleStatus,
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
 import { useIdentityStore } from "@/stores/identityStore";
+
 
 export const Route = createFileRoute("/home")({
   ssr: false,
@@ -105,10 +107,36 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [pushing, setPushing] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [showLast, setShowLast] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setConnected(isRealLink(diffuser.device_id));
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, [diffuser.device_id]);
 
   const schedule = draft ?? diffuser.schedule;
   const preset = intensityPreset(diffuser.intensity);
   const dirty = draft !== null;
+
+  async function connect() {
+    setConnecting(true);
+    setError(null);
+    try {
+      const paired = await pairDiffuser();
+      updateDiffuser(diffuser.id, { device_id: paired.deviceId });
+      setConnected(isRealLink(paired.deviceId));
+    } catch (err) {
+      setError((err as Error).message || "Could not connect to the diffuser.");
+    } finally {
+      setConnecting(false);
+    }
+  }
+
 
   async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
     setPushing(true);
@@ -153,22 +181,76 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl uppercase tracking-wide">{diffuser.name}</h2>
-          <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
-            <Bluetooth className="size-4" aria-hidden />
-            Connected
-          </p>
+          {connected && (
+            <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
+              <Bluetooth className="size-4" aria-hidden />
+              Connected
+            </p>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            {diffuser.schedule_active ? "Schedule on" : "Paused"}
-          </span>
-          <Switch
-            checked={diffuser.schedule_active}
-            aria-label="Toggle schedule"
-            onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
-          />
-        </div>
+        <Switch
+          checked={diffuser.schedule_active}
+          aria-label="Toggle schedule"
+          onCheckedChange={(checked) => updateDiffuser(diffuser.id, { schedule_active: checked })}
+        />
       </div>
+
+      {!connected && (
+        <div className="mt-5">
+          <StatusButton
+            state={connecting ? "pairing" : "idle"}
+            label={connecting ? "Connecting" : "Connect to change settings"}
+            onClick={() => void connect()}
+          />
+          {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
+        </div>
+      )}
+
+      <p className="mt-5 border-l-2 border-gold pl-3 text-sm text-muted-foreground">
+        {now
+          ? scheduleStatus(diffuser.schedule, diffuser.schedule_active, now)
+          : "Checking the current schedule…"}
+      </p>
+
+      <div className="mt-4 border border-border">
+        <button
+          type="button"
+          onClick={() => setShowLast((v) => !v)}
+          aria-expanded={showLast}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground hover:bg-secondary/40"
+        >
+          Last active settings
+          <ChevronDown
+            className={`size-4 transition-transform ${showLast ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </button>
+        {showLast && (
+          <dl className="space-y-2 border-t border-border px-4 py-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Intensity</dt>
+              <dd>{intensityPreset(diffuser.intensity).label}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Spray / pause</dt>
+              <dd>
+                {formatSeconds(preset.onSeconds)} / {formatSeconds(preset.offSeconds)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Days</dt>
+              <dd>{formatDays(activeDays(diffuser.schedule))}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Hours</dt>
+              <dd className="text-right">
+                {formatHourRanges(diffuser.schedule.find((d) => d.active)?.hours ?? [])}
+              </dd>
+            </div>
+          </dl>
+        )}
+      </div>
+
 
       <div className="mt-6 border border-border bg-secondary/30 p-5">
         <p className="flex items-center gap-2 eyebrow text-muted-foreground">

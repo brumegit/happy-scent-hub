@@ -199,3 +199,37 @@ export function buildPushFrames(schedule: DaySchedule[], intensity: Intensity) {
   return frames;
 }
 
+
+/** Human summary of what the device should be doing at `now`, per its schedule. */
+export function scheduleStatus(
+  schedule: DaySchedule[],
+  scheduleActive: boolean,
+  now: Date = new Date(),
+) {
+  if (!scheduleActive) return "The schedule is paused — the diffuser will not spray until you turn it back on.";
+
+  const isOn = (day: number, hour: number) =>
+    !!schedule.find((d) => d.day === day && d.active)?.hours.includes(hour);
+
+  const day = now.getDay();
+  const hour = now.getHours();
+  const running = isOn(day, hour);
+
+  // Walk forward hour by hour (up to a week) to find the next state change.
+  for (let step = 1; step <= 24 * 7; step += 1) {
+    const next = new Date(now.getTime());
+    next.setMinutes(0, 0, 0);
+    next.setHours(next.getHours() + step);
+    if (isOn(next.getDay(), next.getHours()) !== running) {
+      const when = formatHourLabel(next.getHours());
+      const dayLabel = next.getDay() === day ? "" : ` on ${DAYS[next.getDay()]?.long}`;
+      return running
+        ? `The diffuser is programmed to be running and scheduled to pause at ${when}${dayLabel}.`
+        : `The diffuser is programmed to be in pause and scheduled to resume at ${when}${dayLabel}.`;
+    }
+  }
+
+  return running
+    ? "The diffuser is programmed to run continuously."
+    : "No hours are scheduled — the diffuser stays in pause.";
+}
