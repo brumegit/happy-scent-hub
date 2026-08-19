@@ -188,10 +188,34 @@ export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity
   return buildTimerList(buildTimerSlots(schedule, intensity));
 }
 
-/** The hardware name we write to the module: "Device name - Room name". */
+/**
+ * The hardware name we write to the module: "Device Room", no separator, kept
+ * inside the module's 12 plain-ASCII byte limit.
+ */
 export function hardwareName(name: string, room?: string) {
-  return room ? `${name} - ${room}` : name;
+  return sanitizeBroadcastName([name, room].filter(Boolean).join(" "));
 }
+
+/** Reverse of buildTimerSlots: the intensity whose spray duration matches. */
+export function intensityFromTimer(slot: TimerSlot): Intensity {
+  const closest = [...INTENSITIES].sort(
+    (a, b) => Math.abs(a.onSeconds - slot.onSeconds) - Math.abs(b.onSeconds - slot.onSeconds),
+  )[0]!;
+  return closest.value;
+}
+
+/** Reverse of buildTimerSlots: the weekly schedule stored in working mode 1. */
+export function scheduleFromTimer(slot: TimerSlot): DaySchedule[] {
+  const startHour = Math.max(0, Math.min(23, Math.floor(slot.startMinute / 60)));
+  const endHour = slot.endMinute >= 1439 ? 24 : Math.max(startHour + 1, Math.ceil(slot.endMinute / 60));
+  const hours = Array.from({ length: Math.min(24, endHour) - startHour }, (_, i) => startHour + i);
+  return DAYS.map((d) => ({
+    day: d.value,
+    active: slot.enabled && (slot.weekdayMask & weekdayBit(d.value)) !== 0,
+    hours: hours.length ? hours : defaultHours(),
+  }));
+}
+
 
 /**
  * Push sequence per the ScentLife protocol:
