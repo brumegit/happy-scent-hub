@@ -217,8 +217,10 @@ export function unifySchedule(schedule: DaySchedule[]): DaySchedule[] {
 
 /**
  * A time block is exactly one hardware working mode: one contiguous window
- * (end exclusive, 1–24) applied to a set of weekdays. The schedule editor works
- * in blocks so the 5-mode hardware limit is a UI limit, never an error.
+ * expressed in MINUTES of the day (`start`, `end` exclusive, 0–1439) applied to
+ * a set of weekdays. Minute granularity matches the ScentLife protocol, whose
+ * timer slots carry startMinute / endMinute. The schedule editor works in
+ * blocks so the 5-mode hardware limit is a UI limit, never an error.
  */
 export type TimeBlock = { start: number; end: number; days: number[] };
 
@@ -226,8 +228,8 @@ export type TimeBlock = { start: number; end: number; days: number[] };
 export function scheduleToBlocks(schedule: DaySchedule[]): TimeBlock[] {
   const map = new Map<string, TimeBlock>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    for (const [start, end] of hourRanges(day.hours)) {
+    if (!day.active) continue;
+    for (const [start, end] of dayRanges(day)) {
       const key = `${start}-${end}`;
       const existing = map.get(key);
       if (existing) existing.days.push(day.day);
@@ -240,26 +242,36 @@ export function scheduleToBlocks(schedule: DaySchedule[]): TimeBlock[] {
 /** Rebuilds the weekly schedule from blocks. */
 export function blocksFromSchedule(schedule: DaySchedule[]): TimeBlock[] {
   const blocks = scheduleToBlocks(schedule);
-  return blocks.length ? blocks : [{ start: 0, end: 24, days: DAYS.map((d) => d.value) }];
+  return blocks.length ? blocks : [{ start: 0, end: 1439, days: DAYS.map((d) => d.value) }];
 }
 
 export function blocksToSchedule(blocks: TimeBlock[]): DaySchedule[] {
   return DAYS.map((d) => {
+    const ranges = blocks
+      .filter((b) => b.days.includes(d.value) && b.end > b.start)
+      .map((b) => [b.start, b.end] as [number, number])
+      .sort((a, b) => a[0] - b[0]);
     const hours = [
       ...new Set(
-        blocks
-          .filter((b) => b.days.includes(d.value) && b.end > b.start)
-          .flatMap((b) => Array.from({ length: b.end - b.start }, (_, i) => b.start + i)),
+        ranges.flatMap(([start, end]) => {
+          const from = Math.floor(start / 60);
+          const to = Math.min(24, Math.ceil(end / 60));
+          return Array.from({ length: Math.max(1, to - from) }, (_, i) => from + i);
+        }),
       ),
     ].sort((a, b) => a - b);
-    return { day: d.value, active: hours.length > 0, hours: hours.length ? hours : defaultHours() };
+    return {
+      day: d.value,
+      active: ranges.length > 0,
+      hours: hours.length ? hours : defaultHours(),
+      ranges: ranges.length ? ranges : undefined,
+    } satisfies DaySchedule;
   });
 }
 
-/** Human label for one block, e.g. "Mon · Tue · 8:00 AM to 8:00 PM". */
+/** Human label for one block, e.g. "Mon · Tue · 8:00 AM to 8:30 PM". */
 export function formatBlock(block: TimeBlock) {
-  const hours = Array.from({ length: Math.max(0, block.end - block.start) }, (_, i) => block.start + i);
-  return `${formatDays(block.days)} · ${formatHourRanges(hours)}`;
+  return `${formatDays(block.days)} · ${formatMinuteRanges([[block.start, block.end]])}`;
 }
 
 
