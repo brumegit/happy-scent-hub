@@ -1,16 +1,14 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-import type { Intensity } from "@/lib/diffuser";
+import { defaultSchedule, type DaySchedule, type Intensity } from "@/lib/diffuser";
 
 export type Diffuser = {
   id: string;
   name: string;
   device_id: string | null;
   intensity: Intensity;
-  schedule_days: number[];
-  start_time: string;
-  end_time: string;
+  schedule: DaySchedule[];
   schedule_active: boolean;
 };
 
@@ -21,6 +19,12 @@ interface DiffuserState {
   updateDiffuser: (id: string, patch: Partial<Diffuser>) => void;
   removeDiffuser: (id: string) => void;
 }
+
+type LegacyDiffuser = Diffuser & {
+  schedule_days?: number[];
+  start_time?: string;
+  end_time?: string;
+};
 
 export const useDiffuserStore = create<DiffuserState>()(
   persist(
@@ -40,8 +44,28 @@ export const useDiffuserStore = create<DiffuserState>()(
     }),
     {
       name: "brume-diffusers",
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ diffusers: state.diffusers }),
+      migrate: (persisted) => {
+        const state = persisted as { diffusers?: LegacyDiffuser[] } | undefined;
+        return {
+          diffusers: (state?.diffusers ?? []).map((d) => {
+            if (Array.isArray(d.schedule)) return d;
+            const start = Number(d.start_time?.split(":")[0] ?? 8);
+            const end = Number(d.end_time?.split(":")[0] ?? 23);
+            const hours = Array.from({ length: Math.max(end - start, 1) }, (_, i) => start + i);
+            return {
+              ...d,
+              schedule: defaultSchedule().map((day) => ({
+                ...day,
+                active: (d.schedule_days ?? [1, 2, 3, 4, 5]).includes(day.day),
+                hours,
+              })),
+            };
+          }),
+        } as DiffuserState;
+      },
       onRehydrateStorage: () => () => {
         useDiffuserStore.setState({ hydrated: true });
       },

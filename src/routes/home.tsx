@@ -1,13 +1,28 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useState } from "react";
 import { Bluetooth, CalendarClock, Gauge, Plus } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
+import { ScheduleGrid } from "@/components/ScheduleGrid";
+import { StatusCircle, type CircleState } from "@/components/StatusCircle";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { DAYS, INTENSITIES, formatDays, formatTime, type Intensity } from "@/lib/diffuser";
+import { sendFrames } from "@/lib/bluetooth";
+import {
+  DAYS,
+  INTENSITIES,
+  activeDays,
+  buildScheduleFrame,
+  formatDays,
+  formatHourRanges,
+  formatSeconds,
+  intensityPreset,
+  type DaySchedule,
+  type Intensity,
+} from "@/lib/diffuser";
+import { buildSyncTimestamp } from "@/lib/scentlife";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
 import { useIdentityStore } from "@/stores/identityStore";
 
@@ -16,9 +31,9 @@ export const Route = createFileRoute("/home")({
   head: () => ({
     meta: [
       { title: "My diffusers — Brume" },
-      { name: "description", content: "See your Brume diffuser, its intensity and its active schedule." },
+      { name: "description", content: "See your Brume diffuser, its intensity and its weekly schedule." },
       { property: "og:title", content: "My diffusers — Brume" },
-      { property: "og:description", content: "Your diffuser, intensity and active schedule at a glance." },
+      { property: "og:description", content: "Your diffuser, intensity and weekly schedule at a glance." },
     ],
   }),
   component: Home,
@@ -31,9 +46,7 @@ function Home() {
   const firstName = useIdentityStore((s) => s.firstName);
   const status = useIdentityStore((s) => s.status);
 
-  useEffect(() => {
-    if (hydrated && diffusers.length === 0) navigate({ to: "/setup", replace: true });
-  }, [hydrated, diffusers.length, navigate]);
+  const empty = hydrated && diffusers.length === 0;
 
   return (
     <div className="relative min-h-screen">
@@ -41,29 +54,44 @@ function Home() {
       <div className="relative mx-auto max-w-3xl px-6 py-8">
         <AppHeader />
 
-        <div className="mt-10 flex items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display text-4xl uppercase">
-              {status === "matched" && firstName ? `${firstName}'s diffusers` : "Your diffusers"}
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Intensity and schedule, always one tap away.
+        {empty ? (
+          <section className="mt-16">
+            <StatusCircle
+              state="idle"
+              label="Start now"
+              onClick={() => navigate({ to: "/setup", search: { start: true } })}
+            />
+            <p className="text-center text-sm text-muted-foreground">
+              Pair your diffuser to set its intensity and weekly schedule.
             </p>
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/setup">
-              <Plus className="size-4" aria-hidden />
-              Add
-            </Link>
-          </Button>
-        </div>
+          </section>
+        ) : (
+          <>
+            <div className="mt-10 flex items-end justify-between gap-4">
+              <div>
+                <h1 className="font-display text-4xl uppercase">
+                  {status === "matched" && firstName ? `${firstName}'s diffusers` : "Your diffusers"}
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Intensity and schedule, always one tap away.
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/setup" search={{ start: false }}>
+                  <Plus className="size-4" aria-hidden />
+                  Add
+                </Link>
+              </Button>
+            </div>
 
-        <div className="mt-8 space-y-5">
-          {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
-          {diffusers.map((diffuser) => (
-            <DiffuserCard key={diffuser.id} diffuser={diffuser} />
-          ))}
-        </div>
+            <div className="mt-8 space-y-5">
+              {!hydrated && <div className="h-52 animate-pulse border border-border bg-card" />}
+              {diffusers.map((diffuser) => (
+                <DiffuserCard key={diffuser.id} diffuser={diffuser} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -71,6 +99,55 @@ function Home() {
 
 function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
+  const [draft, setDraft] = useState<DaySchedule[] | null>(null);
+  const [pushing, setPushing] = useState(false);
+  const [result, setResult] = useState<CircleState>("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  const schedule = draft ?? diffuser.schedule;
+  const preset = intensityPreset(diffuser.intensity);
+  const dirty = draft !== null;
+
+  async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
+    setPushing(true);
+    setResult("idle");
+    setError(null);
+    try {
+      await sendFrames(diffuser.device_id, [
+        buildSyncTimestamp(),
+        buildScheduleFrame(nextSchedule, nextIntensity),
+      ]);
+      updateDiffuser(diffuser.id, { intensity: nextIntensity, schedule: nextSchedule });
+      setDraft(null);
+      setResult("success");
+      setTimeout(() => {
+        setResult("idle");
+        setPushing(false);
+      }, 1400);
+    } catch (err) {
+      setError((err as Error).message || "Could not reach the diffuser.");
+      setResult("error");
+      setTimeout(() => {
+        setResult("idle");
+        setPushing(false);
+      }, 2400);
+    }
+  }
+
+  if (pushing) {
+    return (
+      <article className="border border-border bg-card p-7">
+        <StatusCircle
+          state={result === "idle" ? "pairing" : result}
+          label={result === "success" ? "OK" : result === "error" ? "Error" : "Sending"}
+          position="top"
+        />
+        {result === "error" && error && (
+          <p className="mt-4 text-center text-sm text-destructive">{error}</p>
+        )}
+      </article>
+    );
+  }
 
   return (
     <article className="border border-border bg-card p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
@@ -105,7 +182,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               key={option.value}
               type="button"
               aria-pressed={diffuser.intensity === option.value}
-              onClick={() => updateDiffuser(diffuser.id, { intensity: option.value as Intensity })}
+              onClick={() => push(option.value, schedule)}
               className={`flex-1 border px-3 py-2 text-sm transition-colors ${
                 diffuser.intensity === option.value
                   ? "border-primary bg-primary text-primary-foreground"
@@ -116,23 +193,32 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </button>
           ))}
         </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Spray {formatSeconds(preset.onSeconds)} · Pause {formatSeconds(preset.offSeconds)} — allow
+          30 minutes for the room to adapt.
+        </p>
       </div>
 
       <div className="mt-4 border border-border bg-secondary/30 p-5">
         <p className="flex items-center gap-2 eyebrow text-muted-foreground">
           <CalendarClock className="size-4" aria-hidden />
-          Active schedule
+          Weekly schedule
         </p>
-        <p className="mt-3 font-display text-xl">
-          {formatTime(diffuser.start_time)} – {formatTime(diffuser.end_time)}
+        <p className="mt-3 font-display text-xl">{formatDays(activeDays(schedule))}</p>
+        <p className="text-sm text-muted-foreground">
+          {formatHourRanges(schedule.find((d) => d.active)?.hours ?? [])}
         </p>
-        <p className="text-sm text-muted-foreground">{formatDays(diffuser.schedule_days)}</p>
+
+        <div className="mt-4">
+          <ScheduleGrid schedule={schedule} onChange={setDraft} />
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2">
           {DAYS.map((day) => (
             <span
               key={day.value}
               className={`border px-3 py-1 text-xs ${
-                diffuser.schedule_days.includes(day.value)
+                schedule.find((d) => d.day === day.value)?.active
                   ? "border-foreground/60 text-foreground"
                   : "border-border text-muted-foreground/60"
               }`}
@@ -141,6 +227,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </span>
           ))}
         </div>
+
+        {dirty && (
+          <Button className="mt-4 w-full" onClick={() => push(diffuser.intensity, schedule)}>
+            Send schedule to diffuser
+          </Button>
+        )}
       </div>
     </article>
   );
