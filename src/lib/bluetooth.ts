@@ -32,6 +32,8 @@ const CHUNK_DELAY_MS = 30;
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
   simulated: boolean;
+  /** True while the physical link is still up. */
+  isLive?: () => Promise<boolean>;
   /** Drops the physical GATT link (web only; native goes through Capacitor). */
   close?: () => Promise<void>;
 };
@@ -125,6 +127,7 @@ async function attachLink(device: {
         await wait(CHUNK_DELAY_MS);
       }
     },
+    isLive: async () => device.gatt?.connected !== false,
     close: async () => {
       // Physically drop the GATT link so the device LED stops showing connected.
       device.gatt?.disconnect?.();
@@ -155,6 +158,7 @@ export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<Pa
             await wait(CHUNK_DELAY_MS);
           }
         },
+        isLive: () => isNativeConnected(found.deviceId),
       });
     }
     return { deviceId: found.deviceId, suggestedName: found.name || "The 24/7 Room Diffuser" };
@@ -208,8 +212,12 @@ export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<Pa
  */
 export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) {
   const link = deviceId ? links.get(deviceId) : undefined;
-  if (!link) {
-    throw new Error("Diffuser is not connected. Pair it over Bluetooth and try again.");
+  if (!link || link.simulated) {
+    throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
+  }
+  if (link.isLive && !(await link.isLive())) {
+    links.delete(deviceId!);
+    throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
   for (const frame of frames) {
     console.info("[ScentLife] TX", toHex(frame));
