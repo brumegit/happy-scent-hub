@@ -138,12 +138,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [nameDraft, setNameDraft] = useState(diffuser.name);
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
   const [editingSettings, setEditingSettings] = useState(false);
-  const nameDraftError = validateBroadcastName(nameDraft);
+  // Only the room name is broadcast over Bluetooth, so only it is validated.
   const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
-  const combinedDraftError =
-    nameDraftError || roomDraftError
-      ? null
-      : validateBroadcastName(`${nameDraft.trim()} ${roomDraft.trim()}`);
+  const combinedDraftError = roomDraftError
+    ? null
+    : validateBroadcastName(hardwareName(nameDraft, roomDraft));
+
 
   useEffect(() => {
     let cancelled = false;
