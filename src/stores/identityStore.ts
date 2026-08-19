@@ -10,7 +10,8 @@ interface IdentityState {
   orderCount: number;
   hydrated: boolean;
   setMatched: (payload: { email: string; firstName: string | null; orderCount: number }) => void;
-  setGuest: () => void;
+  /** Keeps the typed email (for support/debug) while staying unmatched. */
+  setGuest: (email?: string | null) => void;
   reset: () => void;
 }
 
@@ -24,7 +25,8 @@ export const useIdentityStore = create<IdentityState>()(
       hydrated: false,
       setMatched: ({ email, firstName, orderCount }) =>
         set({ email, firstName, orderCount, status: "matched" }),
-      setGuest: () => set({ email: null, firstName: null, orderCount: 0, status: "guest" }),
+      setGuest: (email) =>
+        set({ email: email?.trim() || null, firstName: null, orderCount: 0, status: "guest" }),
       reset: () => set({ email: null, firstName: null, orderCount: 0, status: "guest" }),
     }),
     {
