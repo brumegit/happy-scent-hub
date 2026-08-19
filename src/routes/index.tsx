@@ -1,11 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bluetooth, Gauge, CalendarClock } from "lucide-react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/diffuser-hero.jpg";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
