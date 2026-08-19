@@ -190,7 +190,7 @@ function Setup() {
               <div className="flex min-h-[18rem] items-center justify-center">
                 <div className="w-full space-y-4 text-center">
                   <p className="text-sm text-emerald-400">
-                    Diffuser paired successfully. Its current settings have been loaded.
+                    Diffuser paired successfully
                   </p>
                   <StatusButton state="success" label="OK" />
                 </div>

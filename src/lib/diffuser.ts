@@ -134,55 +134,62 @@ export function activeDays(schedule: DaySchedule[]) {
 export const MAX_TIMERS = 5;
 
 /**
- * The app drives working mode 1 only: every other mode is pushed as disabled so
- * the device can never mix leftover factory programs with our schedule.
- * The weekly schedule is collapsed into one window: the union of active days
- * (weekday bitmask) and the earliest → latest selected hour.
+ * A hardware working mode holds ONE time window (start → end) plus the set of
+ * weekdays it applies to and the spray/pause frequency. It cannot hold
+ * different hours per day.
+ *
+ * Workaround: the weekly schedule is split into windows. Every contiguous hour
+ * block is keyed by "start-end" and the days that share it are merged into one
+ * weekday mask, so "Mon–Fri 8→20, Sat–Sun 10→23" becomes two working modes.
+ * The device exposes 5 modes; if a schedule needs more windows, the extra ones
+ * are merged into the last mode (widest start → end) so nothing is lost.
+ * Unused modes are pushed disabled so leftover factory programs can never run.
  */
 export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): TimerSlot[] {
   const preset = intensityPreset(intensity);
 
-  let mask = 0;
-  let startHour = 24;
-  let endHour = 0;
+  // window key → weekday mask
+  const windows = new Map<string, { start: number; end: number; mask: number }>();
   for (const day of schedule) {
     if (!day.active || day.hours.length === 0) continue;
-    mask |= weekdayBit(day.day);
-    startHour = Math.min(startHour, Math.min(...day.hours));
-    endHour = Math.max(endHour, Math.max(...day.hours) + 1);
+    for (const [start, end] of hourRanges(day.hours)) {
+      const key = `${start}-${end}`;
+      const existing = windows.get(key);
+      if (existing) existing.mask |= weekdayBit(day.day);
+      else windows.set(key, { start, end, mask: weekdayBit(day.day) });
+    }
   }
 
-  const enabled = mask !== 0 && endHour > startHour;
+  let list = [...windows.values()].sort((a, b) => a.start - b.start || a.end - b.end);
 
-  const slots: TimerSlot[] = [
-    {
+  // More windows than the hardware can store: fold the overflow into the last mode.
+  if (list.length > MAX_TIMERS) {
+    const kept = list.slice(0, MAX_TIMERS - 1);
+    const overflow = list.slice(MAX_TIMERS - 1);
+    kept.push({
+      start: Math.min(...overflow.map((w) => w.start)),
+      end: Math.max(...overflow.map((w) => w.end)),
+      mask: overflow.reduce((m, w) => m | w.mask, 0),
+    });
+    list = kept;
+  }
+
+  return Array.from({ length: MAX_TIMERS }, (_, i) => {
+    const index = i + 1;
+    const window = list[i];
+    const enabled = !!window && window.mask !== 0 && window.end > window.start;
+    return {
       enabled,
-      index: 1,
-      weekdayMask: enabled ? mask : 0,
-      startMinute: enabled ? startHour * 60 : 0,
-      // The device rejects/clamps 1440, so a full day ends at 23:59.
-      endMinute: enabled ? Math.min(endHour * 60, 1439) : 0,
-      onSeconds: preset.onSeconds,
-      offSeconds: preset.offSeconds,
-      timerId: 1,
-    },
-  ];
-
-  // Working modes 2–5 are explicitly turned off.
-  for (let index = 2; index <= MAX_TIMERS; index += 1) {
-    slots.push({
-      enabled: false,
       index,
-      weekdayMask: 0,
-      startMinute: 0,
-      endMinute: 0,
+      weekdayMask: enabled ? window!.mask : 0,
+      startMinute: enabled ? window!.start * 60 : 0,
+      // The device rejects/clamps 1440, so a full day ends at 23:59.
+      endMinute: enabled ? Math.min(window!.end * 60, 1439) : 0,
       onSeconds: preset.onSeconds,
       offSeconds: preset.offSeconds,
       timerId: index,
-    });
-  }
-
-  return slots;
+    };
+  });
 }
 
 export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity) {
@@ -205,16 +212,35 @@ export function intensityFromTimer(slot: TimerSlot): Intensity {
   return closest.value;
 }
 
-/** Reverse of buildTimerSlots: the weekly schedule stored in working mode 1. */
-export function scheduleFromTimer(slot: TimerSlot): DaySchedule[] {
+function hoursOfTimer(slot: TimerSlot) {
   const startHour = Math.max(0, Math.min(23, Math.floor(slot.startMinute / 60)));
   const endHour = slot.endMinute >= 1439 ? 24 : Math.max(startHour + 1, Math.ceil(slot.endMinute / 60));
-  const hours = Array.from({ length: Math.min(24, endHour) - startHour }, (_, i) => startHour + i);
-  return DAYS.map((d) => ({
-    day: d.value,
-    active: slot.enabled && (slot.weekdayMask & weekdayBit(d.value)) !== 0,
-    hours: hours.length ? hours : defaultHours(),
-  }));
+  return Array.from({ length: Math.min(24, endHour) - startHour }, (_, i) => startHour + i);
+}
+
+/** Reverse of buildTimerSlots: the weekly schedule stored in working mode 1. */
+export function scheduleFromTimer(slot: TimerSlot): DaySchedule[] {
+  return scheduleFromTimers([slot]);
+}
+
+/**
+ * Reverse of buildTimerSlots: merges every enabled working mode back into one
+ * weekly schedule, each mode contributing its hours to the days it covers.
+ */
+export function scheduleFromTimers(slots: TimerSlot[]): DaySchedule[] {
+  const active = slots.filter((s) => s.enabled && s.endMinute > s.startMinute);
+  const schedule = DAYS.map((d) => ({ day: d.value, active: false, hours: [] as number[] }));
+
+  for (const slot of active) {
+    const hours = hoursOfTimer(slot);
+    for (const day of schedule) {
+      if ((slot.weekdayMask & weekdayBit(day.day)) === 0) continue;
+      day.active = true;
+      day.hours = [...new Set([...day.hours, ...hours])].sort((a, b) => a - b);
+    }
+  }
+
+  return schedule.map((d) => ({ ...d, hours: d.hours.length ? d.hours : defaultHours() }));
 }
 
 
