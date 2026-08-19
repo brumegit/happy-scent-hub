@@ -133,10 +133,12 @@ function Setup() {
     setResult("pairing");
     setError(null);
     try {
-      await sendFrames(
+      await pushSettings({
         deviceId,
-        buildPushFrames(schedule, intensity, hardwareName(name.trim() || DEFAULT_NAME, room.trim())),
-      );
+        schedule,
+        intensity,
+        hardwareName: hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
+      });
       setResult("success");
       setTimeout(() => {
         setResult("idle");
