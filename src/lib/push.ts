@@ -4,6 +4,7 @@ import {
   buildSetBroadcastName,
   buildSyncTimestamp,
   buildTimerList,
+  MAX_BROADCAST_NAME_BYTES,
   type TimerSlot,
 } from "@/lib/scentlife";
 import { buildTimerSlots, MAX_TIMERS, type DaySchedule, type Intensity } from "@/lib/diffuser";
@@ -45,7 +46,7 @@ export async function pushSettings(opts: {
       debug.set(
         "name",
         !ack?.acked ? "unconfirmed" : ack.code === 0 ? "ok" : "fail",
-        `"${opts.hardwareName}" · ${
+        `"${opts.hardwareName.slice(0, MAX_BROADCAST_NAME_BYTES)}" · ${
           ack?.acked ? `ack 0xD2 code ${ack.code}` : "no 0xD2 reply"
         }`,
       );
