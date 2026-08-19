@@ -156,7 +156,7 @@ export function validateBroadcastName(name: string): string | null {
   const trimmed = name.trim();
   if (!trimmed) return "Enter a name.";
   if (!BROADCAST_NAME_PATTERN.test(trimmed))
-    return "Use letters, numbers, spaces, hyphens or underscores only — no accents or symbols.";
+    return "Use letters, numbers, spaces, apostrophes, dots, hyphens or underscores only — no accents.";
   if (trimmed.length > MAX_BROADCAST_NAME_BYTES)
     return `The diffuser only stores ${MAX_BROADCAST_NAME_BYTES} characters (currently ${trimmed.length}).`;
   return null;
