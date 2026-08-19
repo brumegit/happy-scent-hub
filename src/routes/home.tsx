@@ -19,6 +19,7 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
 import { checkConnection, disconnect, isRealLink, pairDiffuser } from "@/lib/bluetooth";
 import { pushName, pushSettings } from "@/lib/push";
 import {
@@ -137,6 +138,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [nameDraft, setNameDraft] = useState(diffuser.name);
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
   const [editingSettings, setEditingSettings] = useState(false);
+  const nameDraftError = validateBroadcastName(nameDraft);
+  const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
+  const combinedDraftError =
+    nameDraftError || roomDraftError
+      ? null
+      : validateBroadcastName(`${nameDraft.trim()} ${roomDraft.trim()}`);
 
   useEffect(() => {
     void checkConnection(diffuser.device_id).then(setConnected);
@@ -257,6 +264,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               onChange={(e) => setRoomDraft(e.target.value)}
               className="mt-2"
             />
+            {roomDraftError && <p className="mt-2 text-xs text-destructive">{roomDraftError}</p>}
             <label className="mt-4 block text-xs uppercase tracking-[0.18em] text-muted-foreground">
               Diffuser name
             </label>
@@ -266,11 +274,19 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               onChange={(e) => setNameDraft(e.target.value)}
               className="mt-2"
             />
+            {nameDraftError && <p className="mt-2 text-xs text-destructive">{nameDraftError}</p>}
+            <p className="mt-3 text-xs text-muted-foreground">
+              The diffuser stores "{hardwareName(nameDraft, roomDraft)}" ({MAX_BROADCAST_NAME_BYTES}{" "}
+              characters max, letters, numbers, spaces, hyphens and underscores only).
+              {combinedDraftError && (
+                <span className="block text-destructive">{combinedDraftError}</span>
+              )}
+            </p>
             <div className="mt-6 flex gap-3">
               <Button variant="secondary" className="flex-1" onClick={() => setEditingName(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={() => void saveNames()} disabled={!nameDraft.trim() || !roomDraft.trim()}>
+              <Button className="flex-1" onClick={() => void saveNames()} disabled={!!nameDraftError || !!roomDraftError || !!combinedDraftError}>
                 Save
               </Button>
             </div>
