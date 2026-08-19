@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 
+import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
