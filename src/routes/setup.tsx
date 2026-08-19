@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
-import { buildSetDeviceName } from "@/lib/scentlife";
 import {
   INTENSITIES,
   buildPushFrames,
@@ -220,7 +219,6 @@ function Setup() {
               className="w-full"
               disabled={room.trim().length === 0}
               onClick={() => {
-                void sendFrames(deviceId, [buildSetDeviceName(name.trim() || DEFAULT_NAME)]);
                 setPhase("intensity");
               }}
             >
@@ -287,7 +285,6 @@ function Setup() {
               <button
                 type="button"
                 onClick={() => {
-                void sendFrames(deviceId, [buildSetDeviceName(name.trim() || DEFAULT_NAME)]);
                 setPhase("intensity");
               }}
                 className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"

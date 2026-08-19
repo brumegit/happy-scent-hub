@@ -19,7 +19,6 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { checkConnection, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
-import { buildSetDeviceName } from "@/lib/scentlife";
 import {
   INTENSITIES,
   activeDays,
