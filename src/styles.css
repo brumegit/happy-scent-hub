@@ -268,3 +268,12 @@
   stroke-dashoffset: 34;
   animation: success-draw 0.55s 0.25s ease-out forwards;
 }
+
+/* --- Liquid glass surfaces --------------------------------------------- */
+@utility glass {
+  background: color-mix(in oklab, var(--card) 45%, transparent);
+  backdrop-filter: blur(22px) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 12%, transparent),
+    0 18px 40px -24px rgb(0 0 0 / 0.9);
+}

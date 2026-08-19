@@ -186,7 +186,7 @@ function Setup() {
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
-            className={`mt-8 bg-card p-7 transition-all duration-[3000ms] ${
+            className={`mt-8 glass p-7 transition-all duration-[3000ms] ${
               phase === "paired"
                 ? `border border-transparent ${fading ? "bg-background opacity-0" : "opacity-100"}`
                 : "border border-border opacity-100"
@@ -272,7 +272,7 @@ function Setup() {
         )}
 
         {phase === "name" && (
-          <section className="mt-8 space-y-6 border border-border bg-card p-7 animate-fade-in">
+          <section className="mt-8 space-y-6 border border-border glass p-7 animate-fade-in">
             <div>
               <h1 className="font-display text-4xl">Where's it going?</h1>
               <p className="mt-2 text-sm text-muted-foreground">Your diffuser is connected.</p>
@@ -315,7 +315,7 @@ function Setup() {
         )}
 
         {phase === "intensity" && (
-          <section className="mt-8 space-y-6 border border-border bg-card p-7 animate-fade-in">
+          <section className="mt-8 space-y-6 border border-border glass p-7 animate-fade-in">
             <button
               type="button"
               onClick={() => setPhase("name")}
@@ -359,7 +359,7 @@ function Setup() {
         )}
 
         {phase === "pushing" && (
-          <section className="mt-8 border border-border bg-card p-7">
+          <section className="mt-8 border border-border glass p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               Keep the diffuser nearby. It beeps once each command is accepted.
