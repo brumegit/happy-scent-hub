@@ -111,6 +111,7 @@ function Home() {
 
 function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
+  const removeDiffuser = useDiffuserStore((s) => s.removeDiffuser);
   const [draft, setDraft] = useState<DaySchedule[] | null>(null);
   const [pushing, setPushing] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
@@ -119,6 +120,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [connecting, setConnecting] = useState(false);
   const [showLast, setShowLast] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   useEffect(() => {
     setConnected(isRealLink(diffuser.device_id));
