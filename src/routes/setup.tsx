@@ -128,7 +128,7 @@ function Setup() {
     const next = setTimeout(() => {
       setFading(false);
       setPhase("name");
-    }, 3900);
+    }, 1400);
     return () => {
       clearTimeout(fade);
       clearTimeout(next);
