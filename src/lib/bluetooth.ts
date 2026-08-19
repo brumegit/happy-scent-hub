@@ -158,6 +158,7 @@ export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<Pa
             await wait(CHUNK_DELAY_MS);
           }
         },
+        isLive: () => isNativeConnected(found.deviceId),
       });
     }
     return { deviceId: found.deviceId, suggestedName: found.name || "The 24/7 Room Diffuser" };
