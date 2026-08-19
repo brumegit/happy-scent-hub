@@ -197,7 +197,7 @@ function Setup() {
         {phase === "name" && (
           <section className="mt-8 space-y-6 border border-border bg-card p-7 animate-fade-in">
             <div>
-              <h1 className="font-display text-4xl uppercase">Name your diffuser</h1>
+              <h1 className="font-display text-4xl">Name your diffuser</h1>
               <p className="mt-2 text-sm text-muted-foreground">Your diffuser is connected.</p>
             </div>
             <div className="space-y-2">
@@ -226,44 +226,42 @@ function Setup() {
 
         {phase === "intensity" && (
           <section className="mt-8 space-y-6 border border-border bg-card p-7 animate-fade-in">
-            <h1 className="font-display text-4xl uppercase">Choose your intensity</h1>
+            <h1 className="font-display text-4xl">Choose your intensity</h1>
 
-            <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2">
               {INTENSITIES.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={intensity === option.value}
                   onClick={() => setIntensity(option.value)}
-                  className={`w-full border p-5 text-left transition-colors ${
+                  className={`w-full border bg-background px-2 py-4 text-center text-sm uppercase tracking-[0.14em] transition-colors ${
                     intensity === option.value
-                      ? "border-primary bg-secondary/60"
-                      : "border-border hover:bg-secondary/30"
+                      ? "border-foreground text-foreground"
+                      : "border-border text-muted-foreground"
                   }`}
                 >
-                  <span className="font-semibold uppercase tracking-[0.14em]">{option.label}</span>
-                  <span className="mt-1 block text-sm text-muted-foreground">{option.blurb}</span>
-                  <span className="mt-2 block text-xs text-muted-foreground">
-                    Spray {formatSeconds(option.onSeconds)} · Pause{" "}
-                    {formatSeconds(option.offSeconds)}
-                  </span>
+                  {option.label}
                 </button>
               ))}
             </div>
 
-            <p className="border border-border bg-secondary/30 p-4 text-xs text-muted-foreground">
-              Selected: spray {formatSeconds(preset.onSeconds)}, then stop{" "}
-              {formatSeconds(preset.offSeconds)} between sprays. Allow 30 minutes for the room to
-              adapt before judging the strength.
-            </p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>{INTENSITIES.find((o) => o.value === intensity)?.blurb}</p>
+              <p className="border border-border p-4 text-xs">
+                Selected: spray {formatSeconds(preset.onSeconds)}, then stop{" "}
+                {formatSeconds(preset.offSeconds)} between sprays. Allow 30 minutes for the room to
+                adapt before judging the strength.
+              </p>
+            </div>
 
-            <StatusButton state="idle" icon={false} label="Send to diffuser" onClick={() => void push("schedule")} />
+            <StatusButton state="idle" icon={false} label="Next" onClick={() => void push("schedule")} />
           </section>
         )}
 
         {phase === "pushing" && (
           <section className="mt-8 border border-border bg-card p-7">
-            <h1 className="font-display text-4xl uppercase">Sending to your diffuser</h1>
+            <h1 className="font-display text-4xl">Sending to your diffuser</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               Keep the diffuser nearby — it beeps once each command is accepted.
             </p>
@@ -283,7 +281,15 @@ function Setup() {
         {phase === "schedule" && (
           <section className="mt-8 space-y-6 animate-fade-in">
             <div>
-              <h1 className="font-display text-4xl uppercase">Your schedule</h1>
+              <button
+                type="button"
+                onClick={() => setPhase("intensity")}
+                className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="size-4" aria-hidden />
+                Back
+              </button>
+              <h1 className="font-display text-4xl">Your schedule</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Pick the days, then paint the working hours.
               </p>
@@ -297,7 +303,7 @@ function Setup() {
             <StatusButton
               state="idle"
               icon={false}
-              label="Confirm and send to diffuser"
+              label="Confirm"
               onClick={() =>
                 void push("schedule", () => {
                   addDiffuser({
