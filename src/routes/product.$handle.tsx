@@ -12,9 +12,9 @@ import { useCartStore } from "@/stores/cartStore";
 export const Route = createFileRoute("/product/$handle")({
   head: () => ({
     meta: [
-      { title: "Product — Brume" },
+      { title: "Product | Brume" },
       { name: "description", content: "Brume scented oil refills and diffusers for your smart scent diffuser." },
-      { property: "og:title", content: "Product — Brume" },
+      { property: "og:title", content: "Product | Brume" },
       { property: "og:description", content: "Brume scented oil refills and diffusers." },
     ],
   }),

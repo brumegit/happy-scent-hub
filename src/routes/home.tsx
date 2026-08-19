@@ -40,9 +40,9 @@ export const Route = createFileRoute("/home")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "My diffusers — Brume" },
+      { title: "My diffusers | Brume" },
       { name: "description", content: "See your Brume diffuser, its intensity and its weekly schedule." },
-      { property: "og:title", content: "My diffusers — Brume" },
+      { property: "og:title", content: "My diffusers | Brume" },
       { property: "og:description", content: "Your diffuser, intensity and weekly schedule at a glance." },
     ],
   }),
@@ -344,7 +344,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
-            label={connecting ? "Connecting" : "Tap to edit"}
+            label={connecting ? "Searching" : "Tap to edit"}
             onClick={() => void connect()}
           />
           {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
