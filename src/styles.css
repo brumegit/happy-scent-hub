@@ -63,6 +63,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
+  --color-pairing: var(--pairing);
 }
 
 :root {
