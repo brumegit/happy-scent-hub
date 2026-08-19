@@ -176,6 +176,54 @@ export function unifySchedule(schedule: DaySchedule[]): DaySchedule[] {
   return schedule.map((d) => (d.active ? { ...d, hours } : d));
 }
 
+/**
+ * A time block is exactly one hardware working mode: one contiguous window
+ * (end exclusive, 1–24) applied to a set of weekdays. The schedule editor works
+ * in blocks so the 5-mode hardware limit is a UI limit, never an error.
+ */
+export type TimeBlock = { start: number; end: number; days: number[] };
+
+/** Splits a weekly schedule into blocks (one per distinct contiguous window). */
+export function scheduleToBlocks(schedule: DaySchedule[]): TimeBlock[] {
+  const map = new Map<string, TimeBlock>();
+  for (const day of schedule) {
+    if (!day.active || day.hours.length === 0) continue;
+    for (const [start, end] of hourRanges(day.hours)) {
+      const key = `${start}-${end}`;
+      const existing = map.get(key);
+      if (existing) existing.days.push(day.day);
+      else map.set(key, { start, end, days: [day.day] });
+    }
+  }
+  return [...map.values()].sort((a, b) => a.start - b.start || a.end - b.end);
+}
+
+/** Rebuilds the weekly schedule from blocks. */
+export function blocksFromSchedule(schedule: DaySchedule[]): TimeBlock[] {
+  const blocks = scheduleToBlocks(schedule);
+  return blocks.length ? blocks : [{ start: 0, end: 24, days: DAYS.map((d) => d.value) }];
+}
+
+export function blocksToSchedule(blocks: TimeBlock[]): DaySchedule[] {
+  return DAYS.map((d) => {
+    const hours = [
+      ...new Set(
+        blocks
+          .filter((b) => b.days.includes(d.value) && b.end > b.start)
+          .flatMap((b) => Array.from({ length: b.end - b.start }, (_, i) => b.start + i)),
+      ),
+    ].sort((a, b) => a - b);
+    return { day: d.value, active: hours.length > 0, hours: hours.length ? hours : defaultHours() };
+  });
+}
+
+/** Human label for one block, e.g. "Mon · Tue · 8:00 AM to 8:00 PM". */
+export function formatBlock(block: TimeBlock) {
+  const hours = Array.from({ length: Math.max(0, block.end - block.start) }, (_, i) => block.start + i);
+  return `${formatDays(block.days)} · ${formatHourRanges(hours)}`;
+}
+
+
 /** Single-Bluetooth devices expose 5 working modes (timers). */
 export const MAX_TIMERS = 5;
 
