@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Brume</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        color: #ffe49d;
+        font-family: ui-serif, Georgia, "Times New Roman", serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: 0.18em;
+        font-size: 1.4rem;
+      }
+      .spin {
+        width: 28px;
+        height: 28px;
+        border: 2px solid rgba(255, 228, 157, 0.25);
+        border-top-color: #ffe49d;
+        border-radius: 50%;
+        animation: r 0.9s linear infinite;
+        margin-right: 14px;
+      }
+      @keyframes r {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div style="display: flex; align-items: center">
+      <span class="spin"></span> BRUME
+    </div>
+  </body>
+</html>
