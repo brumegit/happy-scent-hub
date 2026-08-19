@@ -8,6 +8,7 @@ import {
   MoreVertical,
   Pencil,
   Plus,
+  PowerOff,
   Trash2,
 } from "lucide-react";
 
@@ -18,7 +19,7 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { checkConnection, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
+import { checkConnection, disconnect, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
 import {
   INTENSITIES,
   activeDays,
@@ -58,9 +59,9 @@ function Home() {
   const empty = hydrated && diffusers.length === 0;
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen flex flex-col">
       <GuestBanner />
-      <div className="relative mx-auto max-w-3xl px-6 py-8">
+      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-8">
         <AppHeader />
 
         {empty ? (
@@ -154,6 +155,13 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     } finally {
       setConnecting(false);
     }
+  }
+
+  async function disconnectDevice() {
+    await disconnect(diffuser.device_id);
+    setConnected(false);
+    setEditingSettings(false);
+    setMenuOpen(false);
   }
 
 
@@ -293,6 +301,17 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                   </div>
                 ) : (
                   <>
+                    {connected && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-muted-foreground hover:text-foreground"
+                        onClick={() => void disconnectDevice()}
+                      >
+                        <PowerOff className="size-4" aria-hidden />
+                        Disconnect
+                      </button>
+                    )}
                     <button
                       type="button"
                       role="menuitem"

@@ -219,3 +219,16 @@ export async function checkConnection(deviceId: string | null) {
   }
   return isRealLink(deviceId);
 }
+
+/**
+ * Drops the in-memory GATT link for a device, marking it disconnected.
+ * Native builds disconnect at the OS level; web clears the cached link.
+ */
+export async function disconnect(deviceId: string | null) {
+  if (!deviceId) return;
+  if (await isNativePlatform()) {
+    const { disconnectNative } = await import("@/lib/native-ble");
+    await disconnectNative(deviceId).catch(() => {});
+  }
+  links.delete(deviceId);
+}
