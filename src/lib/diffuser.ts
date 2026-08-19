@@ -15,8 +15,13 @@ export type DaySchedule = {
   /** 0 = Sunday … 6 = Saturday */
   day: number;
   active: boolean;
-  /** Selected hours of the day, 0–23. */
+  /** Selected hours of the day, 0–23 (kept for legacy/coarse views). */
   hours: number[];
+  /**
+   * Minute-precision windows [startMinute, endMinute) within the day, 0–1439.
+   * When present this is the source of truth; `hours` is a rounded mirror.
+   */
+  ranges?: [number, number][];
 };
 
 export const DAYS = [
