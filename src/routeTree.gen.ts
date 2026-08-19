@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as WelcomeRouteImport } from './routes/welcome'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetupRoute = SetupRouteImport.update({
@@ -50,6 +56,7 @@ const ProductHandleRoute = ProductHandleRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
+  '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
   '/welcome': typeof WelcomeRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
+  '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
   '/welcome': typeof WelcomeRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/home': typeof HomeRoute
+  '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
   '/welcome': typeof WelcomeRoute
@@ -75,13 +84,27 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/home' | '/setup' | '/shop' | '/welcome' | '/product/$handle'
+    | '/'
+    | '/home'
+    | '/privacy'
+    | '/setup'
+    | '/shop'
+    | '/welcome'
+    | '/product/$handle'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/home' | '/setup' | '/shop' | '/welcome' | '/product/$handle'
+  to:
+    | '/'
+    | '/home'
+    | '/privacy'
+    | '/setup'
+    | '/shop'
+    | '/welcome'
+    | '/product/$handle'
   id:
     | '__root__'
     | '/'
     | '/home'
+    | '/privacy'
     | '/setup'
     | '/shop'
     | '/welcome'
@@ -91,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HomeRoute: typeof HomeRoute
+  PrivacyRoute: typeof PrivacyRoute
   SetupRoute: typeof SetupRoute
   ShopRoute: typeof ShopRoute
   WelcomeRoute: typeof WelcomeRoute
@@ -111,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/setup': {
@@ -147,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HomeRoute: HomeRoute,
+  PrivacyRoute: PrivacyRoute,
   SetupRoute: SetupRoute,
   ShopRoute: ShopRoute,
   WelcomeRoute: WelcomeRoute,
