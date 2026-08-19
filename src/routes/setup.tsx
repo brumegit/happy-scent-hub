@@ -288,14 +288,9 @@ function Setup() {
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              The diffuser broadcasts as "{combinedName}" — the room name must stay within{" "}
-              {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens and
-              underscores only.
-              {roomTouched && combinedError && (
-                <span className="block text-destructive">{combinedError}</span>
-              )}
-            </p>
+            {roomTouched && combinedError && (
+              <p className="text-xs text-destructive">{combinedError}</p>
+            )}
             <Button
               size="lg"
               className="w-full"
