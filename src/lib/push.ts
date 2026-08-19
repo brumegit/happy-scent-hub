@@ -4,7 +4,8 @@ import {
   buildSetBroadcastName,
   buildSyncTimestamp,
   buildTimerList,
-  MAX_BROADCAST_NAME_BYTES,
+  MODULE_TYPES,
+  sanitizeBroadcastName,
   type TimerSlot,
 } from "@/lib/scentlife";
 import { buildTimerSlots, MAX_TIMERS, type DaySchedule, type Intensity } from "@/lib/diffuser";
