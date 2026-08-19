@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
-import { pushSettings } from "@/lib/push";
-import { buildSyncTimestamp } from "@/lib/scentlife";
+import { pushSettings, readSettings } from "@/lib/push";
+import { buildSyncTimestamp, MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
 import {
   INTENSITIES,
   hardwareName,
@@ -41,7 +41,7 @@ export const Route = createFileRoute("/setup")({
   component: Setup,
 });
 
-const DEFAULT_NAME = "The 24/7 Room Diffuser";
+const DEFAULT_NAME = "Brume";
 
 type Phase = "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
 
@@ -98,6 +98,13 @@ function Setup() {
       setName(DEFAULT_NAME);
       // Only sync the clock on pairing — settings are pushed at each step.
       await sendFrames(device.deviceId, [buildSyncTimestamp()]);
+      // Pull the diffuser's live configuration so the selectors start from the
+      // hardware's real state instead of app defaults.
+      const live = await readSettings(device.deviceId).catch(() => null);
+      if (live) {
+        setIntensity(live.intensity);
+        if (live.schedule.some((d) => d.active)) setSchedule(live.schedule);
+      }
       setPhase("paired");
     } catch (err) {
       setPhase("idle");
@@ -155,6 +162,11 @@ function Setup() {
     }
   }
 
+  const combinedName = `${name.trim()} ${room.trim()}`.trim();
+  const nameError = validateBroadcastName(name);
+  const roomError = room.trim().length === 0 ? "Enter a room name." : validateBroadcastName(room);
+  const combinedError = nameError || roomError ? null : validateBroadcastName(combinedName);
+
   const preset = intensityPreset(intensity);
   const simulated = deviceId !== null && !isRealLink(deviceId);
 
@@ -176,7 +188,10 @@ function Setup() {
               // Once connected, everything else is hidden and only the success
               // confirmation stays, centered, while the tile fades to black.
               <div className="flex min-h-[18rem] items-center justify-center">
-                <div className="w-full">
+                <div className="w-full space-y-4 text-center">
+                  <p className="text-sm text-emerald-400">
+                    Diffuser paired successfully. Its current settings have been loaded.
+                  </p>
                   <StatusButton state="success" label="OK" />
                 </div>
               </div>
@@ -237,20 +252,27 @@ function Setup() {
             <div className="space-y-2">
               <Label htmlFor="name">Device name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+              {nameError && <p className="text-xs text-destructive">{nameError}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="room">Room name (required)</Label>
               <Input
                 id="room"
                 value={room}
-                placeholder="Living room"
+                placeholder="Lounge"
                 onChange={(e) => setRoom(e.target.value)}
               />
+              {roomError && <p className="text-xs text-destructive">{roomError}</p>}
             </div>
+            <p className="text-xs text-muted-foreground">
+              The diffuser stores "{combinedName}" ({MAX_BROADCAST_NAME_BYTES} characters max,
+              letters, numbers, spaces, hyphens and underscores only).
+              {combinedError && <span className="block text-destructive">{combinedError}</span>}
+            </p>
             <Button
               size="lg"
               className="w-full"
-              disabled={room.trim().length === 0}
+              disabled={!!nameError || !!roomError || !!combinedError}
               onClick={() => {
                 setPhase("intensity");
               }}
