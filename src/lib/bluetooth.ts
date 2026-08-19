@@ -8,6 +8,7 @@
  */
 import {
   buildGetTimers,
+  buildModifyTimer,
   buildTimerList,
   parseTimerListResponse,
   toHex,
@@ -207,11 +208,9 @@ export async function pairDiffuser(opts?: {
     if (!found) {
       throw new Error("No diffuser found. Double-tap the button and try again.");
     }
-    const target = await connectNative(found.deviceId, (value) =>
-      responses.receive(value),
-    );
+    const responses = createResponseChannel();
+    const target = await connectNative(found.deviceId, (value) => responses.receive(value));
     if (target) {
-      const responses = createResponseChannel();
       const write = async (frame: Uint8Array) => {
         for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
           await writeNative(found.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
@@ -302,6 +301,7 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
   let outgoing = frames;
+  let expectedTimers: TimerSlot[] | null = null;
   const timerListIndex = frames.findIndex((frame) => frame[3] === 0x13);
   if (timerListIndex >= 0) {
     console.info("[ScentLife] TX", toHex(buildGetTimers()));
@@ -311,8 +311,14 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
       ...slot,
       timerId: current.find((saved) => saved.index === slot.index)?.timerId ?? 0,
     }));
-    outgoing = [...frames];
-    outgoing[timerListIndex] = buildTimerList(withRealIds);
+    expectedTimers = withRealIds;
+    // 0x14 is the documented phone-app downlink operation. Dispatch each
+    // working mode individually, retaining the IDs assigned by this device.
+    outgoing = [
+      ...frames.slice(0, timerListIndex),
+      ...withRealIds.map(buildModifyTimer),
+      ...frames.slice(timerListIndex + 1),
+    ];
   }
   for (const frame of outgoing) {
     console.info("[ScentLife] TX", toHex(frame));
@@ -322,10 +328,9 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
     }
     await wait(150);
   }
-  if (timerListIndex >= 0) {
-    const expected = parseTimerListFrame(outgoing[timerListIndex] as Uint8Array);
+  if (expectedTimers) {
     const saved = parseTimerListResponse(await link.request(buildGetTimers(), 0x88));
-    const matches = expected.every((slot) => {
+    const matches = expectedTimers.every((slot) => {
       const actual = saved.find((candidate) => candidate.index === slot.index);
       return actual && sameTimerSettings(actual, slot);
     });
