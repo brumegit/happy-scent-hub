@@ -273,8 +273,8 @@ function Setup() {
             <div className="space-y-2">
               <Label htmlFor="name">Device name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-              {nameError && <p className="text-xs text-destructive">{nameError}</p>}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="room">Room name (required)</Label>
               <Input
