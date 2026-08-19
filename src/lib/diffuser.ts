@@ -6,6 +6,7 @@ import {
   weekdayBit,
   type TimerSlot,
 } from "@/lib/scentlife";
+import { is24Hour } from "@/stores/clockStore";
 
 export type Intensity = "low" | "medium" | "high";
 

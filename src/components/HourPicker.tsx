@@ -119,7 +119,7 @@ export function HourPicker({
             >
               {HOURS.slice(1).concat(24).map((h) => (
                 <option key={h} value={h}>
-                  {h === 24 ? "12:00 AM" : formatHourLabel(h)}
+                  {formatHourLabel(h)}
                 </option>
               ))}
             </select>
