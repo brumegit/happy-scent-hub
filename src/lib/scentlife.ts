@@ -85,3 +85,11 @@ export function weekdayBit(day: number) {
 export function toHex(frame: Uint8Array) {
   return [...frame].map((b) => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
 }
+
+/** 0x15 — set the device (Bluetooth) name, ASCII, length-prefixed. */
+export const FN_SET_DEVICE_NAME = 0x15;
+
+export function buildSetDeviceName(name: string) {
+  const bytes = [...name].slice(0, 20).map((c) => c.charCodeAt(0) & 0x7f);
+  return buildFrame(FN_SET_DEVICE_NAME, [bytes.length, ...bytes]);
+}

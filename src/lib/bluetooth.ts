@@ -208,3 +208,15 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
     await wait(150);
   }
 }
+
+/**
+ * Async connection check — on native builds the OS keeps the GATT link, so we
+ * ask the platform instead of relying on the in-memory map.
+ */
+export async function checkConnection(deviceId: string | null) {
+  if (!deviceId) return false;
+  if (await isNativePlatform()) {
+    if (await isNativeConnected(deviceId)) return true;
+  }
+  return isRealLink(deviceId);
+}
