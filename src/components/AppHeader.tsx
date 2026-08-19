@@ -16,18 +16,10 @@ export function AppHeader() {
         <BrandLogo className="h-5" />
       </Link>
       <nav className="flex items-center gap-5 text-sm normal-case">
-        <Link
-          to="/home"
-          className="border-b border-transparent pb-1 text-foreground transition-colors"
-          activeProps={{ className: "border-gold text-foreground" }}
-        >
+        <Link to="/home" className="text-foreground hover:underline underline-offset-4">
           {diffusersLabel}
         </Link>
-        <Link
-          to="/shop"
-          className="border-b border-transparent pb-1 text-foreground transition-colors"
-          activeProps={{ className: "border-gold text-foreground" }}
-        >
+        <Link to="/shop" className="text-foreground hover:underline underline-offset-4">
           Shop
         </Link>
       </nav>
