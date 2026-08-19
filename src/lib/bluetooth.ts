@@ -6,7 +6,12 @@
  * are silently dropped by these serial modules, which is why the device never
  * beeps when a whole timer-list frame is written at once.
  */
-import { toHex } from "@/lib/scentlife";
+import {
+  buildGetTimers,
+  parseTimerListResponse,
+  toHex,
+  type TimerSlot,
+} from "@/lib/scentlife";
 import {
   connectNative,
   isNativeConnected,
@@ -130,6 +135,7 @@ async function attachLink(device: {
   const responses = createResponseChannel();
 
   let writable: Char | undefined;
+  let writableWithNotify: Char | undefined;
   for (const service of services) {
     const characteristics = await service.getCharacteristics();
 
@@ -149,12 +155,18 @@ async function attachLink(device: {
       }
     }
 
-    writable =
-      writable ??
-      characteristics.find((c) => c.properties?.writeWithoutResponse || c.properties?.write);
+    const write = characteristics.find(
+      (c) => c.properties?.writeWithoutResponse || c.properties?.write,
+    );
+    // Prefer the write characteristic that lives in the same service as the
+    // notify one — that pair is the transparent serial channel.
+    if (notify && write) writableWithNotify = writableWithNotify ?? write;
+    writable = writable ?? write;
   }
 
+  writable = writableWithNotify ?? writable;
   if (!writable) return false;
+
 
   const write = async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
@@ -279,12 +291,27 @@ export async function pairDiffuser(opts?: {
   };
 }
 
+export type FrameAck = {
+  /** Function code of the command that was sent. */
+  fn: number;
+  /** True when the module replied with fn + 0x80. */
+  acked: boolean;
+  /** Status byte of the acknowledgment (0 = success), null when silent. */
+  code: number | null;
+  hex: string;
+};
+
 /**
  * Sends protocol frames to the diffuser, one at a time with a gap so the module
  * has time to parse and acknowledge each frame (the device beeps per accepted
- * command).
+ * command). Returns the per-command acknowledgments so callers can report what
+ * the hardware actually confirmed.
  */
-export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) {
+export async function sendFrames(
+  deviceId: string | null,
+  frames: Uint8Array[],
+  onLog?: (line: string) => void,
+): Promise<FrameAck[]> {
   const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) {
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
@@ -296,17 +323,23 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
 
   // One frame per command — the module beeps once per accepted command, so the
   // schedule is pushed as a single timer-list frame (0x13), never expanded.
+  const acks: FrameAck[] = [];
   for (const frame of frames) {
-    console.info("[ScentLife] TX", toHex(frame));
+    const hex = toHex(frame);
+    console.info("[ScentLife] TX", hex);
+    onLog?.(`TX ${hex}`);
     const fn = frame[3] ?? 0;
     let response: Uint8Array | null = null;
     try {
       response = await link.request(frame, (fn + 0x80) & 0xff);
+      onLog?.(`RX ${toHex(response)}`);
     } catch {
-      // Some modules acknowledge silently (no notify characteristic). A missing
-      // ack is not an error as long as the link is still up.
+      // Some modules acknowledge silently (no notify characteristic).
       response = null;
+      onLog?.(`RX none for 0x${fn.toString(16)}`);
     }
+    const code = response && response.length >= 6 ? (response[4] ?? null) : null;
+    acks.push({ fn, acked: !!response, code, hex });
     if (response && response.length === 7 && response[4] !== 0) {
       throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
     }
@@ -317,7 +350,31 @@ export async function sendFrames(deviceId: string | null, frames: Uint8Array[]) 
     links.delete(deviceId!);
     throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
+  return acks;
 }
+
+/**
+ * Reads the timers (working modes) persisted on the device — used to verify a
+ * push actually landed instead of trusting the acknowledgment alone.
+ */
+export async function queryTimers(
+  deviceId: string | null,
+  onLog?: (line: string) => void,
+): Promise<TimerSlot[] | null> {
+  const link = deviceId ? links.get(deviceId) : undefined;
+  if (!link || link.simulated) return null;
+  try {
+    const frame = buildGetTimers();
+    onLog?.(`TX ${toHex(frame)}`);
+    const response = await link.request(frame, 0x88);
+    onLog?.(`RX ${toHex(response)}`);
+    return parseTimerListResponse(response);
+  } catch (error) {
+    onLog?.(`Read-back failed: ${(error as Error).message}`);
+    return null;
+  }
+}
+
 
 
 /**

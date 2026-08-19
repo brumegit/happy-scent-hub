@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { PushDebugStrip } from "@/components/PushDebugStrip";
 import { useCartSync } from "@/hooks/useCartSync";
 
 function NotFoundComponent() {
@@ -131,6 +132,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Development strip: what the diffuser confirmed on the last push. */}
+      <PushDebugStrip />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster position="top-center" />

@@ -19,12 +19,11 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { buildSetBroadcastName } from "@/lib/scentlife";
-import { checkConnection, disconnect, isRealLink, pairDiffuser, sendFrames } from "@/lib/bluetooth";
+import { checkConnection, disconnect, isRealLink, pairDiffuser } from "@/lib/bluetooth";
+import { pushName, pushSettings } from "@/lib/push";
 import {
   INTENSITIES,
   activeDays,
-  buildPushFrames,
   hardwareName,
   formatDays,
   formatHourRanges,
@@ -186,7 +185,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     updateDiffuser(diffuser.id, { name, room });
     setEditingName(false);
     try {
-      await sendFrames(diffuser.device_id, [buildSetBroadcastName(hardwareName(name, room))]);
+      await pushName(diffuser.device_id, hardwareName(name, room));
     } catch {
       // Not connected — the name is stored in the app and pushed on next sync.
     }
@@ -197,10 +196,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setResult("idle");
     setError(null);
     try {
-      await sendFrames(
-        diffuser.device_id,
-        buildPushFrames(nextSchedule, nextIntensity, hardwareName(diffuser.name, diffuser.room)),
-      );
+      await pushSettings({
+        deviceId: diffuser.device_id,
+        schedule: nextSchedule,
+        intensity: nextIntensity,
+        hardwareName: hardwareName(diffuser.name, diffuser.room),
+      });
       updateDiffuser(diffuser.id, {
         intensity: nextIntensity,
         schedule: nextSchedule,

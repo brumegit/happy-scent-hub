@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { pushSettings } from "@/lib/push";
+import { buildSyncTimestamp } from "@/lib/scentlife";
 import {
   INTENSITIES,
-  buildPushFrames,
   hardwareName,
   defaultSchedule,
   formatSeconds,
@@ -95,7 +96,8 @@ function Setup() {
       const device = await pairDiffuser({ preferBrume: existingCount === 0 });
       setDeviceId(device.deviceId);
       setName(DEFAULT_NAME);
-      await sendFrames(device.deviceId, buildPushFrames(schedule, intensity).slice(0, 2));
+      // Only sync the clock on pairing — settings are pushed at each step.
+      await sendFrames(device.deviceId, [buildSyncTimestamp()]);
       setPhase("paired");
     } catch (err) {
       setPhase("idle");
@@ -131,10 +133,12 @@ function Setup() {
     setResult("pairing");
     setError(null);
     try {
-      await sendFrames(
+      await pushSettings({
         deviceId,
-        buildPushFrames(schedule, intensity, hardwareName(name.trim() || DEFAULT_NAME, room.trim())),
-      );
+        schedule,
+        intensity,
+        hardwareName: hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
+      });
       setResult("success");
       setTimeout(() => {
         setResult("idle");
