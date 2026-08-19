@@ -231,10 +231,12 @@ function Setup() {
                     Back
                   </button>
                 )}
-                <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
+                <h1 className="font-display text-4xl leading-tight">Start pairing</h1>
 
                 <video
-                  className="mx-auto my-8 w-4/5 h-[clamp(6rem,calc(100vh-36rem),26rem)] object-cover"
+                  // Never crop: the video scales down to fit the space left once the
+                  // headings, CTA and the fixed guest bar (5rem) are accounted for.
+                  className="mx-auto my-8 w-4/5 h-auto max-h-[clamp(6rem,calc(100vh-41rem),26rem)] object-contain"
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
@@ -244,14 +246,15 @@ function Setup() {
                 />
 
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Double tap on the diffuser button to enter pairing mode. The LED should be blinking
-                  in blue.
+                  Double tap on the diffuser button to enter pairing mode. The LED should be
+                  blinking.
                 </p>
+
 
                 <div className="mt-7">
                   <StatusButton
                     state={phase === "idle" ? "idle" : "pairing"}
-                    label={phase === "idle" ? "Scan for my diffuser" : "Searching"}
+                    label={phase === "idle" ? "Start pairing" : "Searching"}
                     {...(phase === "idle" ? { onClick: handlePair } : {})}
                   />
                 </div>
@@ -392,9 +395,9 @@ function Setup() {
               </button>
               <h1 className="font-display text-4xl">When?</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Add routines to choose when the diffuser runs. Start about 30 minutes early so the
-                scent has time to fill the room.
+                Start about 30 minutes early so the scent has time to fill the room.
               </p>
+
             </div>
             <ScheduleGrid
               schedule={schedule}
