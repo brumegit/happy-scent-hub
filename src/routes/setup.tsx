@@ -254,7 +254,7 @@ function Setup() {
                 <div className="mt-7">
                   <StatusButton
                     state={phase === "idle" ? "idle" : "pairing"}
-                    label={phase === "idle" ? "Scan for my diffuser" : "Searching"}
+                    label={phase === "idle" ? "Start pairing" : "Searching"}
                     {...(phase === "idle" ? { onClick: handlePair } : {})}
                   />
                 </div>
