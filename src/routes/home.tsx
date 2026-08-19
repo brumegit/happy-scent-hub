@@ -229,7 +229,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         intensity: nextIntensity,
         schedule: nextSchedule,
         last_pushed_at: new Date().toISOString(),
+        last_pushed_intensity: nextIntensity,
+        last_pushed_schedule: nextSchedule,
       });
+
       setDraft(null);
       setResult("success");
       setTimeout(() => {
