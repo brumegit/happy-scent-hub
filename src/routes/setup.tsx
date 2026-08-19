@@ -96,7 +96,8 @@ function Setup() {
       const device = await pairDiffuser({ preferBrume: existingCount === 0 });
       setDeviceId(device.deviceId);
       setName(DEFAULT_NAME);
-      await sendFrames(device.deviceId, buildPushFrames(schedule, intensity).slice(0, 2));
+      // Only sync the clock on pairing — settings are pushed at each step.
+      await sendFrames(device.deviceId, [buildSyncTimestamp()]);
       setPhase("paired");
     } catch (err) {
       setPhase("idle");
