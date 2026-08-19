@@ -182,7 +182,7 @@ function Setup() {
       <div className="mx-auto max-w-2xl px-6 py-8">
         <AppHeader />
         <Steps phase={phase} />
-        <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center">
+        <div className="flex min-h-[calc(100vh-22rem)] flex-col justify-center pb-[4rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
@@ -236,8 +236,9 @@ function Setup() {
 
                 <video
                   // Cropped from the top (gravity north) so the frame keeps its
-                  // size instead of shrinking on short screens.
-                  className="mx-auto my-8 w-4/5 h-[clamp(8rem,calc(100vh-24rem),26rem)] object-cover object-top"
+                  // size instead of shrinking on short screens. Max height is
+                  // capped so the CTA always clears the fixed guest bar.
+                  className="mx-auto my-6 w-4/5 h-[clamp(7rem,calc(100vh-30rem),20rem)] object-cover object-top"
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
