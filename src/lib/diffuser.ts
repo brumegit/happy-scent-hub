@@ -159,25 +159,35 @@ export function activeDays(schedule: DaySchedule[]) {
   return schedule.filter((d) => d.active && d.hours.length > 0).map((d) => d.day);
 }
 
-/** Active days grouped by the exact set of hours they share. */
+/** Active days grouped by the exact set of minute windows they share. */
 export function scheduleWindows(schedule: DaySchedule[]) {
-  const groups = new Map<string, { days: number[]; hours: number[] }>();
+  const groups = new Map<string, { days: number[]; ranges: [number, number][] }>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    const hours = [...new Set(day.hours)].sort((a, b) => a - b);
-    const key = hours.join(",");
+    if (!day.active) continue;
+    const ranges = dayRanges(day).sort((a, b) => a[0] - b[0]);
+    if (ranges.length === 0) continue;
+    const key = ranges.map((r) => r.join("-")).join(",");
     const existing = groups.get(key);
     if (existing) existing.days.push(day.day);
-    else groups.set(key, { days: [day.day], hours });
+    else groups.set(key, { days: [day.day], ranges });
   }
   return [...groups.values()];
 }
 
-/** One human line per group of days sharing the same hours. */
+/** "8:00 AM to 8:30 PM · 10:00 PM to 11:00 PM" for a list of minute windows. */
+export function formatMinuteRanges(ranges: [number, number][]) {
+  if (ranges.length === 0) return "No hours selected";
+  if (ranges.length === 1 && ranges[0]![0] === 0 && ranges[0]![1] >= 1439) return "Always on";
+  return ranges
+    .map(([start, end]) => `${formatMinutes(start)} to ${formatMinutes(end)}`)
+    .join(" · ");
+}
+
+/** One human line per group of days sharing the same windows. */
 export function formatScheduleLines(schedule: DaySchedule[]) {
   const groups = scheduleWindows(schedule);
   if (groups.length === 0) return ["No days scheduled"];
-  return groups.map((g) => `${formatDays(g.days)} · ${formatHourRanges(g.hours)}`);
+  return groups.map((g) => `${formatDays(g.days)} · ${formatMinuteRanges(g.ranges)}`);
 }
 
 /**
@@ -187,8 +197,8 @@ export function formatScheduleLines(schedule: DaySchedule[]) {
 export function timerWindowCount(schedule: DaySchedule[]) {
   const windows = new Set<string>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    for (const [start, end] of hourRanges(day.hours)) windows.add(`${start}-${end}`);
+    if (!day.active) continue;
+    for (const [start, end] of dayRanges(day)) windows.add(`${start}-${end}`);
   }
   return windows.size;
 }
