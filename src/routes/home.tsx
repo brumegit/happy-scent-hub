@@ -130,6 +130,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(diffuser.name);
+  const [roomDraft, setRoomDraft] = useState(diffuser.room);
   const [editingSettings, setEditingSettings] = useState(false);
 
   useEffect(() => {
