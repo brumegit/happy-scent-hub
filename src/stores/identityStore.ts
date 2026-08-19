@@ -10,7 +10,8 @@ interface IdentityState {
   orderCount: number;
   hydrated: boolean;
   setMatched: (payload: { email: string; firstName: string | null; orderCount: number }) => void;
-  setGuest: () => void;
+  /** Keeps the typed email (for support/debug) while staying unmatched. */
+  setGuest: (email?: string | null) => void;
   reset: () => void;
 }
 
