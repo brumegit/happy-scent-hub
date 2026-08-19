@@ -149,8 +149,8 @@ export const BROADCAST_NAME_PATTERN = /^[A-Za-z0-9 '._-]+$/;
 
 /**
  * Validates a name against the module's specs: plain ASCII letters, digits,
- * space, hyphen or underscore, 1–12 characters. Returns an error message or
- * null when the name is compliant.
+ * space, apostrophe, dot, hyphen or underscore, 1–24 characters. Returns an
+ * error message or null when the name is compliant.
  */
 export function validateBroadcastName(name: string): string | null {
   const trimmed = name.trim();
