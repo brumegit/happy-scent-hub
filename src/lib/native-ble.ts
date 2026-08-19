@@ -40,17 +40,25 @@ async function client() {
  * contains "BRUME"; otherwise resolves with the strongest nearby device that
  * exposes a name.
  */
-export async function scanForDiffuser(timeoutMs = 6000): Promise<NativeDevice | null> {
+export async function scanForDiffuser(
+  preferName?: string,
+  timeoutMs = 6000,
+): Promise<NativeDevice | null> {
   const ble = await client();
   const seen: { device: NativeDevice; rssi: number }[] = [];
   let matched: NativeDevice | null = null;
+  const wanted = preferName?.trim().toUpperCase();
 
   await ble.requestLEScan({ allowDuplicates: false }, (result) => {
     const name = result.localName || result.device?.name;
     if (!name) return;
     const device = { deviceId: result.device.deviceId, name };
     seen.push({ device, rssi: result.rssi ?? -999 });
-    if (!matched && name.toUpperCase().includes("BRUME")) matched = device;
+    const upper = name.toUpperCase();
+    if (matched) return;
+    // When re-connecting to a known diffuser, match its "Device name - Room name"
+    // hardware label first; otherwise fall back to any BRUME unit.
+    if (wanted ? upper.includes(wanted) : upper.includes("BRUME")) matched = device;
   });
 
   const started = Date.now();
