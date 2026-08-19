@@ -190,3 +190,35 @@
   text-transform: uppercase;
   letter-spacing: 0.24em;
 }
+
+/* Drip effect used on the searching/pairing CTA: a soft droplet that slides
+   down inside the button border. */
+@keyframes drip-fall {
+  0% {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(420%);
+    opacity: 0;
+  }
+}
+
+.drip-layer {
+  pointer-events: none;
+}
+
+.drip-layer span {
+  position: absolute;
+  top: 0;
+  width: 0.55em;
+  height: 0.9em;
+  border-radius: 9999px 9999px 9999px 9999px / 80% 80% 100% 100%;
+  background: var(--pairing);
+  opacity: 0;
+  animation: drip-fall 2.4s ease-in infinite;
+  filter: blur(0.4px);
+}
