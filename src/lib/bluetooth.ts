@@ -121,12 +121,11 @@ export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<Pa
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
-      let device: { id: string; name?: string; gatt?: BluetoothLike["requestDevice"] extends Promise<infer D> ? D : never } extends never ? never : Awaited<ReturnType<BluetoothLike["requestDevice"]>>;
-
       // When pairing the first diffuser, narrow the chooser to devices whose
       // advertised name contains "BRUME" so a Brume diffuser is auto-selected
       // from the list. If none matches (or the user cancels), fall back to an
       // open scan so pairing still works.
+      let device: Awaited<ReturnType<BluetoothLike["requestDevice"]>>;
       if (preferBrume) {
         try {
           device = await nav.bluetooth.requestDevice({
