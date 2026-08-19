@@ -210,7 +210,7 @@ function Setup() {
                 <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
 
                 <video
-                  className="mx-auto my-8 w-4/5 object-cover"
+                  className="mx-auto my-8 w-4/5 h-[clamp(6rem,calc(100vh-36rem),26rem)] object-cover"
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
