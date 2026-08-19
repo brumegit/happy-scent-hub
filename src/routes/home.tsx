@@ -27,7 +27,8 @@ import {
   activeDays,
   hardwareName,
   formatDays,
-  formatHourRanges,
+  formatMinuteRanges,
+  dayRanges,
   formatScheduleLines,
   formatSeconds,
 
