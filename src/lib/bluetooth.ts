@@ -137,12 +137,17 @@ async function attachLink(device: {
   return true;
 }
 
-export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<PairedDevice> {
+export async function pairDiffuser(opts?: {
+  preferBrume?: boolean;
+  /** Known hardware label ("Device name - Room name") to auto-select when re-connecting. */
+  preferName?: string;
+}): Promise<PairedDevice> {
   const preferBrume = opts?.preferBrume ?? false;
+  const preferName = opts?.preferName?.trim();
 
-  // Native iOS / Android build: scan silently and auto-select a BRUME unit.
+  // Native iOS / Android build: scan silently and auto-select the known unit.
   if (await isNativePlatform()) {
-    const found = await scanForDiffuser();
+    const found = await scanForDiffuser(preferName);
     if (!found) {
       throw new Error("No diffuser found. Double-tap the button and try again.");
     }
@@ -167,12 +172,23 @@ export async function pairDiffuser(opts?: { preferBrume?: boolean }): Promise<Pa
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
-      // Always show every nearby device; the chooser highlights a BRUME unit
-      // when one is advertising so it can be picked in one tap.
-      const device = await nav.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: SERVICE_UUIDS,
-      });
+      // Re-connecting to a known diffuser: narrow the chooser to its hardware label.
+      // Otherwise show every nearby device.
+      let device: Awaited<ReturnType<BluetoothLike["requestDevice"]>> | null = null;
+      if (preferName) {
+        device = await nav.bluetooth
+          .requestDevice({
+            filters: [{ namePrefix: preferName.slice(0, 20) }],
+            optionalServices: SERVICE_UUIDS,
+          })
+          .catch(() => null);
+      }
+      if (!device) {
+        device = await nav.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: SERVICE_UUIDS,
+        });
+      }
 
       try {
         await attachLink(device);
