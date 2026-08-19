@@ -295,11 +295,11 @@ export const MAX_TIMERS = 5;
 export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): TimerSlot[] {
   const preset = intensityPreset(intensity);
 
-  // window key → weekday mask
+  // window key (minutes of the day) → weekday mask
   const windows = new Map<string, { start: number; end: number; mask: number }>();
   for (const day of schedule) {
-    if (!day.active || day.hours.length === 0) continue;
-    for (const [start, end] of hourRanges(day.hours)) {
+    if (!day.active) continue;
+    for (const [start, end] of dayRanges(day)) {
       const key = `${start}-${end}`;
       const existing = windows.get(key);
       if (existing) existing.mask |= weekdayBit(day.day);
