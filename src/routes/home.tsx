@@ -155,7 +155,11 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setError(null);
     try {
       await sendFrames(diffuser.device_id, buildPushFrames(nextSchedule, nextIntensity));
-      updateDiffuser(diffuser.id, { intensity: nextIntensity, schedule: nextSchedule });
+      updateDiffuser(diffuser.id, {
+        intensity: nextIntensity,
+        schedule: nextSchedule,
+        last_pushed_at: new Date().toISOString(),
+      });
       setDraft(null);
       setResult("success");
       setTimeout(() => {
@@ -192,6 +196,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl tracking-wide">{diffuser.name}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{diffuser.room}</p>
           {connected && (
             <p className="mt-1 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
               <Bluetooth className="size-4" aria-hidden />
@@ -275,10 +280,17 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
-            label={connecting ? "Connecting" : "Connect to change settings"}
+            label={connecting ? "Connecting" : "Tap to edit"}
             onClick={() => void connect()}
           />
           {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
+          <div className="mt-4">
+            <LastSettings
+              diffuser={diffuser}
+              open={showLast}
+              onToggle={() => setShowLast((v) => !v)}
+            />
+          </div>
         </div>
       ) : (
         <>
@@ -288,44 +300,11 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               : "Checking the current schedule…"}
           </p>
 
-          <div className="mt-4 border border-border">
-            <button
-              type="button"
-              onClick={() => setShowLast((v) => !v)}
-              aria-expanded={showLast}
-              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground hover:bg-secondary/40"
-            >
-              Last active settings
-              <ChevronDown
-                className={`size-4 transition-transform ${showLast ? "rotate-180" : ""}`}
-                aria-hidden
-              />
-            </button>
-            {showLast && (
-              <dl className="space-y-2 border-t border-border px-4 py-3 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Intensity</dt>
-                  <dd>{intensityPreset(diffuser.intensity).label}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Spray / pause</dt>
-                  <dd>
-                    {formatSeconds(preset.onSeconds)} / {formatSeconds(preset.offSeconds)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Days</dt>
-                  <dd>{formatDays(activeDays(diffuser.schedule))}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Hours</dt>
-                  <dd className="text-right">
-                    {formatHourRanges(diffuser.schedule.find((d) => d.active)?.hours ?? [])}
-                  </dd>
-                </div>
-              </dl>
-            )}
-          </div>
+          <LastSettings
+            diffuser={diffuser}
+            open={showLast}
+            onToggle={() => setShowLast((v) => !v)}
+          />
 
           <div className="mt-6 border border-border bg-secondary/30 p-5">
             <p className="flex items-center gap-2 eyebrow text-muted-foreground">
@@ -398,5 +377,73 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         </>
       )}
     </article>
+  );
+}
+
+function formatPushedAt(iso: string | null) {
+  if (!iso) return "Never pushed yet";
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function LastSettings({
+  diffuser,
+  open,
+  onToggle,
+}: {
+  diffuser: Diffuser;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const preset = intensityPreset(diffuser.intensity);
+  return (
+    <div className="border border-border">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-[0.18em] text-muted-foreground hover:bg-secondary/40"
+      >
+        Last used settings
+        <ChevronDown
+          className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
+      </button>
+      {open && (
+        <dl className="space-y-2 border-t border-border px-4 py-3 text-sm">
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Pushed on</dt>
+            <dd className="text-right">{formatPushedAt(diffuser.last_pushed_at)}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Intensity</dt>
+            <dd>{preset.label}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Spray / pause</dt>
+            <dd>
+              {formatSeconds(preset.onSeconds)} / {formatSeconds(preset.offSeconds)}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Days</dt>
+            <dd>{formatDays(activeDays(diffuser.schedule))}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Hours</dt>
+            <dd className="text-right">
+              {formatHourRanges(diffuser.schedule.find((d) => d.active)?.hours ?? [])}
+            </dd>
+          </div>
+        </dl>
+      )}
+    </div>
   );
 }
