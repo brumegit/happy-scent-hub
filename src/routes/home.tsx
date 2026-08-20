@@ -140,7 +140,7 @@ function Home() {
  * in spontaneous status frames (0x22 / 0x23), so nothing is shown until the
  * device pushes one.
  */
-function BatteryIndicator({ deviceId }: { deviceId: string }) {
+function BatteryIndicator({ deviceId }: { deviceId: string | null }) {
   const [status, setStatus] = useState(() => getBatteryStatus(deviceId));
 
   useEffect(() => {

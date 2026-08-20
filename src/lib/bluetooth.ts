@@ -69,7 +69,9 @@ export function getBatteryStatus(deviceId: string | null): BatteryStatus | null 
 /** Subscribes to battery updates; returns an unsubscribe function. */
 export function subscribeBattery(listener: () => void) {
   batteryListeners.add(listener);
-  return () => batteryListeners.delete(listener);
+  return () => {
+    batteryListeners.delete(listener);
+  };
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
