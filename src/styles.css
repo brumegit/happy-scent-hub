@@ -195,10 +195,10 @@
 @keyframes border-wave {
   0% {
     transform: scale(1);
-    opacity: 0.75;
+    opacity: 0.9;
   }
   100% {
-    transform: scale(1.06, 1.55);
+    transform: scale(1.08, 1.7);
     opacity: 0;
   }
 }
@@ -210,7 +210,8 @@
 .drip-layer span {
   position: absolute;
   inset: 0;
-  border: 1px solid var(--pairing);
+  border: 1.5px solid var(--pairing);
+  border-radius: inherit;
   opacity: 0;
   animation: border-wave 2.4s ease-out infinite;
 }
