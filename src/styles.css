@@ -271,14 +271,14 @@
 }
 
 
-/* Thin 4-point sparkle stars in the artwork's amber, leaf-green and burnt
-   orange tones, drifting upward and twinkling. Half the volume of the prior
-   pass — sparser tiles, thinner stars, sharper twinkle. */
+/* Thin 4-point sparkle stars (~8px) in the artwork's amber, leaf-green and
+   burnt orange tones, drifting upward and twinkling. Sparser tiles keep the
+   volume low so text stays readable. */
 .scent-particles {
   background-image:
-    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2724%27%20height=%2724%27%3E%3Cpath%20fill=%27rgb%28255%20224%20158%29%27%20fill-opacity=%270.95%27%20d=%27M12%200%20Q12%2010%2013%2011%20Q24%2012%2013%2013%20Q12%2014%2012%2024%20Q12%2014%2011%2013%20Q0%2012%2011%2011%20Q12%2010%2012%200%20Z%27/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2724%27%20height=%2724%27%3E%3Cpath%20fill=%27rgb%28186%20216%20128%29%27%20fill-opacity=%270.85%27%20d=%27M12%200%20Q12%2010%2013%2011%20Q24%2012%2013%2013%20Q12%2014%2012%2024%20Q12%2014%2011%2013%20Q0%2012%2011%2011%20Q12%2010%2012%200%20Z%27/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2724%27%20height=%2724%27%3E%3Cpath%20fill=%27rgb%28255%20168%2074%29%27%20fill-opacity=%270.8%27%20d=%27M12%200%20Q12%2010%2013%2011%20Q24%2012%2013%2013%20Q12%2014%2012%2024%20Q12%2014%2011%2013%20Q0%2012%2011%2011%20Q12%2010%2012%200%20Z%27/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%278%27%20height=%278%27%3E%3Cpath%20fill=%27rgb%28255%20224%20158%29%27%20fill-opacity=%270.95%27%20d=%27M4%200%20Q4%203%204.4%203.6%20Q8%204%204.4%204.4%20Q4%205%204%208%20Q4%205%203.6%204.4%20Q0%204%203.6%203.6%20Q4%203%204%200%20Z%27/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%278%27%20height=%278%27%3E%3Cpath%20fill=%27rgb%28186%20216%20128%29%27%20fill-opacity=%270.85%27%20d=%27M4%200%20Q4%203%204.4%203.6%20Q8%204%204.4%204.4%20Q4%205%204%208%20Q4%205%203.6%204.4%20Q0%204%203.6%203.6%20Q4%203%204%200%20Z%27/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%278%27%20height=%278%27%3E%3Cpath%20fill=%27rgb%28255%20168%2074%29%27%20fill-opacity=%270.8%27%20d=%27M4%200%20Q4%203%204.4%203.6%20Q8%204%204.4%204.4%20Q4%205%204%208%20Q4%205%203.6%204.4%20Q0%204%203.6%203.6%20Q4%203%204%200%20Z%27/%3E%3C/svg%3E");
   background-size: 150px 150px, 210px 210px, 260px 260px;
   background-position: 0 0, 80px 100px, 30px 40px;
   background-repeat: repeat;
