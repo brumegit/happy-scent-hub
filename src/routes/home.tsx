@@ -509,75 +509,13 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             <StatusButton
               state="idle"
               icon={false}
-              label={editingSettings ? "Close settings" : "Edit settings"}
-              onClick={() => setEditingSettings((v) => !v)}
+              label="Edit settings"
+              onClick={() =>
+                void navigate({ to: "/setup", search: { edit: diffuser.id } })
+              }
             />
           </div>
 
-          {editingSettings && (
-          <>
-          <div className="mt-6 border border-border p-5">
-            <p className="flex items-center gap-2 eyebrow text-muted-foreground">
-              <Gauge className="size-4" aria-hidden />
-              Intensity
-            </p>
-            <div className="mt-3 flex gap-2">
-              {INTENSITIES.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={diffuser.intensity === option.value}
-                  onClick={() => push(option.value, schedule)}
-                  className={`flex-1 border px-3 py-2 text-sm transition-colors ${
-                    diffuser.intensity === option.value
-                      ? "border-gold bg-background text-gold"
-                      : "border-border bg-background text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Spray {formatSeconds(preset.onSeconds)} · Pause {formatSeconds(preset.offSeconds)}
-              <br />
-              Allow 30 minutes for the room to adapt.
-            </p>
-          </div>
-
-          <div className="mt-4 border border-border p-5">
-            <p className="flex items-center gap-2 eyebrow text-muted-foreground">
-              <CalendarClock className="size-4" aria-hidden />
-              {scheduleToBlocks(schedule).length > 1
-                ? "My diffusion routines"
-                : "My diffusion routine"}
-            </p>
-            <p className="mt-3 font-display text-xl">{formatDays(activeDays(schedule))}</p>
-            <p className="text-sm text-muted-foreground">
-              {(() => {
-                const first = schedule.find((d) => d.active);
-                return first ? formatMinuteRanges(dayRanges(first)) : "No hours selected";
-              })()}
-            </p>
-
-            <div className="mt-4">
-              <ScheduleGrid schedule={schedule} onChange={setDraft} />
-            </div>
-
-
-            {dirty && (
-              <div className="mt-4">
-                <StatusButton
-                  state="idle"
-                  icon={false}
-                  label="Send routine to diffuser"
-                  onClick={() => void push(diffuser.intensity, schedule)}
-                />
-              </div>
-            )}
-          </div>
-          </>
-          )}
         </>
       )}
     </article>
