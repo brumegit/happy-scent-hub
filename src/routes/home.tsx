@@ -267,7 +267,12 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
 
   return (
-    <article className="border border-border p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
+    <article
+      className="relative isolate overflow-hidden border border-border p-7"
+      style={{ boxShadow: "var(--shadow-soft)" }}
+    >
+      {/* Slow abstract wash drawn from the scent artwork; kept dark for text contrast. */}
+      <div aria-hidden className="scent-wash pointer-events-none absolute inset-0 -z-10" />
       {editingName && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
           <div

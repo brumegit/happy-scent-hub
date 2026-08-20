@@ -270,3 +270,37 @@
   animation: success-draw 0.55s 0.25s ease-out forwards;
 }
 
+
+/* Abstract painted wash sampled from the orange-and-leaf artwork.
+   Low-opacity pigments over black keep foreground text high-contrast. */
+.scent-wash {
+  background:
+    radial-gradient(52% 46% at 18% 22%, rgba(214, 106, 24, 0.22), transparent 70%),
+    radial-gradient(46% 42% at 82% 18%, rgba(255, 176, 60, 0.16), transparent 72%),
+    radial-gradient(58% 50% at 74% 88%, rgba(74, 96, 38, 0.2), transparent 74%),
+    radial-gradient(44% 40% at 30% 92%, rgba(140, 52, 16, 0.18), transparent 72%);
+  filter: blur(22px) saturate(115%);
+  animation: scent-wash-drift 26s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes scent-wash-drift {
+  0% {
+    transform: scale(1.12) translate3d(-2%, -1.5%, 0) rotate(0deg);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.2) translate3d(2%, 1.5%, 0) rotate(1.5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.14) translate3d(-1%, 2%, 0) rotate(-1.5deg);
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scent-wash {
+    animation: none;
+  }
+}
