@@ -342,7 +342,7 @@ export function routineName(block: TimeBlock) {
   const day = routineDayWord(block.days);
   const time = routineTimeWord(block.start, block.end);
   if (day === "Daily" && time === "all-day") return `Always-on${suffix}`.trim();
-  if (!day && !time) return `My routine${suffix}`.trim();
+  if (!day && !time) return `Custom${suffix}`.trim();
   const label = `${day} ${time}`.trim().replace(/\s+/g, " ");
   const cased = label.charAt(0).toUpperCase() + label.slice(1);
   // Keep the descriptive part within the limit; hours are appended after.
