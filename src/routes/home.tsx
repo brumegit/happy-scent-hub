@@ -1,6 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
+  Battery,
+  BatteryCharging,
+  BatteryLow,
   Bluetooth,
   CalendarClock,
   ChevronDown,
@@ -20,7 +23,13 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
-import { checkConnection, disconnect, pairDiffuser } from "@/lib/bluetooth";
+import {
+  checkConnection,
+  disconnect,
+  getBatteryStatus,
+  pairDiffuser,
+  subscribeBattery,
+} from "@/lib/bluetooth";
 import { pushName, pushSettings } from "@/lib/push";
 import {
   INTENSITIES,
@@ -123,6 +132,34 @@ function Home() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Battery level of the connected diffuser. The protocol only reports the level
+ * in spontaneous status frames (0x22 / 0x23), so nothing is shown until the
+ * device pushes one.
+ */
+function BatteryIndicator({ deviceId }: { deviceId: string }) {
+  const [status, setStatus] = useState(() => getBatteryStatus(deviceId));
+
+  useEffect(() => {
+    setStatus(getBatteryStatus(deviceId));
+    return subscribeBattery(() => setStatus(getBatteryStatus(deviceId)));
+  }, [deviceId]);
+
+  if (!status) return null;
+  const Icon = status.charging ? BatteryCharging : status.lowBattery || status.percent <= 20 ? BatteryLow : Battery;
+  return (
+    <p
+      className={`flex items-center gap-2 text-xs uppercase tracking-[0.18em] ${
+        status.lowBattery || status.percent <= 20 ? "text-destructive" : "text-foreground"
+      }`}
+      aria-label={`Battery ${status.percent} percent`}
+    >
+      <Icon className="size-4" aria-hidden />
+      {status.percent}%
+    </p>
   );
 }
 
@@ -323,10 +360,13 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
           <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
           <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
           {connected && (
-            <p className="mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
-              <Bluetooth className="size-4" aria-hidden />
-              Connected
-            </p>
+            <div className="mt-4 flex items-center gap-4">
+              <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
+                <Bluetooth className="size-4" aria-hidden />
+                Connected
+              </p>
+              <BatteryIndicator deviceId={diffuser.device_id} />
+            </div>
           )}
         </div>
         <div className="relative flex items-center gap-3">
