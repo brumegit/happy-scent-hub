@@ -28,12 +28,21 @@ function ShopPage() {
       <div className="mx-auto w-full max-w-5xl px-6 pt-8">
         <AppHeader />
       </div>
-      <iframe
-        src="https://brume.me"
-        title="Brume store"
-        className="mt-4 w-full flex-1 border-0 bg-white"
-        style={{ minHeight: "calc(100vh - 8rem)" }}
-      />
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-6 px-6 pb-24 text-center">
+        <h1 className="font-display text-3xl uppercase tracking-wide">Shop</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Refills and diffusers are sold on our secure store. It opens in your browser, then you
+          come right back here.
+        </p>
+        <a
+          href="https://brume.me"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-14 w-full max-w-sm items-center justify-center border border-border bg-transparent px-6 text-sm uppercase tracking-wide text-foreground transition-colors hover:bg-foreground/10"
+        >
+          Open the store
+        </a>
+      </main>
     </div>
   );
 }
