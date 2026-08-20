@@ -445,7 +445,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             label={connecting ? "Searching" : "Tap to edit"}
             onClick={() => void connect()}
           />
-          {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
+          {error && <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>}
           <div className="mt-4">
             <LastSettings
               diffuser={diffuser}
