@@ -58,6 +58,15 @@ const batteries = new Map<string, BatteryStatus>();
 const batteryListeners = new Set<() => void>();
 
 function captureBattery(deviceId: string, frame: Uint8Array) {
+  // Status reports must be acknowledged, otherwise the module stops sending
+  // them and the battery level never refreshes.
+  const fn = frame[3] ?? 0;
+  if (isStatusReport(fn)) {
+    void links
+      .get(deviceId)
+      ?.write(buildReportAck(fn))
+      .catch(() => {});
+  }
   const status = parseBatteryReport(frame);
   if (!status) return;
   batteries.set(deviceId, status);
@@ -77,7 +86,22 @@ export function subscribeBattery(listener: () => void) {
   };
 }
 
+/**
+ * Polls the module so it emits a runtime status report (which carries the
+ * battery percentage). The query command is silent — the diffuser does not beep.
+ */
+export async function requestBattery(deviceId: string | null) {
+  const link = deviceId ? links.get(deviceId) : undefined;
+  if (!link || link.simulated) return;
+  try {
+    await link.write(buildQueryDeviceInfo());
+  } catch {
+    // Link dropped — the connection poll will surface it.
+  }
+}
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 
 function createResponseChannel(onFrame?: (frame: Uint8Array) => void) {
   let buffer = new Uint8Array();
