@@ -28,9 +28,11 @@ import { useDiffuserStore } from "@/stores/diffuserStore";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>): { start?: boolean } => ({
+  validateSearch: (search: Record<string, unknown>): { start?: boolean; edit?: string } => ({
     start: search["start"] === true || search["start"] === "true",
+    ...(typeof search["edit"] === "string" && search["edit"] ? { edit: search["edit"] } : {}),
   }),
+
   head: () => ({
     meta: [
       { title: "Set up your diffuser | Brume" },
@@ -75,22 +77,38 @@ function Steps({ phase }: { phase: Phase }) {
 
 function Setup() {
   const navigate = useNavigate();
-  const { start } = Route.useSearch();
+  const { start, edit } = Route.useSearch();
   const addDiffuser = useDiffuserStore((s) => s.addDiffuser);
+  const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
   const existingCount = useDiffuserStore((s) => s.diffusers.length);
+  // Editing an existing diffuser: skip pairing and naming, start on intensity.
+  const editing = useDiffuserStore((s) => s.diffusers.find((d) => d.id === edit) ?? null);
 
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "idle");
   const [fading, setFading] = useState(false);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(editing?.device_id ?? null);
   // The app-side device name is fixed; only the room is user provided.
   const name = DEFAULT_NAME;
-  const [room, setRoom] = useState("");
+  const [room, setRoom] = useState(editing?.room ?? "");
   const [roomTouched, setRoomTouched] = useState(false);
-  const [intensity, setIntensity] = useState<Intensity>("high");
-  const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule);
+  const [intensity, setIntensity] = useState<Intensity>(editing?.intensity ?? "high");
+  const [schedule, setSchedule] = useState<DaySchedule[]>(() => editing?.schedule ?? defaultSchedule());
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const autostarted = useRef(false);
+  // The store rehydrates from local storage after the first render, so adopt the
+  // diffuser's saved settings as soon as it appears.
+  const loadedEdit = useRef(false);
+  useEffect(() => {
+    if (!editing || loadedEdit.current) return;
+    loadedEdit.current = true;
+    setDeviceId(editing.device_id);
+    setRoom(editing.room);
+    setIntensity(editing.intensity);
+    setSchedule(editing.schedule);
+    setPhase("intensity");
+  }, [editing]);
+
 
   async function handlePair() {
     setPhase("pairing");
@@ -181,7 +199,11 @@ function Setup() {
       <GuestBanner />
       <div className="mx-auto max-w-2xl px-6 py-8">
         <AppHeader />
-        <Steps phase={phase} />
+        {editing ? (
+          <h1 className="mt-8 font-display text-3xl">{editing.room}'s settings</h1>
+        ) : (
+          <Steps phase={phase} />
+        )}
         <div className="flex min-h-[calc(100vh-22rem)] flex-col justify-center pb-[4rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
@@ -319,7 +341,9 @@ function Setup() {
           <section className="mt-8 space-y-6 border border-border p-7 animate-fade-in">
             <button
               type="button"
-              onClick={() => setPhase("name")}
+              onClick={() =>
+                editing ? void navigate({ to: "/home" }) : setPhase("name")
+              }
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="size-4" aria-hidden />
@@ -415,6 +439,18 @@ function Setup() {
               label="Confirm"
               onClick={() =>
                 void push("schedule", () => {
+                  if (editing) {
+                    updateDiffuser(editing.id, {
+                      intensity,
+                      schedule,
+                      schedule_active: true,
+                      last_pushed_at: new Date().toISOString(),
+                      last_pushed_intensity: intensity,
+                      last_pushed_schedule: schedule,
+                    });
+                    navigate({ to: "/home", replace: true });
+                    return;
+                  }
                   addDiffuser({
                     name: name.trim() || DEFAULT_NAME,
                     room: room.trim(),

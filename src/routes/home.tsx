@@ -28,6 +28,7 @@ import {
   disconnect,
   getBatteryStatus,
   pairDiffuser,
+  requestBattery,
   subscribeBattery,
 } from "@/lib/bluetooth";
 import { pushName, pushSettings } from "@/lib/push";
@@ -136,39 +137,45 @@ function Home() {
 }
 
 /**
- * Battery level of the connected diffuser. The protocol only reports the level
- * in spontaneous status frames (0x22 / 0x23), so nothing is shown until the
- * device pushes one.
+ * Battery level of the connected diffuser. The protocol has no "read battery"
+ * command: the module reports it inside its runtime status frames (0x21/0x22/
+ * 0x23), so the app polls it with the silent query command and acknowledges the
+ * reports it receives. Until the first report lands a placeholder is shown.
  */
 function BatteryIndicator({ deviceId }: { deviceId: string | null }) {
   const [status, setStatus] = useState(() => getBatteryStatus(deviceId));
 
   useEffect(() => {
     setStatus(getBatteryStatus(deviceId));
-    return subscribeBattery(() => setStatus(getBatteryStatus(deviceId)));
+    const unsubscribe = subscribeBattery(() => setStatus(getBatteryStatus(deviceId)));
+    void requestBattery(deviceId);
+    const poll = setInterval(() => void requestBattery(deviceId), 30_000);
+    return () => {
+      unsubscribe();
+      clearInterval(poll);
+    };
   }, [deviceId]);
 
-  if (!status) return null;
-  const Icon = status.charging ? BatteryCharging : status.lowBattery || status.percent <= 20 ? BatteryLow : Battery;
+  const low = !!status && (status.lowBattery || status.percent <= 20);
+  const Icon = status?.charging ? BatteryCharging : low ? BatteryLow : Battery;
   return (
     <p
       className={`flex items-center gap-2 text-xs uppercase tracking-[0.18em] ${
-        status.lowBattery || status.percent <= 20 ? "text-destructive" : "text-foreground"
+        low ? "text-destructive" : "text-foreground"
       }`}
-      aria-label={`Battery ${status.percent} percent`}
+      aria-label={status ? `Battery ${status.percent} percent` : "Reading battery level"}
     >
       <Icon className="size-4" aria-hidden />
-      {status.percent}%
+      {status ? `${status.percent}%` : "--"}
     </p>
   );
 }
 
+
 function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
+  const navigate = useNavigate();
   const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
   const removeDiffuser = useDiffuserStore((s) => s.removeDiffuser);
-  const [draft, setDraft] = useState<DaySchedule[] | null>(null);
-  const [pushing, setPushing] = useState(false);
-  const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -179,7 +186,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(diffuser.name);
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
-  const [editingSettings, setEditingSettings] = useState(false);
+
   // Only the room name is broadcast over Bluetooth, so only it is validated.
   const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
   const combinedDraftError = roomDraftError
@@ -210,9 +217,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     };
   }, [diffuser.device_id]);
 
-  const schedule = draft ?? diffuser.schedule;
   const preset = intensityPreset(diffuser.intensity);
-  const dirty = draft !== null;
+
 
   async function connect() {
     setConnecting(true);
@@ -234,7 +240,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   async function disconnectDevice() {
     await disconnect(diffuser.device_id);
     setConnected(false);
-    setEditingSettings(false);
+    setMenuOpen(false);
     setMenuOpen(false);
   }
 
@@ -256,55 +262,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     }
   }
 
-  async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
-    setPushing(true);
-    setResult("idle");
-    setError(null);
-    try {
-      await pushSettings({
-        deviceId: diffuser.device_id,
-        schedule: nextSchedule,
-        intensity: nextIntensity,
-        hardwareName: hardwareName(diffuser.name, diffuser.room),
-      });
-      updateDiffuser(diffuser.id, {
-        intensity: nextIntensity,
-        schedule: nextSchedule,
-        last_pushed_at: new Date().toISOString(),
-        last_pushed_intensity: nextIntensity,
-        last_pushed_schedule: nextSchedule,
-      });
 
-      setDraft(null);
-      setResult("success");
-      setTimeout(() => {
-        setResult("idle");
-        setPushing(false);
-      }, 1400);
-    } catch (err) {
-      setError((err as Error).message || "Could not reach the diffuser.");
-      setResult("error");
-      setTimeout(() => {
-        setResult("idle");
-        setPushing(false);
-      }, 2400);
-    }
-  }
 
-  if (pushing) {
-    return (
-      <article className="border border-border p-7">
-        <StatusButton
-          state={result === "idle" ? "pairing" : result}
-          icon={result !== "idle"}
-          label={result === "success" ? "OK" : result === "error" ? "Error" : "Sending"}
-        />
-        {result === "error" && error && (
-          <p className="mt-4 text-center text-sm text-destructive">{error}</p>
-        )}
-      </article>
-    );
-  }
 
   return (
     <article className="border border-border p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
@@ -500,75 +459,13 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             <StatusButton
               state="idle"
               icon={false}
-              label={editingSettings ? "Close settings" : "Edit settings"}
-              onClick={() => setEditingSettings((v) => !v)}
+              label="Edit settings"
+              onClick={() =>
+                void navigate({ to: "/setup", search: { edit: diffuser.id } })
+              }
             />
           </div>
 
-          {editingSettings && (
-          <>
-          <div className="mt-6 border border-border p-5">
-            <p className="flex items-center gap-2 eyebrow text-muted-foreground">
-              <Gauge className="size-4" aria-hidden />
-              Intensity
-            </p>
-            <div className="mt-3 flex gap-2">
-              {INTENSITIES.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={diffuser.intensity === option.value}
-                  onClick={() => push(option.value, schedule)}
-                  className={`flex-1 border px-3 py-2 text-sm transition-colors ${
-                    diffuser.intensity === option.value
-                      ? "border-gold bg-background text-gold"
-                      : "border-border bg-background text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Spray {formatSeconds(preset.onSeconds)} · Pause {formatSeconds(preset.offSeconds)}
-              <br />
-              Allow 30 minutes for the room to adapt.
-            </p>
-          </div>
-
-          <div className="mt-4 border border-border p-5">
-            <p className="flex items-center gap-2 eyebrow text-muted-foreground">
-              <CalendarClock className="size-4" aria-hidden />
-              {scheduleToBlocks(schedule).length > 1
-                ? "My diffusion routines"
-                : "My diffusion routine"}
-            </p>
-            <p className="mt-3 font-display text-xl">{formatDays(activeDays(schedule))}</p>
-            <p className="text-sm text-muted-foreground">
-              {(() => {
-                const first = schedule.find((d) => d.active);
-                return first ? formatMinuteRanges(dayRanges(first)) : "No hours selected";
-              })()}
-            </p>
-
-            <div className="mt-4">
-              <ScheduleGrid schedule={schedule} onChange={setDraft} />
-            </div>
-
-
-            {dirty && (
-              <div className="mt-4">
-                <StatusButton
-                  state="idle"
-                  icon={false}
-                  label="Send routine to diffuser"
-                  onClick={() => void push(diffuser.intensity, schedule)}
-                />
-              </div>
-            )}
-          </div>
-          </>
-          )}
         </>
       )}
     </article>
