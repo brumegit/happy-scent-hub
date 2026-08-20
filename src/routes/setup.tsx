@@ -77,22 +77,27 @@ function Steps({ phase }: { phase: Phase }) {
 
 function Setup() {
   const navigate = useNavigate();
-  const { start } = Route.useSearch();
+  const { start, edit } = Route.useSearch();
   const addDiffuser = useDiffuserStore((s) => s.addDiffuser);
+  const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
   const existingCount = useDiffuserStore((s) => s.diffusers.length);
+  // Editing an existing diffuser: skip pairing and naming, start on intensity.
+  const editing = useDiffuserStore((s) => s.diffusers.find((d) => d.id === edit) ?? null);
 
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "idle");
   const [fading, setFading] = useState(false);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(editing?.device_id ?? null);
   // The app-side device name is fixed; only the room is user provided.
   const name = DEFAULT_NAME;
-  const [room, setRoom] = useState("");
+  const [room, setRoom] = useState(editing?.room ?? "");
   const [roomTouched, setRoomTouched] = useState(false);
-  const [intensity, setIntensity] = useState<Intensity>("high");
-  const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule);
+  const [intensity, setIntensity] = useState<Intensity>(editing?.intensity ?? "high");
+  const [schedule, setSchedule] = useState<DaySchedule[]>(editing?.schedule ?? defaultSchedule);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const autostarted = useRef(false);
+
+
 
   async function handlePair() {
     setPhase("pairing");
