@@ -86,18 +86,20 @@ function RefillCard({ product }: { product: ShopifyProduct }) {
           className="w-full object-contain"
         />
       )}
-      <h2 className="mt-3 text-sm normal-case">{node.title}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {formatPrice(node.priceRange.minVariantPrice.amount, node.priceRange.minVariantPrice.currencyCode)}
-      </p>
-      <Button
-        variant="outline"
-        className="mt-3 h-14 w-full"
-        onClick={handleAddToCart}
-        disabled={isLoading || !variant?.availableForSale}
-      >
-        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to cart"}
-      </Button>
+      <div className="px-6">
+        <h2 className="mt-3 text-sm normal-case text-black">{node.title}</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          {formatPrice(node.priceRange.minVariantPrice.amount, node.priceRange.minVariantPrice.currencyCode)}
+        </p>
+        <Button
+          variant="default"
+          className="mt-3 h-14 w-full"
+          onClick={handleAddToCart}
+          disabled={isLoading || !variant?.availableForSale}
+        >
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to cart"}
+        </Button>
+      </div>
     </article>
   );
 }
@@ -113,42 +115,42 @@ function ShopPage() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <GuestBanner />
-      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-8">
-        <AppHeader />
+      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col">
+        <div className="px-6 py-8">
+          <AppHeader />
+        </div>
 
-        <main className="flex-1 pb-24">
-          <div className="flex items-center justify-between gap-4">
-            <h1 className="font-display text-4xl leading-tight">Scent refills</h1>
-            <CartDrawer />
+        <main className="flex-1 bg-white text-black">
+          <div className="px-6 pt-10 pb-24">
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="font-display text-4xl leading-tight">Scent refills</h1>
+              <CartDrawer />
+            </div>
+
+            {isLoading && (
+              <div className="mt-8 grid grid-cols-2 gap-px -mx-6">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-64 animate-pulse bg-neutral-200" />
+                ))}
+              </div>
+            )}
+
+            {!isLoading && refills.length === 0 && (
+              <p className="mt-16 text-center text-sm text-neutral-500">No products found.</p>
+            )}
+
+            {!isLoading && refills.length > 0 && (
+              <div className="mt-8 grid grid-cols-2 gap-px -mx-6">
+                {refills.map((product) => (
+                  <RefillCard key={product.node.id} product={product} />
+                ))}
+              </div>
+            )}
+
+            <Button variant="default" className="mt-10 h-14 w-full" onClick={() => void openStore("/")}>
+              Open the full store
+            </Button>
           </div>
-
-          {isLoading && (
-            <div className="mt-8 grid grid-cols-2 gap-6">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-64 animate-pulse border border-border" />
-              ))}
-            </div>
-          )}
-
-          {!isLoading && refills.length === 0 && (
-            <p className="mt-16 text-center text-sm text-muted-foreground">No products found.</p>
-          )}
-
-          {!isLoading && refills.length > 0 && (
-            <div className="mt-8 grid grid-cols-2 gap-6">
-              {refills.map((product) => (
-                <RefillCard key={product.node.id} product={product} />
-              ))}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => void openStore("/")}
-            className="mt-10 flex h-14 w-full items-center justify-center border border-border text-xs uppercase tracking-[0.2em] transition-colors hover:bg-foreground hover:text-background"
-          >
-            Open the full store
-          </button>
         </main>
       </div>
     </div>
