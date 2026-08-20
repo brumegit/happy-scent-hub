@@ -1,14 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 import { AppHeader } from "@/components/AppHeader";
 import { CartDrawer } from "@/components/CartDrawer";
 import { GuestBanner } from "@/components/GuestBanner";
 import { Button } from "@/components/ui/button";
 import { fetchProducts, formatPrice, type ShopifyProduct } from "@/lib/shopify";
-import { useCartStore } from "@/stores/cartStore";
+
 
 const STORE_URL = "https://brume.me";
 
@@ -57,27 +55,13 @@ function inStock(product: ShopifyProduct) {
 }
 
 function RefillCard({ product }: { product: ShopifyProduct }) {
-  const addItem = useCartStore((s) => s.addItem);
-  const isLoading = useCartStore((s) => s.isLoading);
   const node = product.node;
-  const variant = node.variants.edges.find((v) => v.node.availableForSale)?.node ?? node.variants.edges[0]?.node;
   const image = node.images.edges[0]?.node;
-
-  async function handleAddToCart() {
-    if (!variant) return;
-    await addItem({
-      product,
-      variantId: variant.id,
-      variantTitle: variant.title,
-      price: variant.price,
-      quantity: 1,
-      selectedOptions: variant.selectedOptions ?? [],
-    });
-    toast.success(`${node.title} added to cart`);
-  }
+  const price = Number.parseFloat(node.priceRange.minVariantPrice.amount);
+  const perDay = price / 2 / 60;
 
   return (
-    <article className="flex flex-col">
+    <Link to="/product/$handle" params={{ handle: node.handle }} className="flex flex-col">
       {image && (
         <img
           src={image.url}
@@ -86,23 +70,19 @@ function RefillCard({ product }: { product: ShopifyProduct }) {
           className="w-full object-contain"
         />
       )}
-      <div className="px-6">
-        <h2 className="mt-3 text-sm normal-case text-black">{node.title}</h2>
-        <p className="mt-1 text-sm text-neutral-500">
+      <div className="px-6 pb-6">
+        <h2 className="mt-3 text-base normal-case text-black">
+          {node.title} ·{" "}
           {formatPrice(node.priceRange.minVariantPrice.amount, node.priceRange.minVariantPrice.currencyCode)}
+        </h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Starting at {formatPrice(perDay.toFixed(2), node.priceRange.minVariantPrice.currencyCode)} / day
         </p>
-        <Button
-          variant="default"
-          className="mt-3 h-14 w-full"
-          onClick={handleAddToCart}
-          disabled={isLoading || !variant?.availableForSale}
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to cart"}
-        </Button>
       </div>
-    </article>
+    </Link>
   );
 }
+
 
 function ShopPage() {
   const { data, isLoading } = useQuery({
