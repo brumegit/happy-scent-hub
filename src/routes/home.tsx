@@ -217,9 +217,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     };
   }, [diffuser.device_id]);
 
-  const schedule = draft ?? diffuser.schedule;
   const preset = intensityPreset(diffuser.intensity);
-  const dirty = draft !== null;
+
 
   async function connect() {
     setConnecting(true);
