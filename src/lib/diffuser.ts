@@ -315,21 +315,42 @@ function routineTimeWord(start: number, end: number) {
   return "late evening";
 }
 
-/** Routine names stay short enough to fit one line in the UI. */
+/** The descriptive part of a routine name stays short enough for one line. */
 const MAX_ROUTINE_NAME = 25;
 
+/** Compact lowercase time label, e.g. "8am", "2:30pm", or "14:30" in 24h. */
+function compactTimeLabel(minutes: number) {
+  const clamped = Math.max(0, Math.min(1440, Math.round(minutes)));
+  const hour = clamped === 1440 ? 0 : Math.floor(clamped / 60);
+  const min = clamped === 1440 ? 0 : clamped % 60;
+  if (is24Hour()) return `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+  const suffix = hour >= 12 ? "pm" : "am";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  return min === 0 ? `${displayHour}${suffix}` : `${displayHour}:${String(min).padStart(2, "0")}${suffix}`;
+}
+
+/** Working-hours suffix, e.g. "(8am → 2pm)". Null for all-day routines. */
+function routineHoursLabel(block: TimeBlock): string | null {
+  if (block.start <= 5 && block.end >= 1435) return null;
+  const end = block.end >= 1439 ? 1440 : block.end;
+  return `(${compactTimeLabel(block.start)} → ${compactTimeLabel(end)})`;
+}
+
 export function routineName(block: TimeBlock) {
+  const hours = routineHoursLabel(block);
+  const suffix = hours ? ` ${hours}` : "";
   const day = routineDayWord(block.days);
   const time = routineTimeWord(block.start, block.end);
-  if (day === "Daily" && time === "all-day") return "Always-on routine";
-  if (!day && !time) return "My routine";
-  const label = `${day} ${time} routine`.trim().replace(/\s+/g, " ");
+  if (day === "Daily" && time === "all-day") return `Always-on${suffix}`.trim();
+  if (!day && !time) return `My routine${suffix}`.trim();
+  const label = `${day} ${time}`.trim().replace(/\s+/g, " ");
   const cased = label.charAt(0).toUpperCase() + label.slice(1);
-  if (cased.length <= MAX_ROUTINE_NAME) return cased;
-  // Drop the "routine" suffix first, then trim on a word boundary.
-  const short = cased.replace(/ routine$/, "");
-  if (short.length <= MAX_ROUTINE_NAME) return short;
-  return short.slice(0, MAX_ROUTINE_NAME).replace(/[\s&-]+\S*$/, "");
+  // Keep the descriptive part within the limit; hours are appended after.
+  const trimmed =
+    cased.length <= MAX_ROUTINE_NAME
+      ? cased
+      : cased.slice(0, MAX_ROUTINE_NAME).replace(/[\s&-]+\S*$/, "");
+  return `${trimmed}${suffix}`;
 }
 
 
