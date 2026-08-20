@@ -271,93 +271,70 @@
 }
 
 
-/* Abstract painted wash sampled from the orange-and-leaf artwork:
-   burnt orange, amber, rind yellow and leaf green, dreamy and drifting.
-   A dark veil sits above the pigments so foreground text stays readable. */
-.scent-wash {
-  background:
-    radial-gradient(58% 52% at 16% 20%, rgba(236, 112, 20, 0.95), transparent 70%),
-    radial-gradient(50% 46% at 86% 12%, rgba(255, 196, 86, 0.8), transparent 72%),
-    radial-gradient(60% 60% at 12% 82%, rgba(126, 190, 64, 1), transparent 72%),
-    radial-gradient(52% 48% at 88% 92%, rgba(206, 74, 16, 0.85), transparent 72%),
-    radial-gradient(40% 38% at 52% 48%, rgba(224, 158, 44, 0.6), transparent 76%);
-  filter: blur(34px) saturate(150%);
-  animation: scent-wash-drift 24s ease-in-out infinite alternate;
+/* Sparkles sampled from the orange-and-leaf artwork: amber, rind yellow,
+   burnt orange and leaf green specks drifting quickly upward and twinkling. */
+.scent-particles {
+  background-image:
+    radial-gradient(circle, rgba(255, 224, 158, 1) 0 1.3px, transparent 2.2px),
+    radial-gradient(circle, rgba(186, 216, 128, 0.95) 0 1.5px, transparent 2.4px),
+    radial-gradient(circle, rgba(255, 168, 74, 0.9) 0 1.2px, transparent 2px),
+    radial-gradient(circle, rgba(255, 246, 214, 0.95) 0 0.9px, transparent 1.8px);
+  background-size: 110px 110px, 150px 150px, 190px 190px, 90px 90px;
+  background-position: 0 0, 40px 70px, 90px 20px, 25px 55px;
+  animation:
+    scent-particles-float 7s linear infinite,
+    scent-particles-twinkle 2.6s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
-/* Second pigment layer moving the other way for a slow marbled mix. */
-.scent-wash::before {
-  content: "";
-  position: absolute;
-  inset: -18%;
-  background:
-    radial-gradient(46% 44% at 40% 58%, rgba(150, 196, 66, 0.6), transparent 72%),
-    radial-gradient(34% 32% at 70% 34%, rgba(238, 128, 26, 0.48), transparent 72%),
-    radial-gradient(30% 28% at 44% 16%, rgba(255, 206, 110, 0.32), transparent 74%);
-  filter: blur(38px);
-  animation: scent-wash-counter 34s ease-in-out infinite alternate;
-}
-
-/* Dark veil: keeps contrast high without flattening the colour. */
-.scent-wash::after {
+/* Second, faster sparkle layer for depth. */
+.scent-particles::after {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.42) 45%, rgba(0, 0, 0, 0.62));
-}
-
-/* Floating pollen-like particles. */
-.scent-particles {
   background-image:
-    radial-gradient(circle, rgba(255, 220, 150, 0.95) 0 1.4px, transparent 2px),
-    radial-gradient(circle, rgba(186, 216, 128, 0.85) 0 1.6px, transparent 2.3px),
-    radial-gradient(circle, rgba(255, 176, 88, 0.6) 0 1.6px, transparent 2.2px);
-  background-size: 120px 120px, 170px 170px, 230px 230px;
-  background-position: 0 0, 40px 70px, 90px 20px;
-  animation: scent-particles-float 30s linear infinite;
-  opacity: 0.9;
-  will-change: transform;
+    radial-gradient(circle, rgba(255, 236, 190, 1) 0 1px, transparent 1.8px),
+    radial-gradient(circle, rgba(160, 204, 96, 0.9) 0 1.1px, transparent 1.9px);
+  background-size: 70px 70px, 130px 130px;
+  background-position: 15px 30px, 60px 10px;
+  animation:
+    scent-particles-float-fast 4.5s linear infinite,
+    scent-particles-twinkle 1.7s ease-in-out infinite alternate;
 }
 
 @keyframes scent-particles-float {
   0% {
-    background-position: 0 0, 40px 70px, 90px 20px;
+    background-position: 0 0, 40px 70px, 90px 20px, 25px 55px;
   }
   100% {
-    background-position: 60px -240px, 140px -270px, -30px -300px;
+    background-position: 18px -110px, 58px -80px, 72px -190px, 5px -90px;
   }
 }
 
-@keyframes scent-wash-drift {
+@keyframes scent-particles-float-fast {
   0% {
-    transform: scale(1.15) translate3d(-3%, -2%, 0) rotate(0deg);
-    opacity: 0.85;
+    background-position: 15px 30px, 60px 10px;
+  }
+  100% {
+    background-position: 0 -40px, 78px -120px;
+  }
+}
+
+@keyframes scent-particles-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
   }
   50% {
-    transform: scale(1.25) translate3d(3%, 2%, 0) rotate(2deg);
     opacity: 1;
-  }
-  100% {
-    transform: scale(1.18) translate3d(-1%, 3%, 0) rotate(-2deg);
-    opacity: 0.9;
-  }
-}
-
-@keyframes scent-wash-counter {
-  0% {
-    transform: translate3d(4%, 3%, 0) scale(1.05);
-  }
-  100% {
-    transform: translate3d(-5%, -4%, 0) scale(1.2);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scent-wash,
-  .scent-wash::before,
-  .scent-particles {
+  .scent-particles,
+  .scent-particles::after {
     animation: none;
+    opacity: 0.7;
   }
 }
+
