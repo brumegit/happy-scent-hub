@@ -316,8 +316,19 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       )}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
-          <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
+          <div className="flex items-start gap-3">
+            {/* Scent visual, sized to the room + device name block. */}
+            <img
+              src={orangeAsset.url}
+              alt=""
+              aria-hidden
+              className="h-14 w-14 shrink-0 self-start object-contain"
+            />
+            <div>
+              <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
+              <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
+            </div>
+          </div>
           {connected && (
             <div className="mt-4 flex items-center gap-4">
               <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
@@ -328,6 +339,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </div>
           )}
         </div>
+
         <div className="relative flex items-center gap-3">
           <button
             type="button"
