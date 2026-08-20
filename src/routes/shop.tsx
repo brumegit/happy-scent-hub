@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
 import { AppHeader } from "@/components/AppHeader";
+import { CartDrawer } from "@/components/CartDrawer";
 import { GuestBanner } from "@/components/GuestBanner";
+import { ProductCard } from "@/components/ProductCard";
+import { fetchProducts } from "@/lib/shopify";
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
@@ -16,32 +20,50 @@ export const Route = createFileRoute("/shop")({
         property: "og:description",
         content: "Browse and order from the live Brume store: refills and the 24/7 room diffuser.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ShopPage,
 });
 
 function ShopPage() {
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => fetchProducts(),
+  });
+
   return (
     <div className="flex min-h-screen flex-col">
       <GuestBanner />
       <div className="mx-auto w-full max-w-5xl px-6 pt-8">
         <AppHeader />
       </div>
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-6 px-6 pb-24 text-center">
-        <h1 className="font-display text-3xl uppercase tracking-wide">Shop</h1>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Refills and diffusers are sold on our secure store. It opens in your browser, then you
-          come right back here.
-        </p>
-        <a
-          href="https://brume.me"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex h-14 w-full max-w-sm items-center justify-center border border-border bg-transparent px-6 text-sm uppercase tracking-wide text-foreground transition-colors hover:bg-foreground/10"
-        >
-          Open the store
-        </a>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 pb-24">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-display text-3xl uppercase tracking-wide">Shop</h1>
+          <CartDrawer />
+        </div>
+
+        {isLoading && (
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-80 animate-pulse border border-border bg-card" />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && (products?.length ?? 0) === 0 && (
+          <p className="mt-16 text-center text-sm text-muted-foreground">No products found.</p>
+        )}
+
+        {!isLoading && products && products.length > 0 && (
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <ProductCard key={product.node.id} product={product} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
