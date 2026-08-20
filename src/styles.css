@@ -271,47 +271,5 @@
 }
 
 
-/* Tiny floating sparkles in champagne gold (#ffe49d), the dominant tone of
-   the scent artwork and the colour of "The 24/7 Room Diffuser" label.
-   Each particle is a 4-point sparkle star, drifting bottom → top. */
-.scent-particles {
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M2 0L2.5 1.5L4 2L2.5 2.5L2 4L1.5 2.5L0 2L1.5 1.5Z' fill='%23ffe49d' fill-opacity='0.95'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3Cpath d='M1.5 0L1.9 1.1L3 1.5L1.9 1.9L1.5 3L1.1 1.9L0 1.5L1.1 1.1Z' fill='%23ffe49d' fill-opacity='0.7'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2.5' height='2.5'%3E%3Cpath d='M1.25 0L1.5 0.9L2.5 1.25L1.5 1.6L1.25 2.5L1 1.6L0 1.25L1 0.9Z' fill='%23ffe49d' fill-opacity='0.5'/%3E%3C/svg%3E");
-  background-size: 72px 96px, 104px 128px, 132px 160px;
-  background-position: 0 0, 34px 52px, 12px 20px;
-  background-repeat: repeat;
-  animation:
-    scent-particles-float 14s linear infinite,
-    scent-particles-twinkle 3.4s ease-in-out infinite;
-  will-change: background-position, opacity;
-}
-
-@keyframes scent-particles-float {
-  0% {
-    background-position: 0 0, 34px 52px, 12px 20px;
-  }
-  100% {
-    background-position: 0 -96px, 34px -76px, 12px -140px;
-  }
-}
-
-@keyframes scent-particles-twinkle {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scent-particles {
-    animation: none;
-    opacity: 0.6;
-  }
-}
 
 
