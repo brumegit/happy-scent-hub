@@ -265,55 +265,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     }
   }
 
-  async function push(nextIntensity: Intensity, nextSchedule: DaySchedule[]) {
-    setPushing(true);
-    setResult("idle");
-    setError(null);
-    try {
-      await pushSettings({
-        deviceId: diffuser.device_id,
-        schedule: nextSchedule,
-        intensity: nextIntensity,
-        hardwareName: hardwareName(diffuser.name, diffuser.room),
-      });
-      updateDiffuser(diffuser.id, {
-        intensity: nextIntensity,
-        schedule: nextSchedule,
-        last_pushed_at: new Date().toISOString(),
-        last_pushed_intensity: nextIntensity,
-        last_pushed_schedule: nextSchedule,
-      });
 
-      setDraft(null);
-      setResult("success");
-      setTimeout(() => {
-        setResult("idle");
-        setPushing(false);
-      }, 1400);
-    } catch (err) {
-      setError((err as Error).message || "Could not reach the diffuser.");
-      setResult("error");
-      setTimeout(() => {
-        setResult("idle");
-        setPushing(false);
-      }, 2400);
-    }
-  }
 
-  if (pushing) {
-    return (
-      <article className="border border-border p-7">
-        <StatusButton
-          state={result === "idle" ? "pairing" : result}
-          icon={result !== "idle"}
-          label={result === "success" ? "OK" : result === "error" ? "Error" : "Sending"}
-        />
-        {result === "error" && error && (
-          <p className="mt-4 text-center text-sm text-destructive">{error}</p>
-        )}
-      </article>
-    );
-  }
 
   return (
     <article className="border border-border p-7" style={{ boxShadow: "var(--shadow-soft)" }}>
