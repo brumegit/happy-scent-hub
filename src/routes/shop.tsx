@@ -1,27 +1,53 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 
-import { AppHeader } from "@/components/AppHeader";
-import { CartDrawer } from "@/components/CartDrawer";
 import { GuestBanner } from "@/components/GuestBanner";
-import { Button } from "@/components/ui/button";
-import { fetchProducts, formatPrice, type ShopifyProduct } from "@/lib/shopify";
-
 
 const STORE_URL = "https://brume.me";
+
+function platformMedium(): string {
+  if (typeof window !== "undefined") {
+    const ua = window.navigator.userAgent || "";
+    if (/android/i.test(ua)) return "Android";
+    if (/iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document)) {
+      return "iOS";
+    }
+  }
+  // Capacitor native: infer from platform at runtime when available
+  return "iOS";
+}
+
+async function openStore() {
+  let medium = platformMedium();
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform()) {
+      const platform = Capacitor.getPlatform();
+      medium = platform === "android" ? "Android" : "iOS";
+      const url = `${STORE_URL}/?utm_source=App&utm_medium=${medium}&utm_content=Shop`;
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url, presentationStyle: "fullscreen", toolbarColor: "#000000" });
+      return;
+    }
+  } catch {
+    // fall through to default browser
+  }
+  const url = `${STORE_URL}/?utm_source=App&utm_medium=${medium}&utm_content=Shop`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
 export const Route = createFileRoute("/shop")({
   head: () => ({
     meta: [
-      { title: "Scent refills | Brume" },
+      { title: "Shop | Brume" },
       {
         name: "description",
-        content: "Order Brume scent refills in a tap: live availability and prices from the Brume store.",
+        content: "Browse the full Brume store and order scent refills and diffusers.",
       },
-      { property: "og:title", content: "Scent refills | Brume" },
+      { property: "og:title", content: "Shop | Brume" },
       {
         property: "og:description",
-        content: "Order Brume scent refills in a tap: live availability and prices from the Brume store.",
+        content: "Browse the full Brume store and order scent refills and diffusers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -30,108 +56,25 @@ export const Route = createFileRoute("/shop")({
   component: ShopPage,
 });
 
-async function openStore(path = "/") {
-  const url = `${STORE_URL}${path}`;
-  try {
-    const { Capacitor } = await import("@capacitor/core");
-    if (Capacitor.isNativePlatform()) {
-      const { Browser } = await import("@capacitor/browser");
-      await Browser.open({ url, presentationStyle: "fullscreen", toolbarColor: "#000000" });
-      return;
-    }
-  } catch {
-    // fall through to a normal tab
-  }
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-function isRefill(product: ShopifyProduct) {
-  const haystack = `${product.node.title} ${product.node.productType}`.toLowerCase();
-  return !haystack.includes("diffuser");
-}
-
-function inStock(product: ShopifyProduct) {
-  return product.node.variants.edges.some((v) => v.node.availableForSale);
-}
-
-function RefillCard({ product }: { product: ShopifyProduct }) {
-  const node = product.node;
-  const image = node.images.edges[0]?.node;
-  const price = Number.parseFloat(node.priceRange.minVariantPrice.amount);
-  const perDay = price / 2 / 60;
-
-  return (
-    <Link to="/product/$handle" params={{ handle: node.handle }} className="flex flex-col">
-      {image && (
-        <img
-          src={image.url}
-          alt={image.altText ?? node.title}
-          loading="lazy"
-          className="w-full object-contain"
-        />
-      )}
-      <div className="px-6 pb-6">
-        <h2 className="mt-3 text-base normal-case text-black">
-          {node.title} ·{" "}
-          {formatPrice(node.priceRange.minVariantPrice.amount, node.priceRange.minVariantPrice.currencyCode)}
-        </h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          Starting at {formatPrice(perDay.toFixed(2), node.priceRange.minVariantPrice.currencyCode)} / day
-        </p>
-      </div>
-    </Link>
-  );
-}
-
-
 function ShopPage() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => fetchProducts(),
-  });
-
-  const refills = (data ?? []).filter((p) => isRefill(p) && inStock(p));
+  useEffect(() => {
+    void openStore();
+  }, []);
 
   return (
     <div className="relative flex min-h-screen flex-col">
       <GuestBanner />
       <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col">
-        <div className="px-6 py-8">
-          <AppHeader />
+        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+          <p className="text-base text-neutral-400">Opening the Brume store…</p>
+          <button
+            type="button"
+            onClick={() => void openStore()}
+            className="mt-6 text-sm underline decoration-dotted underline-offset-4"
+          >
+            Tap here if it doesn't open
+          </button>
         </div>
-
-        <main className="flex-1 bg-white text-black">
-          <div className="px-6 pt-10 pb-24">
-            <div className="flex items-center justify-between gap-4">
-              <h1 className="font-display text-4xl leading-tight">Scent refills</h1>
-              <CartDrawer />
-            </div>
-
-            {isLoading && (
-              <div className="mt-8 grid grid-cols-2 gap-px -mx-6">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-64 animate-pulse bg-neutral-200" />
-                ))}
-              </div>
-            )}
-
-            {!isLoading && refills.length === 0 && (
-              <p className="mt-16 text-center text-sm text-neutral-500">No products found.</p>
-            )}
-
-            {!isLoading && refills.length > 0 && (
-              <div className="mt-8 grid grid-cols-2 gap-px -mx-6">
-                {refills.map((product) => (
-                  <RefillCard key={product.node.id} product={product} />
-                ))}
-              </div>
-            )}
-
-            <Button variant="default" className="mt-10 h-14 w-full" onClick={() => void openStore("/")}>
-              Open the full store
-            </Button>
-          </div>
-        </main>
       </div>
     </div>
   );
