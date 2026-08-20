@@ -92,7 +92,7 @@ function Setup() {
   const [room, setRoom] = useState(editing?.room ?? "");
   const [roomTouched, setRoomTouched] = useState(false);
   const [intensity, setIntensity] = useState<Intensity>(editing?.intensity ?? "high");
-  const [schedule, setSchedule] = useState<DaySchedule[]>(editing?.schedule ?? defaultSchedule);
+  const [schedule, setSchedule] = useState<DaySchedule[]>(() => editing?.schedule ?? defaultSchedule());
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const autostarted = useRef(false);
@@ -188,7 +188,11 @@ function Setup() {
       <GuestBanner />
       <div className="mx-auto max-w-2xl px-6 py-8">
         <AppHeader />
-        <Steps phase={phase} />
+        {editing ? (
+          <h1 className="mt-8 font-display text-3xl">{editing.room}'s settings</h1>
+        ) : (
+          <Steps phase={phase} />
+        )}
         <div className="flex min-h-[calc(100vh-22rem)] flex-col justify-center pb-[4rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
