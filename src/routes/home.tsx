@@ -240,7 +240,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   async function disconnectDevice() {
     await disconnect(diffuser.device_id);
     setConnected(false);
-    setEditingSettings(false);
+    setMenuOpen(false);
     setMenuOpen(false);
   }
 
