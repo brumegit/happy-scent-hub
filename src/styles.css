@@ -271,70 +271,46 @@
 }
 
 
-/* Sparkles sampled from the orange-and-leaf artwork: amber, rind yellow,
-   burnt orange and leaf green specks drifting quickly upward and twinkling. */
+/* Thin 4-point sparkle stars in the artwork's amber, leaf-green and burnt
+   orange tones, drifting upward and twinkling. Half the volume of the prior
+   pass — sparser tiles, thinner stars, sharper twinkle. */
 .scent-particles {
   background-image:
-    radial-gradient(circle, rgba(255, 224, 158, 1) 0 1.3px, transparent 2.2px),
-    radial-gradient(circle, rgba(186, 216, 128, 0.95) 0 1.5px, transparent 2.4px),
-    radial-gradient(circle, rgba(255, 168, 74, 0.9) 0 1.2px, transparent 2px),
-    radial-gradient(circle, rgba(255, 246, 214, 0.95) 0 0.9px, transparent 1.8px);
-  background-size: 110px 110px, 150px 150px, 190px 190px, 90px 90px;
-  background-position: 0 0, 40px 70px, 90px 20px, 25px 55px;
+    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2724%27%20height=%2724%27%3E%3Cpath%20fill=%27rgb%28255%20224%20158%29%27%20fill-opacity=%270.95%27%20d=%27M12%200%20Q12%2010%2013%2011%20Q24%2012%2013%2013%20Q12%2014%2012%2024%20Q12%2014%2011%2013%20Q0%2012%2011%2011%20Q12%2010%2012%200%20Z%27/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2724%27%20height=%2724%27%3E%3Cpath%20fill=%27rgb%28186%20216%20128%29%27%20fill-opacity=%270.85%27%20d=%27M12%200%20Q12%2010%2013%2011%20Q24%2012%2013%2013%20Q12%2014%2012%2024%20Q12%2014%2011%2013%20Q0%2012%2011%2011%20Q12%2010%2012%200%20Z%27/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2724%27%20height=%2724%27%3E%3Cpath%20fill=%27rgb%28255%20168%2074%29%27%20fill-opacity=%270.8%27%20d=%27M12%200%20Q12%2010%2013%2011%20Q24%2012%2013%2013%20Q12%2014%2012%2024%20Q12%2014%2011%2013%20Q0%2012%2011%2011%20Q12%2010%2012%200%20Z%27/%3E%3C/svg%3E");
+  background-size: 150px 150px, 210px 210px, 260px 260px;
+  background-position: 0 0, 80px 100px, 30px 40px;
+  background-repeat: repeat;
   animation:
-    scent-particles-float 7s linear infinite,
+    scent-particles-float 6s linear infinite,
     scent-particles-twinkle 2.6s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
-/* Second, faster sparkle layer for depth. */
-.scent-particles::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle, rgba(255, 236, 190, 1) 0 1px, transparent 1.8px),
-    radial-gradient(circle, rgba(160, 204, 96, 0.9) 0 1.1px, transparent 1.9px);
-  background-size: 70px 70px, 130px 130px;
-  background-position: 15px 30px, 60px 10px;
-  animation:
-    scent-particles-float-fast 4.5s linear infinite,
-    scent-particles-twinkle 1.7s ease-in-out infinite alternate;
-}
-
 @keyframes scent-particles-float {
   0% {
-    background-position: 0 0, 40px 70px, 90px 20px, 25px 55px;
+    background-position: 0 0, 80px 100px, 30px 40px;
   }
   100% {
-    background-position: 18px -110px, 58px -80px, 72px -190px, 5px -90px;
-  }
-}
-
-@keyframes scent-particles-float-fast {
-  0% {
-    background-position: 15px 30px, 60px 10px;
-  }
-  100% {
-    background-position: 0 -40px, 78px -120px;
+    background-position: 16px -150px, 100px -110px, 6px -260px;
   }
 }
 
 @keyframes scent-particles-twinkle {
   0%,
   100% {
-    opacity: 0.35;
+    opacity: 0.3;
   }
   50% {
-    opacity: 1;
+    opacity: 0.85;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scent-particles,
-  .scent-particles::after {
+  .scent-particles {
     animation: none;
-    opacity: 0.7;
+    opacity: 0.6;
   }
 }
 
