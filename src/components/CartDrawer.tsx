@@ -36,14 +36,18 @@ export function CartDrawer() {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
+        <button
+          type="button"
+          aria-label="Open cart"
+          className="relative flex h-9 w-9 items-center justify-center text-black hover:text-neutral-400"
+        >
           <ShoppingCart className="h-5 w-5" />
           {totalItems > 0 && (
-            <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
+            <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-[0.65rem] font-semibold leading-none text-white">
               {totalItems}
-            </Badge>
+            </span>
           )}
-        </Button>
+        </button>
       </SheetTrigger>
       <SheetContent className="flex h-full w-full flex-col sm:max-w-lg">
         <SheetHeader className="flex-shrink-0">
