@@ -22,9 +22,8 @@ async function openStore() {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform()) {
-      const { Device } = await import("@capacitor/device");
-      const info = await Device.getInfo();
-      medium = info.platform === "android" ? "Android" : "iOS";
+      const platform = Capacitor.getPlatform();
+      medium = platform === "android" ? "Android" : "iOS";
       const url = `${STORE_URL}/?utm_source=App&utm_medium=${medium}&utm_content=Shop`;
       const { Browser } = await import("@capacitor/browser");
       await Browser.open({ url, presentationStyle: "fullscreen", toolbarColor: "#000000" });
