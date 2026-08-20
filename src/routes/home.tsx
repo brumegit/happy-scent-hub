@@ -173,11 +173,9 @@ function BatteryIndicator({ deviceId }: { deviceId: string | null }) {
 
 
 function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
+  const navigate = useNavigate();
   const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
   const removeDiffuser = useDiffuserStore((s) => s.removeDiffuser);
-  const [draft, setDraft] = useState<DaySchedule[] | null>(null);
-  const [pushing, setPushing] = useState(false);
-  const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -188,7 +186,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(diffuser.name);
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
-  const [editingSettings, setEditingSettings] = useState(false);
+
   // Only the room name is broadcast over Bluetooth, so only it is validated.
   const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
   const combinedDraftError = roomDraftError
