@@ -96,7 +96,18 @@ function Setup() {
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const autostarted = useRef(false);
-
+  // The store rehydrates from local storage after the first render, so adopt the
+  // diffuser's saved settings as soon as it appears.
+  const loadedEdit = useRef(false);
+  useEffect(() => {
+    if (!editing || loadedEdit.current) return;
+    loadedEdit.current = true;
+    setDeviceId(editing.device_id);
+    setRoom(editing.room);
+    setIntensity(editing.intensity);
+    setSchedule(editing.schedule);
+    setPhase("intensity");
+  }, [editing]);
 
 
   async function handlePair() {
