@@ -341,7 +341,9 @@ function Setup() {
           <section className="mt-8 space-y-6 border border-border p-7 animate-fade-in">
             <button
               type="button"
-              onClick={() => setPhase("name")}
+              onClick={() =>
+                editing ? void navigate({ to: "/home" }) : setPhase("name")
+              }
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="size-4" aria-hidden />
@@ -437,6 +439,18 @@ function Setup() {
               label="Confirm"
               onClick={() =>
                 void push("schedule", () => {
+                  if (editing) {
+                    updateDiffuser(editing.id, {
+                      intensity,
+                      schedule,
+                      schedule_active: true,
+                      last_pushed_at: new Date().toISOString(),
+                      last_pushed_intensity: intensity,
+                      last_pushed_schedule: schedule,
+                    });
+                    navigate({ to: "/home", replace: true });
+                    return;
+                  }
                   addDiffuser({
                     name: name.trim() || DEFAULT_NAME,
                     room: room.trim(),
