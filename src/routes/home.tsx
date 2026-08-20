@@ -273,6 +273,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     >
       {/* Slow abstract wash drawn from the scent artwork; kept dark for text contrast. */}
       <div aria-hidden className="scent-wash pointer-events-none absolute inset-0 -z-10" />
+      <div aria-hidden className="scent-particles pointer-events-none absolute inset-0 -z-10" />
       {editingName && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6">
           <div
