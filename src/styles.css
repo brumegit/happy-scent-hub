@@ -277,8 +277,8 @@
 .scent-wash {
   background:
     radial-gradient(58% 52% at 16% 20%, rgba(226, 106, 18, 0.62), transparent 70%),
-    radial-gradient(50% 46% at 84% 14%, rgba(255, 186, 66, 0.5), transparent 72%),
-    radial-gradient(62% 56% at 78% 86%, rgba(86, 122, 40, 0.58), transparent 74%),
+    radial-gradient(50% 46% at 86% 12%, rgba(255, 190, 74, 0.58), transparent 72%),
+    radial-gradient(66% 58% at 80% 84%, rgba(104, 152, 44, 0.78), transparent 74%),
     radial-gradient(48% 44% at 26% 94%, rgba(158, 54, 12, 0.5), transparent 72%),
     radial-gradient(40% 38% at 52% 48%, rgba(214, 148, 38, 0.34), transparent 76%);
   filter: blur(30px) saturate(135%);
@@ -292,7 +292,7 @@
   position: absolute;
   inset: -18%;
   background:
-    radial-gradient(38% 34% at 30% 70%, rgba(122, 156, 52, 0.5), transparent 72%),
+    radial-gradient(44% 40% at 24% 64%, rgba(132, 176, 58, 0.66), transparent 72%),
     radial-gradient(34% 32% at 70% 34%, rgba(238, 128, 26, 0.48), transparent 72%),
     radial-gradient(30% 28% at 44% 16%, rgba(255, 206, 110, 0.32), transparent 74%);
   filter: blur(38px);
@@ -305,7 +305,7 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.34) 45%, rgba(0, 0, 0, 0.6));
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3) 45%, rgba(0, 0, 0, 0.55));
 }
 
 /* Floating pollen-like particles. */
