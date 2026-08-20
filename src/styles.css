@@ -276,11 +276,11 @@
    A dark veil sits above the pigments so foreground text stays readable. */
 .scent-wash {
   background:
-    radial-gradient(58% 52% at 16% 20%, rgba(226, 106, 18, 0.62), transparent 70%),
-    radial-gradient(50% 46% at 86% 12%, rgba(255, 190, 74, 0.58), transparent 72%),
-    radial-gradient(60% 60% at 12% 82%, rgba(116, 176, 60, 0.85), transparent 72%),
-    radial-gradient(52% 48% at 88% 92%, rgba(196, 68, 14, 0.6), transparent 72%),
-    radial-gradient(40% 38% at 52% 48%, rgba(214, 148, 38, 0.34), transparent 76%);
+    radial-gradient(58% 52% at 16% 20%, rgba(236, 112, 20, 0.95), transparent 70%),
+    radial-gradient(50% 46% at 86% 12%, rgba(255, 196, 86, 0.8), transparent 72%),
+    radial-gradient(60% 60% at 12% 82%, rgba(126, 190, 64, 1), transparent 72%),
+    radial-gradient(52% 48% at 88% 92%, rgba(206, 74, 16, 0.85), transparent 72%),
+    radial-gradient(40% 38% at 52% 48%, rgba(224, 158, 44, 0.6), transparent 76%);
   filter: blur(34px) saturate(150%);
   animation: scent-wash-drift 24s ease-in-out infinite alternate;
   will-change: transform, opacity;
@@ -305,7 +305,7 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.22) 45%, rgba(0, 0, 0, 0.48));
+    linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.42) 45%, rgba(0, 0, 0, 0.62));
 }
 
 /* Floating pollen-like particles. */
