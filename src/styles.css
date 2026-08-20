@@ -311,13 +311,13 @@
 /* Floating pollen-like particles. */
 .scent-particles {
   background-image:
-    radial-gradient(circle, rgba(255, 214, 138, 0.9) 0 1.1px, transparent 1.6px),
-    radial-gradient(circle, rgba(178, 206, 122, 0.75) 0 1.3px, transparent 1.8px),
+    radial-gradient(circle, rgba(255, 220, 150, 0.95) 0 1.4px, transparent 2px),
+    radial-gradient(circle, rgba(186, 216, 128, 0.85) 0 1.6px, transparent 2.3px),
     radial-gradient(circle, rgba(255, 176, 88, 0.6) 0 1.6px, transparent 2.2px);
   background-size: 120px 120px, 170px 170px, 230px 230px;
   background-position: 0 0, 40px 70px, 90px 20px;
   animation: scent-particles-float 30s linear infinite;
-  opacity: 0.75;
+  opacity: 0.9;
   will-change: transform;
 }
 
