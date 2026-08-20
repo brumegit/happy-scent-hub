@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
+import orangeAsset from "@/assets/orange.png.asset.json";
 import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
@@ -34,13 +35,13 @@ import {
 import { pushName, pushSettings } from "@/lib/push";
 import {
   INTENSITIES,
-  activeDays,
+  blocksFromSchedule,
+  routineName,
   hardwareName,
-  formatDays,
   formatMinuteRanges,
   dayRanges,
-  formatScheduleLines,
   formatSeconds,
+
 
   intensityPreset,
   scheduleStatus,
@@ -316,8 +317,19 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       )}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
-          <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
+          <div className="flex items-start gap-3">
+            {/* Scent visual, sized to the room + device name block. */}
+            <img
+              src={orangeAsset.url}
+              alt=""
+              aria-hidden
+              className="h-14 w-14 shrink-0 self-start object-contain"
+            />
+            <div>
+              <h2 className="font-display text-2xl tracking-wide">{diffuser.room}</h2>
+              <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
+            </div>
+          </div>
           {connected && (
             <div className="mt-4 flex items-center gap-4">
               <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
@@ -328,6 +340,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             </div>
           )}
         </div>
+
         <div className="relative flex items-center gap-3">
           <button
             type="button"
@@ -432,7 +445,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             label={connecting ? "Searching" : "Tap to edit"}
             onClick={() => void connect()}
           />
-          {error && <p className="mt-3 text-center text-sm text-destructive">{error}</p>}
+          {error && <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>}
           <div className="mt-4">
             <LastSettings
               diffuser={diffuser}
@@ -496,7 +509,8 @@ function LastSettings({
   // Report exactly what was last written to the hardware, not the current draft.
   const pushedSchedule = diffuser.last_pushed_schedule ?? diffuser.schedule;
   const preset = intensityPreset(diffuser.last_pushed_intensity ?? diffuser.intensity);
-  const lines = formatScheduleLines(pushedSchedule);
+  // Routine names describe the pushed time blocks better than raw day/hour lines.
+  const routines = blocksFromSchedule(pushedSchedule).map(routineName);
   return (
     <div className="border border-border">
       <button
@@ -528,15 +542,13 @@ function LastSettings({
             </dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Days</dt>
-            <dd>{formatDays(activeDays(pushedSchedule))}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="shrink-0 text-muted-foreground">Hours</dt>
+            <dt className="shrink-0 text-muted-foreground">Routines</dt>
             <dd className="space-y-1 text-right">
-              {lines.map((line) => (
-                <div key={line}>{line}</div>
-              ))}
+              {routines.length ? (
+                routines.map((name, i) => <div key={`${name}-${i}`}>{name}</div>)
+              ) : (
+                <div>No routine</div>
+              )}
             </dd>
           </div>
         </dl>

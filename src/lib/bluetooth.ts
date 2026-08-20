@@ -268,7 +268,7 @@ export async function pairDiffuser(opts?: {
   if (await isNativePlatform()) {
     const found = await scanForDiffuser(preferName);
     if (!found) {
-      throw new Error("No diffuser found. Double-tap the button and try again.");
+      throw new Error("No diffuser found.\nDouble-tap the button and try again.");
     }
     const responses = createResponseChannel((frame) => captureBattery(found.deviceId, frame));
     const target = await connectNative(found.deviceId, (value) => responses.receive(value));
@@ -325,7 +325,7 @@ export async function pairDiffuser(opts?: {
       return { deviceId: device.id, suggestedName: suggested };
     } catch (error) {
       if ((error as Error)?.name === "NotFoundError") {
-        throw new Error("No device selected. Double-tap the button and try again.");
+        throw new Error("No device selected.\nDouble-tap the button and try again.");
       }
       // Fall through to simulated pairing on unsupported/blocked environments.
     }

@@ -129,7 +129,7 @@ function Setup() {
       setPhase("paired");
     } catch (err) {
       setPhase("idle");
-      toast.error((err as Error).message);
+      toast.error((err as Error).message, { className: "whitespace-pre-line" });
     }
   }
 
