@@ -28,6 +28,7 @@ import {
   disconnect,
   getBatteryStatus,
   pairDiffuser,
+  requestBattery,
   subscribeBattery,
 } from "@/lib/bluetooth";
 import { pushName, pushSettings } from "@/lib/push";
