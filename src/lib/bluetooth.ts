@@ -8,6 +8,9 @@
  */
 import {
   buildGetTimers,
+  buildQueryDeviceInfo,
+  buildReportAck,
+  isStatusReport,
   parseBatteryReport,
   parseTimerListResponse,
   toHex,
