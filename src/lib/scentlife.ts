@@ -177,3 +177,69 @@ export function buildSetBroadcastName(name: string, moduleType: string = "A") {
     ...bytes,
   ]);
 }
+
+/** Uplink status reports that carry a battery reading. */
+export const FN_BATTERY_STATUS = 0x22;
+export const FN_STATUS_REPORT_2 = 0x23;
+
+export type BatteryStatus = {
+  /** Remaining charge, 0-100. */
+  percent: number;
+  charging: boolean;
+  dcPowered: boolean;
+  lowBattery: boolean;
+};
+
+/**
+ * Extracts the battery reading from a spontaneous status report (0x22 or 0x23).
+ * The device pushes these on its own schedule; there is no read-on-demand
+ * command in the protocol, so the app surfaces the last reported value.
+ */
+export function parseBatteryReport(frame: Uint8Array): BatteryStatus | null {
+  if (frame.length < 8 || frame[0] !== 0x55 || frame[1] !== 0xaa) return null;
+  const fn = frame[3];
+  // Content byte k (1-indexed in the spec) lives at frame[3 + k].
+  const at = (k: number) => frame[3 + k] ?? 0;
+
+  if (fn === FN_BATTERY_STATUS) {
+    const count = ((at(3) << 8) | at(4)) || 1;
+    const groupsEnd = 4 + 2 * count;
+    // The spec's byte map is 1-off ambiguous around the status group; pick the
+    // offset whose voltage/percentage pair is physically plausible.
+    for (const base of [groupsEnd, groupsEnd + 1]) {
+      const voltage = (at(base + 2) << 8) | at(base + 3);
+      const percent = at(base + 4);
+      if (percent <= 100 && voltage >= 2000 && voltage <= 30000) {
+        const working = (at(5) << 8) | at(6);
+        return {
+          percent,
+          charging: !!(working & 0x0100),
+          dcPowered: !!(working & 0x0080),
+          lowBattery: !!(working & 0x0040),
+        };
+      }
+    }
+    return null;
+  }
+
+  if (fn === FN_STATUS_REPORT_2) {
+    const statusLen = at(21);
+    const statusStart = 22;
+    const working = (at(statusStart) << 8) | at(statusStart + 1);
+    const liquidLenAt = statusStart + statusLen;
+    const liquidLen = at(liquidLenAt);
+    const batteryLenAt = liquidLenAt + 1 + liquidLen;
+    const batteryLen = at(batteryLenAt);
+    if (!batteryLen) return null;
+    const percent = at(batteryLenAt + 1);
+    if (percent > 100) return null;
+    return {
+      percent,
+      charging: !!(working & 0x0100),
+      dcPowered: !!(working & 0x0080),
+      lowBattery: !!(working & 0x0040),
+    };
+  }
+
+  return null;
+}

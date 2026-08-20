@@ -8,8 +8,10 @@
  */
 import {
   buildGetTimers,
+  parseBatteryReport,
   parseTimerListResponse,
   toHex,
+  type BatteryStatus,
   type TimerSlot,
 } from "@/lib/scentlife";
 import {
@@ -48,9 +50,33 @@ type Link = {
 
 const links = new Map<string, Link>();
 
+/** Last battery reading pushed by each device (the protocol has no read command). */
+const batteries = new Map<string, BatteryStatus>();
+const batteryListeners = new Set<() => void>();
+
+function captureBattery(deviceId: string, frame: Uint8Array) {
+  const status = parseBatteryReport(frame);
+  if (!status) return;
+  batteries.set(deviceId, status);
+  batteryListeners.forEach((listener) => listener());
+}
+
+/** Last known battery status for a device, or null when it has not reported yet. */
+export function getBatteryStatus(deviceId: string | null): BatteryStatus | null {
+  return (deviceId && batteries.get(deviceId)) || null;
+}
+
+/** Subscribes to battery updates; returns an unsubscribe function. */
+export function subscribeBattery(listener: () => void) {
+  batteryListeners.add(listener);
+  return () => {
+    batteryListeners.delete(listener);
+  };
+}
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function createResponseChannel() {
+function createResponseChannel(onFrame?: (frame: Uint8Array) => void) {
   let buffer = new Uint8Array();
   const pending: { fn: number; resolve: (frame: Uint8Array) => void }[] = [];
 
@@ -71,6 +97,7 @@ function createResponseChannel() {
       const frame = buffer.slice(0, frameLength);
       buffer = buffer.slice(frameLength);
       console.info("[ScentLife] RX", toHex(frame));
+      onFrame?.(frame);
       const waiterIndex = pending.findIndex((entry) => entry.fn === frame[3]);
       if (waiterIndex >= 0) pending.splice(waiterIndex, 1)[0]?.resolve(frame);
     }
@@ -134,7 +161,7 @@ async function attachLink(device: {
   const server = await device.gatt?.connect();
   if (!server) return false;
   const services = await server.getPrimaryServices();
-  const responses = createResponseChannel();
+  const responses = createResponseChannel((frame) => captureBattery(device.id, frame));
 
   let writable: Char | undefined;
   let writableWithNotify: Char | undefined;
@@ -216,7 +243,7 @@ export async function pairDiffuser(opts?: {
     if (!found) {
       throw new Error("No diffuser found. Double-tap the button and try again.");
     }
-    const responses = createResponseChannel();
+    const responses = createResponseChannel((frame) => captureBattery(found.deviceId, frame));
     const target = await connectNative(found.deviceId, (value) => responses.receive(value));
     if (target) {
       const write = async (frame: Uint8Array) => {
