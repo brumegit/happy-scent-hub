@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
-import orangeAsset from "@/assets/orange.png.asset.json";
+
 import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
