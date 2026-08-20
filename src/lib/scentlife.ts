@@ -179,8 +179,34 @@ export function buildSetBroadcastName(name: string, moduleType: string = "A") {
 }
 
 /** Uplink status reports that carry a battery reading. */
+export const FN_STATUS_REPORT = 0x21;
 export const FN_BATTERY_STATUS = 0x22;
 export const FN_STATUS_REPORT_2 = 0x23;
+/** 0x09 — query command; type 0x01 asks the module for its device info. */
+export const FN_QUERY = 0x09;
+
+/**
+ * Nudges the module to talk: the query itself returns device info (no battery),
+ * but the modules push their runtime status report right after being polled.
+ */
+export function buildQueryDeviceInfo() {
+  return buildFrame(FN_QUERY, [0x01]);
+}
+
+/**
+ * Acknowledgment for a spontaneous uplink report (0x21/0x22/0x23 -> 0xA1/0xA2/0xA3).
+ * Modules stop reporting when the app never confirms, which is why the battery
+ * level would otherwise never appear.
+ */
+export function buildReportAck(fn: number) {
+  return buildFrame((fn + 0x80) & 0xff, [0x00]);
+}
+
+/** True when the frame is a status report the app must acknowledge. */
+export function isStatusReport(fn: number) {
+  return fn === FN_STATUS_REPORT || fn === FN_BATTERY_STATUS || fn === FN_STATUS_REPORT_2;
+}
+
 
 export type BatteryStatus = {
   /** Remaining charge, 0-100. */
