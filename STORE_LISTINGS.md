@@ -6,9 +6,45 @@ into each console. Update version numbers in the native projects, not here.
 ## Identity
 - **App name:** Brume
 - **Bundle ID / Application ID:** `me.brume.app`
-- **Developer:** Brume (Florian Mariencourt)
+- **Developer:** BRUME LLC (Miami, FL)
+- **App Store seller name:** BRUME LLC (requires Organization enrollment — see below)
+- **Google Play developer name:** BRUME LLC (set freely, no D-U-N-S required)
 - **Primary category:** Lifestyle (secondary: Health & Fitness optional)
 - **Content rating:** All ages — no user-generated content, no mature themes.
+
+---
+
+## Apple Developer enrollment notes
+
+Enroll as an **Organization** so the App Store seller name displays as "BRUME LLC".
+An Individual enrollment shows the personal legal name and cannot display a company name.
+
+### D-U-N-S Number (required, free)
+- Only **BRUME LLC** (Miami, FL) needs one. SOUS MARIN SASU (French parent) and
+  Florian personally do **not** need a D-U-N-S.
+- Start at https://developer.apple.com/support/D-U-N-S/ → links to the D&B lookup
+  used by Apple.
+- Or D&B direct: https://www.dnb.com/duns-number/ → choose the free
+  "Get a D-U-N-S Number" (decline paid expedite / credit products).
+- Match the legal name + address **exactly** to the Florida Division of Corporations
+  filing — verify BRUME LLC is active on https://search.sunbiz.org first.
+- Use a business email on a domain you control (e.g. @brume.me), not a personal one.
+- Typical turnaround: 1–5 business days, up to ~2 weeks.
+
+### Authority to bind (if Apple requests)
+- Provide BRUME LLC's **operating agreement**, or
+- A **corporate resolution** from SOUS MARIN SASU (sole member) authorizing Florian
+  to act for BRUME LLC.
+
+### Fallback path (start fast, convert later)
+- Enroll as an **Individual now** to start the App Store review clock and upload the
+  build; request the D-U-N-S in parallel.
+- Once the D-U-N-S is verified, convert the account **Individual → Organization**.
+  The app, bundle ID, and build carry over — only the seller name flips to "BRUME LLC".
+
+### Review timing
+- Apple review: ~1–2 days after upload.
+- Google Play: separate process; publisher name is set freely, no D-U-N-S required.
 
 ---
 
