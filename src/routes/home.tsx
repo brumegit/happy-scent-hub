@@ -1,10 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  Battery,
-  BatteryCharging,
-  BatteryLow,
-  Bluetooth,
   CalendarClock,
   ChevronDown,
   Gauge,
