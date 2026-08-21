@@ -85,9 +85,6 @@ function PrivacyPage() {
         <AppHeader />
 
         <h1 className="mt-10 font-display text-4xl">Privacy policy</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Pulled live from brume.me, so it always matches the published policy.
-        </p>
 
         {!body && !failed && (
           <div className="mt-8 space-y-3">
