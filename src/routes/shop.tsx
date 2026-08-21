@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
 
+import { AppHeader } from "@/components/AppHeader";
 import { GuestBanner } from "@/components/GuestBanner";
 
 const STORE_URL = "https://brume.me";
@@ -57,6 +59,8 @@ export const Route = createFileRoute("/shop")({
 });
 
 function ShopPage() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     void openStore();
   }, []);
@@ -64,8 +68,10 @@ function ShopPage() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <GuestBanner />
-      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col">
-        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6">
+        <AppHeader />
+
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
           <p className="text-base text-neutral-400">Opening the Brume store…</p>
           <button
             type="button"
@@ -75,6 +81,17 @@ function ShopPage() {
             Tap here if it doesn't open
           </button>
         </div>
+
+        <footer className="pb-8 pt-4">
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/home" })}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            Back to diffusers
+          </button>
+        </footer>
       </div>
     </div>
   );
