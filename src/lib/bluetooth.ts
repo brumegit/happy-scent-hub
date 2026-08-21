@@ -8,7 +8,7 @@
  */
 import {
   buildGetTimers,
-  buildQueryDeviceInfo,
+  buildQuery,
   buildReportAck,
   isStatusReport,
   parseBatteryReport,
@@ -17,6 +17,7 @@ import {
   type BatteryStatus,
   type TimerSlot,
 } from "@/lib/scentlife";
+import { pushDebug } from "@/stores/pushDebugStore";
 import {
   connectNative,
   isNativeConnected,
