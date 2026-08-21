@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
+  Bluetooth,
   CalendarClock,
   ChevronDown,
   Gauge,
