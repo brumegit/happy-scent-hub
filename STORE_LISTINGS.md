@@ -45,7 +45,7 @@ https://brume.me
 https://brume.me
 
 ### Privacy Policy URL
-https://project--b7e968af-080d-4dcf-b627-250d2e4b52ef.lovable.app/privacy
+https://happy-scent-hub.lovable.app/privacy
 
 ### Screenshots (required)
 - 6.9" iPhone (1290×2796) — mandatory
@@ -90,7 +90,7 @@ and are sent straight to your hardware over Bluetooth.
 Lifestyle
 
 ### Privacy Policy URL
-https://project--b7e968af-080d-4dcf-b627-250d2e4b52ef.lovable.app/privacy
+https://happy-scent-hub.lovable.app/privacy
 
 ### Target audience
 18+ (default; app is general use)
