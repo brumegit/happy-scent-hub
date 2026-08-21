@@ -61,6 +61,7 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   // Status reports must be acknowledged, otherwise the module stops sending
   // them and the battery level never refreshes.
   const fn = frame[3] ?? 0;
+  pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
     void links
       .get(deviceId)
@@ -69,6 +70,7 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   }
   const status = parseBatteryReport(frame);
   if (!status) return;
+  pushDebug().addLog(`Battery ${status.percent}%`);
   batteries.set(deviceId, status);
   batteryListeners.forEach((listener) => listener());
 }
@@ -89,16 +91,24 @@ export function subscribeBattery(listener: () => void) {
 /**
  * Polls the module so it emits a runtime status report (which carries the
  * battery percentage). The query command is silent — the diffuser does not beep.
+ * Different firmware revisions answer different query sub-types, so we probe
+ * the documented ones in sequence and keep whichever replies.
  */
 export async function requestBattery(deviceId: string | null) {
   const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) return;
-  try {
-    await link.write(buildQueryDeviceInfo());
-  } catch {
-    // Link dropped — the connection poll will surface it.
+  for (const subType of [0x01, 0x02, 0x03]) {
+    try {
+      pushDebug().addLog(`TX query 0x09 type=0x0${subType}`);
+      await link.write(buildQuery(subType));
+      await wait(250);
+    } catch {
+      // Link dropped — the connection poll will surface it.
+      return;
+    }
   }
 }
+
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
