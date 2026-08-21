@@ -190,7 +190,12 @@ export const FN_QUERY = 0x09;
  * but the modules push their runtime status report right after being polled.
  */
 export function buildQueryDeviceInfo() {
-  return buildFrame(FN_QUERY, [0x01]);
+  return buildQuery(0x01);
+}
+
+/** 0x09 query with an explicit sub-type (0x01 device info, 0x02/0x03 runtime status). */
+export function buildQuery(subType: number) {
+  return buildFrame(FN_QUERY, [subType & 0xff]);
 }
 
 /**
