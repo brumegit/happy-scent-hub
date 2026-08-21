@@ -130,7 +130,7 @@ function Home() {
           </>
         )}
 
-        <footer className="mt-auto pt-10 text-center">
+        <footer className="mt-auto pb-20 pt-10 text-center">
           <Link
             to="/privacy"
             className="text-xs text-muted-foreground hover:underline underline-offset-4"
