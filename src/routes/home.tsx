@@ -129,17 +129,7 @@ function Home() {
             </div>
           </>
         )}
-
-        <footer className="mt-auto pb-20 pt-10 text-center">
-          <Link
-            to="/privacy"
-            className="text-xs text-muted-foreground hover:underline underline-offset-4"
-          >
-            Privacy policy
-          </Link>
-        </footer>
       </div>
-
     </div>
   );
 }
