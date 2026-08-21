@@ -155,15 +155,13 @@ function BatteryIndicator({ deviceId }: { deviceId: string | null }) {
   }, [deviceId]);
 
   const low = !!status && (status.lowBattery || status.percent <= 20);
-  const Icon = status?.charging ? BatteryCharging : low ? BatteryLow : Battery;
   return (
     <p
-      className={`flex items-center gap-2 text-xs uppercase tracking-[0.18em] ${
+      className={`text-xs uppercase tracking-[0.18em] ${
         low ? "text-destructive" : "text-foreground"
       }`}
       aria-label={status ? `Battery ${status.percent} percent` : "Reading battery level"}
     >
-      <Icon className="size-4" aria-hidden />
       {status ? `${status.percent}%` : "--"}
     </p>
   );
