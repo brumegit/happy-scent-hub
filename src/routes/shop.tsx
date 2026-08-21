@@ -68,7 +68,7 @@ function ShopPage() {
   return (
     <div className="relative flex min-h-screen flex-col">
       <GuestBanner />
-      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6">
+      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-8">
         <AppHeader />
 
         <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -80,18 +80,16 @@ function ShopPage() {
           >
             Tap here if it doesn't open
           </button>
-        </div>
 
-        <footer className="pb-8 pt-4">
           <button
             type="button"
             onClick={() => navigate({ to: "/home" })}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            className="mt-[50px] flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-4" aria-hidden />
             Back to diffusers
           </button>
-        </footer>
+        </div>
       </div>
     </div>
   );
