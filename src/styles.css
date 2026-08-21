@@ -273,3 +273,53 @@
 
 
 
+
+/* Shopify policy HTML rendered inside the native app shell */
+.policy-body h2 {
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+  color: var(--foreground);
+  text-transform: none;
+}
+.policy-body h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+  color: var(--foreground);
+}
+.policy-body p {
+  margin-bottom: 0.9rem;
+}
+.policy-body ul,
+.policy-body ol {
+  margin: 0 0 1rem 1.1rem;
+  list-style: disc;
+}
+.policy-body ol {
+  list-style: decimal;
+}
+.policy-body li {
+  margin-bottom: 0.5rem;
+}
+.policy-body strong {
+  color: var(--foreground);
+  font-weight: 500;
+}
+.policy-body a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-word;
+}
+.policy-body table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+.policy-body td,
+.policy-body th {
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  text-align: left;
+}
