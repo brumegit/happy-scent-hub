@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "me.brume.app"
+    namespace = "me.brume.diffuser"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "me.brume.app"
+        applicationId "me.brume.diffuser"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

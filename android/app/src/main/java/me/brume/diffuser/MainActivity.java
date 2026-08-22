@@ -1,4 +1,4 @@
-package me.brume.app;
+package me.brume.diffuser;
 
 import com.getcapacitor.BridgeActivity;
 

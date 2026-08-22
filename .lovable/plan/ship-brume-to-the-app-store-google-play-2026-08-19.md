@@ -16,7 +16,7 @@ Prepare both native store builds in parallel:
 1. Add Android + iOS native projects.
    - `npx cap add android` → generates `android/`.
    - `npx cap add ios` → generates `ios/`.
-   - Both inherit appId `me.brume.app`, appName `Brume`.
+   - Both inherit appId `me.brume.diffuser`, appName `Brume`.
 
 2. Bluetooth permissions (required or the app crashes on BLE).
    - iOS `ios/App/App/Info.plist`:
