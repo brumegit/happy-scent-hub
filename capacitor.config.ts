@@ -5,8 +5,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // and Supabase keep working unchanged, while the native Bluetooth LE plugin
 // runs in the webview via the injected Capacitor bridge. The local webDir is a
 // minimal splash shown only while the remote app loads.
-const PRODUCTION_URL =
-  "https://project--b7e968af-080d-4dcf-b627-250d2e4b52ef.lovable.app";
+const PRODUCTION_URL = "https://happy-scent-hub.lovable.app";
 
 const config: CapacitorConfig = {
   appId: "me.brume.diffuser",
