@@ -43,7 +43,7 @@ npx cap open ios           # opens App.xcworkspace in Xcode
 ## 5. App Store Connect
 - https://appstoreconnect.apple.com → **My Apps → + → New App**.
   - Platforms: iOS. Name: Brume. Primary language: English.
-  - Bundle ID: `me.brume.app` (must match the signed archive).
+  - Bundle ID: `me.brume.diffuser` (must match the signed archive).
 - Under the new app → **App Store** tab → add listing (see `STORE_LISTINGS.md`):
   - Subtitle, description, keywords, support/marketing URLs, privacy policy URL.
   - Screenshots for 6.9" and 6.5" iPhones.

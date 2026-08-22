@@ -9,7 +9,7 @@ const PRODUCTION_URL =
   "https://project--b7e968af-080d-4dcf-b627-250d2e4b52ef.lovable.app";
 
 const config: CapacitorConfig = {
-  appId: "me.brume.app",
+  appId: "me.brume.diffuser",
   appName: "Brume",
   webDir: "native-shell",
   server: {

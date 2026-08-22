@@ -5,7 +5,7 @@ into each console. Update version numbers in the native projects, not here.
 
 ## Identity
 - **App name:** Brume
-- **Bundle ID / Application ID:** `me.brume.app`
+- **Bundle ID / Application ID:** `me.brume.diffuser`
 - **Developer:** BRUME LLC (Miami, FL)
 - **App Store seller name:** BRUME LLC (requires Organization enrollment — see below)
 - **Google Play developer name:** BRUME LLC (set freely, no D-U-N-S required)
