@@ -19,3 +19,24 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- Brume / Capacitor R8 rules ---
+# Capacitor discovers plugins and bridges methods via reflection + annotations.
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * {
+  @com.getcapacitor.PluginMethod public <methods>;
+  @com.getcapacitor.annotation.PermissionCallback <methods>;
+  @com.getcapacitor.annotation.ActivityCallback <methods>;
+}
+-keep public class * extends com.getcapacitor.Plugin { *; }
+-keep class com.getcapacitor.** { *; }
+-keep class org.apache.cordova.** { *; }
+-keep class me.brume.diffuser.** { *; }
+
+# JavaScript interfaces exposed to the WebView
+-keepclassmembers class * {
+  @android.webkit.JavascriptInterface <methods>;
+}
