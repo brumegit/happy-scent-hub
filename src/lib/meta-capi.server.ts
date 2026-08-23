@@ -41,8 +41,10 @@ function getClientIp(request: Request | null): string {
  * Failures are logged but never thrown — tracking must not break the app.
  */
 export async function sendCapiEvent(input: CapiEventInput): Promise<void> {
-  const pixelId = process.env["META_PIXEL_ID"];
+  // The access token is the only server-only secret. The Pixel ID is public
+  // (it's in the page source) so the client passes it in.
   const accessToken = process.env["META_CAPI_ACCESS_TOKEN"];
+  const pixelId = input.pixelId;
   if (!pixelId || !accessToken) return;
 
   const request = getRequest();
