@@ -8,6 +8,7 @@ import { createServerFn } from "@tanstack/react-start";
 export const trackMetaEvent = createServerFn({ method: "POST" })
   .inputValidator(
     (input: {
+      pixelId: string | undefined;
       eventName: string;
       eventId: string;
       customData: Record<string, unknown> | undefined;
@@ -21,6 +22,7 @@ export const trackMetaEvent = createServerFn({ method: "POST" })
     try {
       const { sendCapiEvent } = await import("./meta-capi.server");
       await sendCapiEvent({
+        pixelId: data.pixelId,
         eventName: data.eventName,
         eventId: data.eventId,
         eventTime: Date.now(),

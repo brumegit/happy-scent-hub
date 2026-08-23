@@ -59,9 +59,11 @@ export function trackEvent(
   const fbp = getFbp() ?? generateFbp();
   const fbc = getFbc() ?? undefined;
   const eventSourceUrl = window.location.href;
+  const pixelId = import.meta.env["VITE_META_PIXEL_ID"] as string | undefined;
 
   void trackMetaEvent({
     data: {
+      pixelId,
       eventName,
       eventId,
       customData: data,
