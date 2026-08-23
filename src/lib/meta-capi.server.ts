@@ -9,10 +9,10 @@ interface CapiEventInput {
   eventId: string;
   eventTime: number;
   customData: Record<string, unknown> | undefined;
-  email?: string | null;
-  fbp?: string;
-  fbc?: string;
-  eventSourceUrl?: string;
+  email: string | null | undefined;
+  fbp: string | undefined;
+  fbc: string | undefined;
+  eventSourceUrl: string | undefined;
 }
 
 /** SHA-256 hash a string and return hex — for PII hashing before sending to Meta. */
