@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PushDebugStrip } from "@/components/PushDebugStrip";
 import { ReadDebugStrip } from "@/components/ReadDebugStrip";
 import { useCartSync } from "@/hooks/useCartSync";
+import { initMetaPixel, trackEvent } from "@/lib/meta";
 
 
 function NotFoundComponent() {
