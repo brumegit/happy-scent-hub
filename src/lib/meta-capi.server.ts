@@ -5,6 +5,7 @@
 import { getRequest } from "@tanstack/react-start/server";
 
 interface CapiEventInput {
+  pixelId: string | undefined;
   eventName: string;
   eventId: string;
   eventTime: number;
