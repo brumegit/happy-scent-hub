@@ -2,7 +2,7 @@
 // The Pixel runs inside the Capacitor webview exactly like on a website —
 // no native SDK needed. All functions are SSR-safe (guarded by typeof window).
 
-const PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string | undefined;
+const PIXEL_ID = import.meta.env["VITE_META_PIXEL_ID"] as string | undefined;
 
 let initialized = false;
 

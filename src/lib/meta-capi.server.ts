@@ -8,7 +8,7 @@ interface CapiEventInput {
   eventName: string;
   eventId: string;
   eventTime: number;
-  customData?: Record<string, unknown>;
+  customData: Record<string, unknown> | undefined;
   email?: string | null;
   fbp?: string;
   fbc?: string;

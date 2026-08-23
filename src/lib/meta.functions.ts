@@ -10,11 +10,11 @@ export const trackMetaEvent = createServerFn({ method: "POST" })
     (input: {
       eventName: string;
       eventId: string;
-      customData?: Record<string, unknown>;
-      email?: string | null;
-      fbp?: string;
-      fbc?: string;
-      eventSourceUrl?: string;
+      customData: Record<string, unknown> | undefined;
+      email: string | null | undefined;
+      fbp: string | undefined;
+      fbc: string | undefined;
+      eventSourceUrl: string | undefined;
     }) => input,
   )
   .handler(async ({ data }) => {
