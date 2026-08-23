@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
 import {
@@ -127,6 +128,7 @@ function Setup() {
         if (live.schedule.some((d) => d.active)) setSchedule(live.schedule);
       }
       setPhase("paired");
+      trackEvent("Lead", { content_category: "diffuser_pairing" });
     } catch (err) {
       setPhase("idle");
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
@@ -451,6 +453,10 @@ function Setup() {
                     navigate({ to: "/home", replace: true });
                     return;
                   }
+                  trackEvent("CompleteRegistration", {
+                    content_name: name.trim() || DEFAULT_NAME,
+                    content_category: "diffuser_setup",
+                  });
                   addDiffuser({
                     name: name.trim() || DEFAULT_NAME,
                     room: room.trim(),

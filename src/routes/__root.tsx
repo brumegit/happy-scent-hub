@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PushDebugStrip } from "@/components/PushDebugStrip";
 import { ReadDebugStrip } from "@/components/ReadDebugStrip";
 import { useCartSync } from "@/hooks/useCartSync";
+import { initMetaPixel, trackEvent } from "@/lib/meta";
 
 
 function NotFoundComponent() {
@@ -127,6 +128,16 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useCartSync();
+
+  useEffect(() => {
+    // Initialise the Meta Pixel (loads base code + fires initial PageView).
+    initMetaPixel();
+    // Fire AppOpen once per browser session for retargeting and install attribution.
+    if (!sessionStorage.getItem("meta-app-open")) {
+      sessionStorage.setItem("meta-app-open", "1");
+      trackEvent("AppOpen", { source: "webview" }, true);
+    }
+  }, []);
 
 
 
