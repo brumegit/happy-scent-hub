@@ -22,6 +22,7 @@ import {
   connectNative,
   isNativeConnected,
   isNativePlatform,
+  isNativeSync,
   scanForDiffuser,
   writeNative,
 } from "@/lib/native-ble";
@@ -158,6 +159,9 @@ function createResponseChannel(onFrame?: (frame: Uint8Array) => void) {
 }
 
 export function isBluetoothSupported() {
+  // The native shell has no Web Bluetooth API — it pairs through the Capacitor
+  // BLE plugin instead, so it must still report as supported.
+  if (isNativeSync()) return true;
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
 }
 
@@ -277,7 +281,14 @@ export async function pairDiffuser(opts?: {
 
   // Native iOS / Android build: scan silently and auto-select the known unit.
   if (await isNativePlatform()) {
-    const found = await scanForDiffuser(preferName);
+    // Never fall back to the simulated link inside the native app: surface the
+    // real reason (permission refused, Bluetooth off, nothing advertising) so
+    // the user can fix it instead of silently landing in demo mode.
+    const found = await scanForDiffuser(preferName).catch((error: unknown) => {
+      throw error instanceof Error
+        ? error
+        : new Error("Bluetooth scan failed. Check that Bluetooth is on and try again.");
+    });
     if (!found) {
       throw new Error("No diffuser found.\nDouble-tap the button and try again.");
     }
