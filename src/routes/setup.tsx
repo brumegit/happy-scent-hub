@@ -307,7 +307,12 @@ function Setup() {
                   />
                 </div>
 
-                {phase === "idle" && !isBluetoothSupported() && (
+                {phase === "idle" && btOff && (
+                  <p className="mt-5 text-xs text-destructive">
+                    Bluetooth is off, turn it on to pair your diffuser.
+                  </p>
+                )}
+                {phase === "idle" && !btOff && !isBluetoothSupported() && (
                   <p className="mt-5 text-xs text-muted-foreground">
                     This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
                     so you can finish. Use Chrome or the mobile app for a real pairing.
