@@ -92,6 +92,9 @@ export function DevicePicker({
     connectedRef.current = false;
     setDevices([]);
     setConnectingId(null);
+    setScanError(null);
+    setSlowScan(false);
+    const slowTimer = setTimeout(() => !cancelled && setSlowScan(true), 12000);
 
     void (async () => {
       const granted = await ensureNativePermissions();
@@ -111,15 +114,17 @@ export function DevicePicker({
         }
         stopRef.current = stop;
       } catch (err) {
-        if (!cancelled) onErrorRef.current((err as Error).message || "Bluetooth scan failed.");
+        if (!cancelled) setScanError((err as Error).message || "Bluetooth scan failed.");
       }
     })();
 
     return () => {
       cancelled = true;
+      clearTimeout(slowTimer);
       void stopRef.current?.();
       stopRef.current = null;
     };
+
   }, [open]);
 
   // Auto-connect the diffuser once it shows up, after a short delay so the user
