@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isBluetoothOn, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { DevicePicker } from "@/components/DevicePicker";
+import { isNativeSync } from "@/lib/native-ble";
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
@@ -97,6 +99,7 @@ function Setup() {
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [btOff, setBtOff] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const autostarted = useRef(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
@@ -112,13 +115,9 @@ function Setup() {
   }, [editing]);
 
 
-  async function handlePair() {
-    setPhase("pairing");
-    setError(null);
+  async function afterPaired(device: { deviceId: string; suggestedName: string }) {
+    setDeviceId(device.deviceId);
     try {
-      const device = await pairDiffuser({ preferBrume: existingCount === 0 });
-      setDeviceId(device.deviceId);
-      
       // Only sync the clock on pairing — settings are pushed at each step.
       await sendFrames(device.deviceId, [buildSyncTimestamp()]);
       // Pull the diffuser's live configuration so the selectors start from the
@@ -135,6 +134,26 @@ function Setup() {
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
     }
   }
+
+  async function handlePair() {
+    setError(null);
+    // Native build: show the device list (with signal strength) so the user can
+    // pick manually; a recognised BRUME unit connects on its own.
+    if (isNativeSync()) {
+      setPhase("pairing");
+      setPickerOpen(true);
+      return;
+    }
+    setPhase("pairing");
+    try {
+      const device = await pairDiffuser({ preferBrume: existingCount === 0 });
+      await afterPaired(device);
+    } catch (err) {
+      setPhase("idle");
+      toast.error((err as Error).message, { className: "whitespace-pre-line" });
+    }
+  }
+
 
   useEffect(() => {
     if (start && !autostarted.current) {
@@ -220,7 +239,24 @@ function Setup() {
 
   return (
     <div className="min-h-screen">
+      <DevicePicker
+        open={pickerOpen}
+        onCancel={() => {
+          setPickerOpen(false);
+          setPhase("idle");
+        }}
+        onConnected={(device) => {
+          setPickerOpen(false);
+          void afterPaired(device);
+        }}
+        onError={(message) => {
+          setPickerOpen(false);
+          setPhase("idle");
+          toast.error(message, { className: "whitespace-pre-line" });
+        }}
+      />
       <GuestBanner />
+
       <div className="mx-auto max-w-2xl px-6 py-8">
         <AppHeader />
         {editing ? (

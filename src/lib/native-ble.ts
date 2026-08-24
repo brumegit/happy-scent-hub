@@ -50,10 +50,7 @@ async function client() {
     // CoreBluetooth authorisation on iOS. Throws when the user denies them.
     await mod.BleClient.initialize({ androidNeverForLocation: true });
   } catch (error) {
-    throw new Error(
-      "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.",
-      { cause: error },
-    );
+    throw new Error(PERMISSION_ERROR, { cause: error });
   }
   try {
     const enabled = await mod.BleClient.isEnabled();
@@ -70,6 +67,69 @@ async function client() {
   bleClient = mod.BleClient;
   return bleClient;
 }
+
+/** Marker used by the UI to show the "allow Bluetooth" dialog. */
+export const PERMISSION_ERROR =
+  "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.";
+
+export function isPermissionError(error: unknown) {
+  return error instanceof Error && error.message === PERMISSION_ERROR;
+}
+
+/**
+ * Triggers the OS permission prompt (first run) and reports whether Bluetooth
+ * access is usable. Never throws.
+ */
+export async function ensureNativePermissions(): Promise<boolean> {
+  if (!isNativeSync()) return true;
+  try {
+    const mod = await import("@capacitor-community/bluetooth-le");
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Opens the OS settings page for this app so the user can grant permissions. */
+export async function openNativeAppSettings() {
+  try {
+    const mod = await import("@capacitor-community/bluetooth-le");
+    await mod.BleClient.openAppSettings();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export type ScannedDevice = NativeDevice & { rssi: number };
+
+/**
+ * Live scan that streams every named device it sees, strongest first, so the
+ * user can pick manually. Returns a stop function.
+ */
+export async function startDeviceScan(
+  onUpdate: (devices: ScannedDevice[]) => void,
+): Promise<() => Promise<void>> {
+  const ble = await client();
+  const found = new Map<string, ScannedDevice>();
+
+  await ble.requestLEScan({ allowDuplicates: true }, (result) => {
+    const name = result.localName || result.device?.name;
+    if (!name) return;
+    found.set(result.device.deviceId, {
+      deviceId: result.device.deviceId,
+      name,
+      rssi: result.rssi ?? -999,
+    });
+    onUpdate([...found.values()].sort((a, b) => b.rssi - a.rssi));
+  });
+
+  return async () => {
+    await ble.stopLEScan().catch(() => undefined);
+  };
+}
+
 
 /**
  * Scans for up to `timeoutMs` and resolves with the first device whose name
