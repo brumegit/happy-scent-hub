@@ -55,9 +55,12 @@ export function DevicePicker({
 }) {
   const [devices, setDevices] = useState<ScannedDevice[]>([]);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [slowScan, setSlowScan] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const stopRef = useRef<(() => Promise<void>) | null>(null);
   const connectedRef = useRef(false);
+
   // Kept in refs so a parent re-render never restarts the scan.
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
@@ -89,6 +92,9 @@ export function DevicePicker({
     connectedRef.current = false;
     setDevices([]);
     setConnectingId(null);
+    setScanError(null);
+    setSlowScan(false);
+    const slowTimer = setTimeout(() => !cancelled && setSlowScan(true), 12000);
 
     void (async () => {
       const granted = await ensureNativePermissions();
@@ -108,15 +114,17 @@ export function DevicePicker({
         }
         stopRef.current = stop;
       } catch (err) {
-        if (!cancelled) onErrorRef.current((err as Error).message || "Bluetooth scan failed.");
+        if (!cancelled) setScanError((err as Error).message || "Bluetooth scan failed.");
       }
     })();
 
     return () => {
       cancelled = true;
+      clearTimeout(slowTimer);
       void stopRef.current?.();
       stopRef.current = null;
     };
+
   }, [open]);
 
   // Auto-connect the diffuser once it shows up, after a short delay so the user
@@ -205,12 +213,33 @@ export function DevicePicker({
               </li>
             ))}
           </ul>
-          {devices.length === 0 && (
-            <p className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-              Searching for devices, double tap the diffuser button.
-            </p>
+          {scanError && <p className="mt-8 text-sm text-destructive">{scanError}</p>}
+          {!scanError && devices.length === 0 && (
+            <div className="mt-8 space-y-3">
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Searching for devices, double tap the diffuser button.
+              </p>
+              {slowScan && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Still nothing. Check that Bluetooth is on, that the diffuser LED is blinking,
+                    and that nearby devices permission is allowed for Brume.
+                  </p>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-14 w-full"
+                    onClick={() => void openNativeAppSettings()}
+                  >
+                    <Settings className="mr-2 size-4" aria-hidden />
+                    Open app settings
+                  </Button>
+                </>
+              )}
+            </div>
           )}
+
         </div>
       )}
     </div>

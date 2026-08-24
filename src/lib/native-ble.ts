@@ -105,8 +105,9 @@ export async function openNativeAppSettings() {
 export type ScannedDevice = NativeDevice & { rssi: number };
 
 /**
- * Live scan that streams every named device it sees, strongest first, so the
- * user can pick manually. Returns a stop function.
+ * Live scan that streams every device it sees, strongest first, so the user can
+ * pick manually. Unnamed peripherals are kept (most BLE devices advertise
+ * without a local name) and labelled by their id. Returns a stop function.
  */
 export async function startDeviceScan(
   onUpdate: (devices: ScannedDevice[]) => void,
@@ -114,21 +115,35 @@ export async function startDeviceScan(
   const ble = await client();
   const found = new Map<string, ScannedDevice>();
 
-  await ble.requestLEScan({ allowDuplicates: true }, (result) => {
+  const handle = (result: {
+    device: { deviceId: string; name?: string };
+    localName?: string;
+    rssi?: number;
+  }) => {
+    const id = result.device?.deviceId;
+    if (!id) return;
     const name = result.localName || result.device?.name;
-    if (!name) return;
-    found.set(result.device.deviceId, {
-      deviceId: result.device.deviceId,
-      name,
-      rssi: result.rssi ?? -999,
+    const previous = found.get(id);
+    found.set(id, {
+      deviceId: id,
+      name: name || previous?.name || `Unknown device (${id.slice(-5)})`,
+      rssi: result.rssi ?? previous?.rssi ?? -999,
     });
     onUpdate([...found.values()].sort((a, b) => b.rssi - a.rssi));
-  });
+  };
+
+  try {
+    await ble.requestLEScan({ allowDuplicates: true, scanMode: 2 as never }, handle);
+  } catch {
+    // Some platforms reject the scanMode hint — retry with the plain options.
+    await ble.requestLEScan({ allowDuplicates: true }, handle);
+  }
 
   return async () => {
     await ble.stopLEScan().catch(() => undefined);
   };
 }
+
 
 
 /**
