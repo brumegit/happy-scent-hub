@@ -166,6 +166,14 @@ export function isBluetoothSupported() {
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
 }
 
+/**
+ * Reports whether Bluetooth is currently switched on (adapter powered), so the
+ * UI can warn the user before they try to pair. Safe to call on mount.
+ */
+export async function isBluetoothOn(): Promise<boolean> {
+  return nativeBluetoothEnabled();
+}
+
 /** True when frames are actually going out over a real GATT link. */
 export function isRealLink(deviceId: string | null) {
   return !!deviceId && links.get(deviceId)?.simulated === false;
