@@ -55,9 +55,12 @@ export function DevicePicker({
 }) {
   const [devices, setDevices] = useState<ScannedDevice[]>([]);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [slowScan, setSlowScan] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const stopRef = useRef<(() => Promise<void>) | null>(null);
   const connectedRef = useRef(false);
+
   // Kept in refs so a parent re-render never restarts the scan.
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
