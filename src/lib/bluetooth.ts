@@ -280,6 +280,38 @@ async function attachLink(device: {
   return true;
 }
 
+/**
+ * Connects to a device the user (or the auto-match) selected in the picker and
+ * registers its transport link.
+ */
+export async function connectPickedDevice(device: {
+  deviceId: string;
+  name?: string;
+}): Promise<PairedDevice> {
+  const responses = createResponseChannel((frame) => captureBattery(device.deviceId, frame));
+  const target = await connectNative(device.deviceId, (value) => responses.receive(value));
+  if (target) {
+    const write = async (frame: Uint8Array) => {
+      for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
+        await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
+        await wait(CHUNK_DELAY_MS);
+      }
+    };
+    links.set(device.deviceId, {
+      simulated: false,
+      write,
+      request: async (frame, responseFn) => {
+        const response = responses.waitFor(responseFn);
+        await write(frame);
+        return response;
+      },
+      waitFor: (fn) => responses.waitFor(fn, 2500),
+      isLive: () => isNativeConnected(device.deviceId),
+    });
+  }
+  return { deviceId: device.deviceId, suggestedName: device.name || "The 24/7 Room Diffuser" };
+}
+
 export async function pairDiffuser(opts?: {
   preferBrume?: boolean;
   /** Known hardware label ("Device name - Room name") to auto-select when re-connecting. */
@@ -301,29 +333,9 @@ export async function pairDiffuser(opts?: {
     if (!found) {
       throw new Error("No diffuser found.\nDouble-tap the button and try again.");
     }
-    const responses = createResponseChannel((frame) => captureBattery(found.deviceId, frame));
-    const target = await connectNative(found.deviceId, (value) => responses.receive(value));
-    if (target) {
-      const write = async (frame: Uint8Array) => {
-        for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-          await writeNative(found.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
-          await wait(CHUNK_DELAY_MS);
-        }
-      };
-      links.set(found.deviceId, {
-        simulated: false,
-        write,
-        request: async (frame, responseFn) => {
-          const response = responses.waitFor(responseFn);
-          await write(frame);
-          return response;
-        },
-        waitFor: (fn) => responses.waitFor(fn, 2500),
-        isLive: () => isNativeConnected(found.deviceId),
-      });
-    }
-    return { deviceId: found.deviceId, suggestedName: found.name || "The 24/7 Room Diffuser" };
+    return connectPickedDevice(found);
   }
+
 
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
