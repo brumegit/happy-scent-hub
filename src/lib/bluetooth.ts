@@ -20,6 +20,7 @@ import {
 import { pushDebug } from "@/stores/pushDebugStore";
 import {
   connectNative,
+  isBluetoothEnabled as nativeBluetoothEnabled,
   isNativeConnected,
   isNativePlatform,
   isNativeSync,
@@ -163,6 +164,14 @@ export function isBluetoothSupported() {
   // BLE plugin instead, so it must still report as supported.
   if (isNativeSync()) return true;
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
+}
+
+/**
+ * Reports whether Bluetooth is currently switched on (adapter powered), so the
+ * UI can warn the user before they try to pair. Safe to call on mount.
+ */
+export async function isBluetoothOn(): Promise<boolean> {
+  return nativeBluetoothEnabled();
 }
 
 /** True when frames are actually going out over a real GATT link. */

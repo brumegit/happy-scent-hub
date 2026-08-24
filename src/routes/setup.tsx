@@ -12,7 +12,7 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { pairDiffuser, isBluetoothSupported, isBluetoothOn, isRealLink, sendFrames } from "@/lib/bluetooth";
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
@@ -96,6 +96,7 @@ function Setup() {
   const [schedule, setSchedule] = useState<DaySchedule[]>(() => editing?.schedule ?? defaultSchedule());
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [btOff, setBtOff] = useState(false);
   const autostarted = useRef(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
@@ -142,6 +143,27 @@ function Setup() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start]);
+
+  // Proactively detect whether Bluetooth is switched off so we can warn the
+  // user before they tap "Start pairing". Re-checks while idle and when the app
+  // returns to the foreground.
+  useEffect(() => {
+    if (phase !== "idle") return;
+    let cancelled = false;
+    const check = () =>
+      isBluetoothOn()
+        .then((on) => !cancelled && setBtOff(!on))
+        .catch(() => !cancelled && setBtOff(false));
+    void check();
+    const interval = setInterval(check, 4000);
+    const onResume = () => void check();
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [phase]);
 
   // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
@@ -285,7 +307,12 @@ function Setup() {
                   />
                 </div>
 
-                {phase === "idle" && !isBluetoothSupported() && (
+                {phase === "idle" && btOff && (
+                  <p className="mt-5 text-xs text-destructive">
+                    Bluetooth is off, turn it on to pair your diffuser.
+                  </p>
+                )}
+                {phase === "idle" && !btOff && !isBluetoothSupported() && (
                   <p className="mt-5 text-xs text-muted-foreground">
                     This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
                     so you can finish. Use Chrome or the mobile app for a real pairing.
