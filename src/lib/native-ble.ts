@@ -18,7 +18,22 @@ type BleClientType = typeof import("@capacitor-community/bluetooth-le")["BleClie
 
 let bleClient: BleClientType | null = null;
 
+/**
+ * Synchronous native check. The Capacitor bridge injects `window.Capacitor`
+ * into the webview (including when the shell loads a remote URL), so the UI can
+ * branch on it during render without awaiting a dynamic import.
+ */
+export function isNativeSync() {
+  if (typeof window === "undefined") return false;
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; platform?: string } })
+    .Capacitor;
+  if (!cap) return false;
+  if (typeof cap.isNativePlatform === "function") return cap.isNativePlatform();
+  return cap.platform === "ios" || cap.platform === "android";
+}
+
 export async function isNativePlatform() {
+  if (isNativeSync()) return true;
   try {
     const { Capacitor } = await import("@capacitor/core");
     return Capacitor.isNativePlatform();
@@ -30,7 +45,28 @@ export async function isNativePlatform() {
 async function client() {
   if (bleClient) return bleClient;
   const mod = await import("@capacitor-community/bluetooth-le");
-  await mod.BleClient.initialize({ androidNeverForLocation: true });
+  try {
+    // Asks for the runtime Bluetooth permissions on Android 12+ and for the
+    // CoreBluetooth authorisation on iOS. Throws when the user denies them.
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
+  } catch (error) {
+    throw new Error(
+      "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.",
+      { cause: error },
+    );
+  }
+  try {
+    const enabled = await mod.BleClient.isEnabled();
+    if (!enabled) {
+      // Android can prompt the user to switch Bluetooth on; iOS cannot.
+      await mod.BleClient.requestEnable().catch(() => undefined);
+      const nowEnabled = await mod.BleClient.isEnabled().catch(() => false);
+      if (!nowEnabled) throw new Error("Bluetooth is off. Turn it on and try again.");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Bluetooth is off")) throw error;
+    // isEnabled/requestEnable are unavailable on some platforms — keep going.
+  }
   bleClient = mod.BleClient;
   return bleClient;
 }
