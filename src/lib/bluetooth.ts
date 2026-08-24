@@ -20,6 +20,7 @@ import {
 import { pushDebug } from "@/stores/pushDebugStore";
 import {
   connectNative,
+  isBluetoothEnabled as nativeBluetoothEnabled,
   isNativeConnected,
   isNativePlatform,
   isNativeSync,
