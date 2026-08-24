@@ -162,3 +162,32 @@ export async function disconnectNative(deviceId: string) {
   const ble = await client();
   await ble.disconnect(deviceId);
 }
+
+/**
+ * Reports whether Bluetooth is currently switched on. On native builds this
+ * queries the adapter directly (Android) or the CoreBluetooth state (iOS);
+ * on the web it falls back to the Web Bluetooth availability promise. It
+ * never requests permissions or scans, so it is safe to call on mount to show
+ * a "Bluetooth is off" hint before the user tries to pair.
+ */
+export async function isBluetoothEnabled(): Promise<boolean> {
+  if (!isNativeSync()) {
+    if (typeof navigator !== "undefined" && "bluetooth" in navigator) {
+      try {
+        const nav = navigator as unknown as {
+          bluetooth?: { getAvailability?: () => Promise<boolean> };
+        };
+        if (nav.bluetooth?.getAvailability) return await nav.bluetooth.getAvailability();
+      } catch {
+        // ignore
+      }
+    }
+    return true;
+  }
+  try {
+    const mod = await import("@capacitor-community/bluetooth-le");
+    return await mod.BleClient.isEnabled();
+  } catch {
+    return false;
+  }
+}
