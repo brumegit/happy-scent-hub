@@ -58,6 +58,11 @@ export function DevicePicker({
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const stopRef = useRef<(() => Promise<void>) | null>(null);
   const connectedRef = useRef(false);
+  // Kept in refs so a parent re-render never restarts the scan.
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+  const onConnectedRef = useRef(onConnected);
+  onConnectedRef.current = onConnected;
 
   const connect = useCallback(
     async (device: ScannedDevice) => {
@@ -67,14 +72,14 @@ export function DevicePicker({
       await stopRef.current?.();
       try {
         const paired = await connectPickedDevice(device);
-        onConnected(paired);
+        onConnectedRef.current(paired);
       } catch (err) {
         connectedRef.current = false;
         setConnectingId(null);
-        onError((err as Error).message || "Could not connect to that device.");
+        onErrorRef.current((err as Error).message || "Could not connect to that device.");
       }
     },
-    [onConnected, onError],
+    [],
   );
 
   // Ask for permissions, then stream nearby devices while the sheet is open.
@@ -103,7 +108,7 @@ export function DevicePicker({
         }
         stopRef.current = stop;
       } catch (err) {
-        if (!cancelled) onError((err as Error).message || "Bluetooth scan failed.");
+        if (!cancelled) onErrorRef.current((err as Error).message || "Bluetooth scan failed.");
       }
     })();
 
@@ -112,7 +117,7 @@ export function DevicePicker({
       void stopRef.current?.();
       stopRef.current = null;
     };
-  }, [open, onError]);
+  }, [open]);
 
   // Auto-connect the diffuser once it shows up, after a short delay so the user
   // still sees the list appear.
