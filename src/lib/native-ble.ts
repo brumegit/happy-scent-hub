@@ -46,9 +46,10 @@ async function client() {
   if (bleClient) return bleClient;
   const mod = await import("@capacitor-community/bluetooth-le");
   try {
-    // Asks for the runtime Bluetooth permissions on Android 12+ and for the
-    // CoreBluetooth authorisation on iOS. Throws when the user denies them.
-    await mod.BleClient.initialize({ androidNeverForLocation: true });
+    // Do not use Android's `neverForLocation` assertion here. Android is
+    // allowed to filter BLE advertisements when it is enabled, which hides
+    // some diffuser chipsets even though other scanners can see them.
+    await mod.BleClient.initialize({ androidNeverForLocation: false });
   } catch (error) {
     throw new Error(PERMISSION_ERROR, { cause: error });
   }
@@ -84,7 +85,7 @@ export async function ensureNativePermissions(): Promise<boolean> {
   if (!isNativeSync()) return true;
   try {
     const mod = await import("@capacitor-community/bluetooth-le");
-    await mod.BleClient.initialize({ androidNeverForLocation: true });
+    await mod.BleClient.initialize({ androidNeverForLocation: false });
     return true;
   } catch {
     return false;
@@ -102,7 +103,22 @@ export async function openNativeAppSettings() {
   }
 }
 
+/** Opens Android's location-services screen, which is required for BLE scans
+ * on Android 11 and below and on a few vendor-modified Android builds. */
+export async function openNativeLocationSettings() {
+  try {
+    const mod = await import("@capacitor-community/bluetooth-le");
+    await mod.BleClient.openLocationSettings();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export type ScannedDevice = NativeDevice & { rssi: number };
+
+export const LOCATION_SERVICES_ERROR =
+  "Location services are off. Android requires them to discover nearby Bluetooth devices.";
 
 /**
  * Live scan that streams every device it sees, strongest first, so the user can
@@ -114,6 +130,12 @@ export async function startDeviceScan(
 ): Promise<() => Promise<void>> {
   const ble = await client();
   const found = new Map<string, ScannedDevice>();
+
+  // Android 11 and below return a successful but permanently empty scan when
+  // system location services are disabled. Some manufacturers keep that
+  // behaviour on newer versions, so surface it instead of spinning forever.
+  const locationEnabled = await ble.isLocationEnabled().catch(() => true);
+  if (!locationEnabled) throw new Error(LOCATION_SERVICES_ERROR);
 
   const handle = (result: {
     device: { deviceId: string; name?: string };
@@ -133,7 +155,10 @@ export async function startDeviceScan(
   };
 
   try {
-    await ble.requestLEScan({ allowDuplicates: true, scanMode: 2 as never }, handle);
+    await ble.requestLEScan(
+      { allowDuplicates: true, scanMode: 2 as never, allowExtendedAdvertising: true },
+      handle,
+    );
   } catch {
     // Some platforms reject the scanMode hint — retry with the plain options.
     await ble.requestLEScan({ allowDuplicates: true }, handle);

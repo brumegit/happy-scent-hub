@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { connectPickedDevice, type PairedDevice } from "@/lib/bluetooth";
 import {
   ensureNativePermissions,
+  LOCATION_SERVICES_ERROR,
   openNativeAppSettings,
+  openNativeLocationSettings,
   startDeviceScan,
   type ScannedDevice,
 } from "@/lib/native-ble";
@@ -214,6 +216,17 @@ export function DevicePicker({
             ))}
           </ul>
           {scanError && <p className="mt-8 text-sm text-destructive">{scanError}</p>}
+          {scanError === LOCATION_SERVICES_ERROR && (
+            <Button
+              size="lg"
+              variant="outline"
+              className="mt-5 h-14 w-full"
+              onClick={() => void openNativeLocationSettings()}
+            >
+              <Settings className="mr-2 size-4" aria-hidden />
+              Open location settings
+            </Button>
+          )}
           {!scanError && devices.length === 0 && (
             <div className="mt-8 space-y-3">
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
