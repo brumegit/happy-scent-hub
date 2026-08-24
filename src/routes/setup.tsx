@@ -97,6 +97,7 @@ function Setup() {
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [btOff, setBtOff] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const autostarted = useRef(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
