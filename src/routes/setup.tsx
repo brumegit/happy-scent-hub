@@ -303,12 +303,13 @@ function Setup() {
                   <StatusButton
                     state={phase === "idle" ? "idle" : "pairing"}
                     label={phase === "idle" ? "Start pairing" : "Searching"}
-                    {...(phase === "idle" ? { onClick: handlePair } : {})}
+                    disabled={phase === "idle" && btOff}
+                    {...(phase === "idle" && !btOff ? { onClick: handlePair } : {})}
                   />
                 </div>
 
                 {phase === "idle" && btOff && (
-                  <p className="mt-5 text-xs text-destructive">
+                  <p className="mt-5 text-sm text-destructive">
                     Bluetooth is off, turn it on to pair your diffuser.
                   </p>
                 )}

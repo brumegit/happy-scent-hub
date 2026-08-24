@@ -13,12 +13,14 @@ export function StatusButton({
   onClick,
   fading = false,
   icon = true,
+  disabled = false,
 }: {
   state: CircleState;
   label: string;
   onClick?: () => void;
   fading?: boolean;
   icon?: boolean;
+  disabled?: boolean;
 }) {
   const tone =
     state === "pairing"
@@ -29,7 +31,7 @@ export function StatusButton({
           ? "border-destructive text-destructive"
           : "border-foreground text-foreground";
 
-  const Tag = onClick && state === "idle" ? "button" : "div";
+  const Tag = onClick && state === "idle" && !disabled ? "button" : "div";
 
   return (
     <div
@@ -38,7 +40,8 @@ export function StatusButton({
     >
       <Tag
         {...(Tag === "button" ? { type: "button" as const, onClick } : {})}
-        className={`relative flex w-full items-center justify-center gap-3 border px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone}`}
+        aria-disabled={disabled || undefined}
+        className={`relative flex w-full items-center justify-center gap-3 border px-6 py-4 text-sm uppercase tracking-[0.22em] transition-colors duration-500 ${tone} ${disabled ? "opacity-40" : ""}`}
       >
         {state === "pairing" && (
           <span className="drip-layer absolute inset-0">
