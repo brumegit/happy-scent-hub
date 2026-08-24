@@ -144,6 +144,27 @@ function Setup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start]);
 
+  // Proactively detect whether Bluetooth is switched off so we can warn the
+  // user before they tap "Start pairing". Re-checks while idle and when the app
+  // returns to the foreground.
+  useEffect(() => {
+    if (phase !== "idle") return;
+    let cancelled = false;
+    const check = () =>
+      isBluetoothOn()
+        .then((on) => !cancelled && setBtOff(!on))
+        .catch(() => !cancelled && setBtOff(false));
+    void check();
+    const interval = setInterval(check, 4000);
+    const onResume = () => void check();
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [phase]);
+
   // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
     if (phase !== "paired") return;
