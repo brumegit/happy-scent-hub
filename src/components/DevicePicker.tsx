@@ -213,12 +213,33 @@ export function DevicePicker({
               </li>
             ))}
           </ul>
-          {devices.length === 0 && (
-            <p className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-              Searching for devices, double tap the diffuser button.
-            </p>
+          {scanError && <p className="mt-8 text-sm text-destructive">{scanError}</p>}
+          {!scanError && devices.length === 0 && (
+            <div className="mt-8 space-y-3">
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Searching for devices, double tap the diffuser button.
+              </p>
+              {slowScan && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Still nothing. Check that Bluetooth is on, that the diffuser LED is blinking,
+                    and that nearby devices permission is allowed for Brume.
+                  </p>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-14 w-full"
+                    onClick={() => void openNativeAppSettings()}
+                  >
+                    <Settings className="mr-2 size-4" aria-hidden />
+                    Open app settings
+                  </Button>
+                </>
+              )}
+            </div>
           )}
+
         </div>
       )}
     </div>
