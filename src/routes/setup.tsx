@@ -239,7 +239,24 @@ function Setup() {
 
   return (
     <div className="min-h-screen">
+      <DevicePicker
+        open={pickerOpen}
+        onCancel={() => {
+          setPickerOpen(false);
+          setPhase("idle");
+        }}
+        onConnected={(device) => {
+          setPickerOpen(false);
+          void afterPaired(device);
+        }}
+        onError={(message) => {
+          setPickerOpen(false);
+          setPhase("idle");
+          toast.error(message, { className: "whitespace-pre-line" });
+        }}
+      />
       <GuestBanner />
+
       <div className="mx-auto max-w-2xl px-6 py-8">
         <AppHeader />
         {editing ? (
