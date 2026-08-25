@@ -251,7 +251,7 @@ function Setup() {
       <GuestBanner />
 
       <div className="mx-auto flex max-w-2xl flex-1 flex-col px-11 pb-8">
-        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-8 pb-5">
+        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-8 pb-8">
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
@@ -259,7 +259,11 @@ function Setup() {
             <Steps phase={phase} />
           )}
         </div>
-        <div className="flex flex-1 flex-col justify-center pb-[5rem]">
+        {/* Keyed on the phase so each step animates in as it appears. */}
+        <div
+          key={phase === "pairing" || phase === "paired" ? "connect" : phase}
+          className="flex flex-1 flex-col justify-center pb-[5rem] animate-fade-in"
+        >
 
         {phase === "intro" && (
           <section className="flex flex-1 flex-col justify-center animate-fade-in">
