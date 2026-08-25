@@ -126,9 +126,15 @@ export const PERMISSION_ERROR =
 export async function requestNativeDevice(): Promise<NativeDevice> {
   const ble = await client();
   try {
-    // Intentionally pass no filters: the native list must show every nearby
-    // BLE peripheral and wait for the user to choose one.
-    return await ble.requestDevice({});
+    const { ScanMode } = await import("@capacitor-community/bluetooth-le");
+    // Deliberately omit services, name, namePrefix, manufacturerData and
+    // serviceData. Low-latency mode scans at the highest foreground duty cycle,
+    // while extended advertising keeps both modern and legacy advertisements
+    // visible. The user still chooses the device; nothing is auto-selected.
+    return await ble.requestDevice({
+      scanMode: ScanMode.SCAN_MODE_LOW_LATENCY,
+      allowExtendedAdvertising: true,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message.toLowerCase() : "";
     if (message.includes("cancel") || message.includes("dismiss")) {
