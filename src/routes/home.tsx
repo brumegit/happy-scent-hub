@@ -18,7 +18,7 @@ import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
-import { useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
+import { bluetoothRequirementPrompt, useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
