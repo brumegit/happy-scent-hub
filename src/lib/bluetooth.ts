@@ -24,7 +24,7 @@ import {
   isNativeConnected,
   isNativePlatform,
   isNativeSync,
-  scanForDiffuser,
+  requestNativeDevice,
   writeNative,
 } from "@/lib/native-ble";
 
@@ -320,19 +320,14 @@ export async function pairDiffuser(opts?: {
   const preferBrume = opts?.preferBrume ?? false;
   const preferName = opts?.preferName?.trim();
 
-  // Native iOS / Android build: scan silently and auto-select the known unit.
+  // Native iOS / Android build: let the operating system scan and present its
+  // own chooser. This is more reliable than maintaining a scanner in the webview.
   if (await isNativePlatform()) {
-    // Never fall back to the simulated link inside the native app: surface the
-    // real reason (permission refused, Bluetooth off, nothing advertising) so
-    // the user can fix it instead of silently landing in demo mode.
-    const found = await scanForDiffuser(preferName).catch((error: unknown) => {
+    const found = await requestNativeDevice().catch((error: unknown) => {
       throw error instanceof Error
         ? error
         : new Error("Bluetooth scan failed. Check that Bluetooth is on and try again.");
     });
-    if (!found) {
-      throw new Error("No diffuser found.\nDouble-tap the button and try again.");
-    }
     return connectPickedDevice(found);
   }
 

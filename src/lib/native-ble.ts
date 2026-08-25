@@ -1,10 +1,8 @@
 /**
  * Native (iOS / Android) Bluetooth transport via Capacitor.
  *
- * On a native build this scans in the background, auto-selects the first
- * advertising device whose name contains "BRUME" and connects without showing
- * any picker. On the web this module is inert — bluetooth.ts falls back to
- * Web Bluetooth.
+ * On a native build this uses the operating system's Bluetooth device chooser.
+ * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
 export type NativeChar = { service: string; characteristic: string };
@@ -119,6 +117,24 @@ export type ScannedDevice = NativeDevice & { rssi: number };
 
 export const LOCATION_SERVICES_ERROR =
   "Location services are off. Android requires them to discover nearby Bluetooth devices.";
+
+/**
+ * Opens the native Android/iOS BLE chooser and returns the device selected by
+ * the user. The plugin owns scanning, permission handling and dialog lifecycle,
+ * avoiding a second scanner implemented inside the web view.
+ */
+export async function requestNativeDevice(): Promise<NativeDevice> {
+  const ble = await client();
+  try {
+    return await ble.requestDevice();
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    if (message.includes("cancel") || message.includes("dismiss")) {
+      throw new Error("No device selected.\nDouble-tap the button and try again.");
+    }
+    throw error;
+  }
+}
 
 /**
  * Live scan that streams every device it sees, strongest first, so the user can
