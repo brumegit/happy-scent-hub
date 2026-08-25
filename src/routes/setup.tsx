@@ -106,6 +106,9 @@ function Setup() {
   const [btOff, setBtOff] = useState(false);
   // Distinct from btOff: the adapter is on but the app is not allowed to use it.
   const [btDenied, setBtDenied] = useState(false);
+  // Android returns an empty scan list while the phone's Location service is
+  // off, so we detect that separately and say exactly what to switch on.
+  const [locOff, setLocOff] = useState(false);
   const autostarted = useRef(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
