@@ -256,12 +256,10 @@
   }
 }
 
-/* Soft fade to black between setup steps. */
+/* A new setup step is rendered behind black, then revealed. The veil never
+   fades in over content, which avoids showing the next step twice. */
 @keyframes step-veil {
   0% {
-    opacity: 0;
-  }
-  35% {
     opacity: 1;
   }
   100% {
@@ -270,7 +268,14 @@
 }
 
 .step-veil {
-  animation: step-veil 0.65s ease-in-out both;
+  animation: step-veil 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-veil {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 
