@@ -256,6 +256,24 @@
   }
 }
 
+/* Soft fade to black between setup steps. */
+@keyframes step-veil {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.step-veil {
+  animation: step-veil 0.65s ease-in-out both;
+}
+
+
 .success-pop {
   animation: success-pop 0.6s cubic-bezier(0.34, 1.4, 0.5, 1) both;
 }
