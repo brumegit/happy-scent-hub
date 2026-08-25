@@ -116,6 +116,34 @@ export async function openAppSettings() {
   }
 }
 
+/**
+ * Android only: reports whether the phone's Location service is switched on.
+ * Android refuses to return BLE scan results while it is off, which shows up
+ * as an empty device list rather than an error, so we detect it up front.
+ * Returns true on platforms where the question does not apply.
+ */
+export async function isLocationServiceEnabled(): Promise<boolean> {
+  if (!isNativeSync()) return true;
+  try {
+    const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+    if (cap?.getPlatform?.() !== "android") return true;
+    const mod = await import("@capacitor-community/bluetooth-le");
+    return await mod.BleClient.isLocationEnabled();
+  } catch {
+    return true;
+  }
+}
+
+/** Android only: opens the system Location settings screen. */
+export async function openLocationSettings() {
+  try {
+    const mod = await import("@capacitor-community/bluetooth-le");
+    await mod.BleClient.openLocationSettings();
+  } catch {
+    // ignore
+  }
+}
+
 export const PERMISSION_ERROR =
   "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.";
 
