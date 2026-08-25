@@ -62,7 +62,7 @@ function stepIndex(phase: Phase) {
 function Steps({ phase }: { phase: Phase }) {
   const current = stepIndex(phase);
   return (
-    <div className="mt-8 grid grid-cols-3 gap-4">
+    <div className="mt-4 grid grid-cols-3 gap-4">
       {STEPS.map((step, index) => (
         <div key={step}>
           <div className={`h-0.5 ${index <= current ? "bg-gold" : "bg-border"}`} />
@@ -242,7 +242,7 @@ function Setup() {
       <GuestBanner />
 
       <div className="mx-auto max-w-2xl px-6 pb-8">
-        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-8">
+        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-5">
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
@@ -250,11 +250,11 @@ function Setup() {
             <Steps phase={phase} />
           )}
         </div>
-        <div className="flex min-h-[calc(100vh-22rem)] flex-col justify-center pb-[4rem]">
+        <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center pb-[4rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
-            className={`mt-8 p-7 transition-all duration-[3000ms] ${
+            className={`mt-4 p-7 transition-all duration-[3000ms] ${
               phase === "paired"
                 ? `border border-transparent ${fading ? "bg-background opacity-0" : "opacity-100"}`
                 : "border border-border opacity-100"
@@ -361,7 +361,7 @@ function Setup() {
         )}
 
         {phase === "name" && (
-          <section className="mt-8 space-y-6 border border-border p-7 animate-fade-in">
+          <section className="mt-4 space-y-6 border border-border p-7 animate-fade-in">
             <div>
               <h1 className="font-display text-4xl">Where's it going?</h1>
                <p className="mt-2 text-sm text-foreground">Your diffuser is connected.</p>
@@ -404,7 +404,7 @@ function Setup() {
         )}
 
         {phase === "intensity" && (
-          <section className="mt-8 space-y-6 border border-border p-7 animate-fade-in">
+          <section className="mt-4 space-y-6 border border-border p-7 animate-fade-in">
             <button
               type="button"
               onClick={() =>
@@ -450,7 +450,7 @@ function Setup() {
         )}
 
         {phase === "pushing" && (
-          <section className="mt-8 border border-border p-7">
+          <section className="mt-4 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
              <p className="mt-3 text-sm text-foreground">
               Keep the diffuser nearby. It beeps once each command is accepted.
@@ -469,7 +469,7 @@ function Setup() {
         )}
 
         {phase === "schedule" && (
-          <section className="mt-8 space-y-6 animate-fade-in">
+          <section className="mt-4 space-y-6 animate-fade-in">
             <div>
               <button
                 type="button"
