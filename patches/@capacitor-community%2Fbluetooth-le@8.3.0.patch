@@ -9,7 +9,7 @@ index 5584781..5b45092 100644
 +
 +        override fun onScanFailed(errorCode: Int) {
 +            super.onScanFailed(errorCode)
-+            Logger.error(TAG, "Bluetooth scan failed with Android error code $errorCode")
++            Logger.error(TAG, "Bluetooth scan failed with Android error code $errorCode", null)
 +            stopScanning()
 +            dialogHandler?.post {
 +                dialog?.dismiss()
