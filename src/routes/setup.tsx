@@ -143,6 +143,9 @@ function Setup() {
   }
 
   async function handlePair() {
+    // The UI is gated too, but keep the native action itself unreachable until
+    // Android has returned every permission and service-state check.
+    if (checkingRequirements || btOff || btDenied || locOff) return;
     setError(null);
     setPhase("pairing");
     try {
