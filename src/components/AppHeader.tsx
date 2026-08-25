@@ -12,11 +12,11 @@ export function AppHeader() {
 
   return (
     <header className="flex items-center justify-between gap-4 pb-5">
-      <Link to="/home" className="flex items-center">
+      <Link to="/" className="flex items-center">
         <BrandLogo className="h-5" />
       </Link>
       <nav className="flex items-center gap-5 text-sm normal-case">
-        <Link to="/home" className="text-foreground hover:underline underline-offset-4">
+        <Link to="/" className="text-foreground hover:underline underline-offset-4">
           {diffusersLabel}
         </Link>
         <Link to="/shop" className="text-foreground hover:underline underline-offset-4">

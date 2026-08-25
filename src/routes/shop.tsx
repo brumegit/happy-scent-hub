@@ -85,7 +85,7 @@ function ShopPage() {
 
           <button
             type="button"
-            onClick={() => navigate({ to: "/home" })}
+            onClick={() => navigate({ to: "/" })}
             className="mt-[50px] flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-4" aria-hidden />
