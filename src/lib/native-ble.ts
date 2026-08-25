@@ -308,6 +308,9 @@ export async function isBluetoothEnabled(): Promise<boolean> {
     const mod = await import("@capacitor-community/bluetooth-le");
     return await mod.BleClient.isEnabled();
   } catch {
-    return false;
+    // Android throws here when the app lacks the Bluetooth permission, which is
+    // NOT the same as the radio being off. Report "on" so the UI blames the
+    // missing permission instead of wrongly telling the user Bluetooth is off.
+    return true;
   }
 }

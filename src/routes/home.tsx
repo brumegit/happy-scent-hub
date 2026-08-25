@@ -18,7 +18,7 @@ import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
-import { useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
+import { bluetoothRequirementPrompt, useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
@@ -82,16 +82,7 @@ function Home() {
   } = useBluetoothRequirements(empty);
 
   const requirementsMissing = bluetoothOff || permissionDenied || locationOff;
-  const missingMessage = bluetoothOff
-    ? locationOff
-      ? "Bluetooth and Location are off. Turn both on to pair your diffuser."
-      : "Bluetooth is off, turn it on to pair your diffuser."
-    : permissionDenied && locationOff
-      ? "Brume needs Bluetooth and Location access to find your diffuser."
-      : permissionDenied
-        ? "Brume needs Bluetooth access to find your diffuser."
-        : "Location is off. Android needs it switched on to find Bluetooth devices.";
-  const openLocationOnly = locationOff && !permissionDenied && !bluetoothOff;
+  const prompt = bluetoothRequirementPrompt({ bluetoothOff, permissionDenied, locationOff });
 
   return (
     <div className="relative min-h-screen flex flex-col">
@@ -114,15 +105,17 @@ function Home() {
                 </div>
               ) : requirementsMissing ? (
                 <div className="mt-7 space-y-3 border border-border p-5">
-                  <p className="text-sm text-foreground">{missingMessage}</p>
+                  <p className="text-sm text-foreground">{prompt.message}</p>
                   <Button
                     variant="link"
                     onClick={() =>
-                      void (openLocationOnly ? openLocationSettings() : openAppSettings())
+                      void (prompt.target === "location"
+                        ? openLocationSettings()
+                        : openAppSettings())
                     }
                     className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
                   >
-                    {openLocationOnly ? "Open location settings" : "Open app settings"}
+                    {prompt.cta}
                   </Button>
                 </div>
               ) : (

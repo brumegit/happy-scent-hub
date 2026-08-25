@@ -162,7 +162,7 @@
 
 @layer base {
   html {
-    font-size: calc(100% + 2pt);
+    font-size: 100%;
   }
 
   * {
