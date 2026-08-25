@@ -404,7 +404,7 @@ function Setup() {
         )}
 
         {phase === "intensity" && (
-          <section className="mt-8 space-y-6 border border-border p-7 animate-fade-in">
+          <section className="mt-4 space-y-6 border border-border p-7 animate-fade-in">
             <button
               type="button"
               onClick={() =>
