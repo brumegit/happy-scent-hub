@@ -105,15 +105,17 @@ function Home() {
                 </div>
               ) : requirementsMissing ? (
                 <div className="mt-7 space-y-3 border border-border p-5">
-                  <p className="text-sm text-foreground">{missingMessage}</p>
+                  <p className="text-sm text-foreground">{prompt.message}</p>
                   <Button
                     variant="link"
                     onClick={() =>
-                      void (openLocationOnly ? openLocationSettings() : openAppSettings())
+                      void (prompt.target === "location"
+                        ? openLocationSettings()
+                        : openAppSettings())
                     }
                     className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
                   >
-                    {openLocationOnly ? "Open location settings" : "Open app settings"}
+                    {prompt.cta}
                   </Button>
                 </div>
               ) : (
