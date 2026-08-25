@@ -243,12 +243,11 @@ function Setup() {
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
-            className={`mt-4 p-7 transition-all duration-[3000ms] ${
-              phase === "paired"
-                ? `border border-transparent ${fading ? "bg-background opacity-0" : "opacity-100"}`
-                : "border border-border opacity-100"
+            className={`mt-4 transition-all duration-[3000ms] ${
+              phase === "paired" && fading ? "opacity-0" : "opacity-100"
             }`}
           >
+
             {phase === "paired" ? (
               // Once connected, everything else is hidden and only the success
               // animation stays, centered, while the tile fades to black.
