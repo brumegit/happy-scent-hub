@@ -227,10 +227,10 @@ function Setup() {
   const simulated = deviceId !== null && !isRealLink(deviceId);
 
   return (
-    <div className="min-h-screen">
+    <div className="flex h-screen flex-col">
       <GuestBanner />
 
-      <div className="mx-auto max-w-2xl px-11 pb-8">
+      <div className="mx-auto flex max-w-2xl flex-1 flex-col px-11 pb-8">
         <div className="sticky top-0 z-40 -mx-11 bg-background px-11 py-5">
           <AppHeader />
           {editing ? (
@@ -239,7 +239,7 @@ function Setup() {
             <Steps phase={phase} />
           )}
         </div>
-        <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center pb-[5rem]">
+        <div className="flex flex-1 flex-col justify-center pb-[5rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
