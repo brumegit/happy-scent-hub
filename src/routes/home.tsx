@@ -18,6 +18,7 @@ import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
@@ -49,6 +50,7 @@ import {
 } from "@/lib/diffuser";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
 import { useIdentityStore } from "@/stores/identityStore";
+import { openAppSettings, openLocationSettings } from "@/lib/native-ble";
 
 
 export const Route = createFileRoute("/home")({
@@ -72,6 +74,24 @@ function Home() {
   const status = useIdentityStore((s) => s.status);
 
   const empty = hydrated && diffusers.length === 0;
+  const {
+    checking: checkingRequirements,
+    bluetoothOff,
+    permissionDenied,
+    locationOff,
+  } = useBluetoothRequirements(empty);
+
+  const requirementsMissing = bluetoothOff || permissionDenied || locationOff;
+  const missingMessage = bluetoothOff
+    ? locationOff
+      ? "Bluetooth and Location are off. Turn both on to pair your diffuser."
+      : "Bluetooth is off, turn it on to pair your diffuser."
+    : permissionDenied && locationOff
+      ? "Brume needs Bluetooth and Location access to find your diffuser."
+      : permissionDenied
+        ? "Brume needs Bluetooth access to find your diffuser."
+        : "Location is off. Android needs it switched on to find Bluetooth devices.";
+  const openLocationOnly = locationOff && !permissionDenied && !bluetoothOff;
 
   return (
     <div className="relative min-h-screen flex flex-col">
@@ -88,13 +108,32 @@ function Home() {
               <p className="mt-3 text-sm text-muted-foreground">
                 Pair your diffuser to set its intensity and weekly schedule.
               </p>
-              <div className="mt-7">
-                <StatusButton
-                  state="idle"
-                  label="Start now"
-                  onClick={() => navigate({ to: "/setup", search: { start: true } })}
-                />
-              </div>
+              {checkingRequirements ? (
+                <div className="mt-7 border border-border p-5">
+                  <p className="text-sm text-foreground">Checking Bluetooth and Location access…</p>
+                </div>
+              ) : requirementsMissing ? (
+                <div className="mt-7 space-y-3 border border-border p-5">
+                  <p className="text-sm text-foreground">{missingMessage}</p>
+                  <Button
+                    variant="link"
+                    onClick={() =>
+                      void (openLocationOnly ? openLocationSettings() : openAppSettings())
+                    }
+                    className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
+                  >
+                    {openLocationOnly ? "Open location settings" : "Open app settings"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-7">
+                  <StatusButton
+                    state="idle"
+                    label="Start now"
+                    onClick={() => navigate({ to: "/setup", search: { start: true } })}
+                  />
+                </div>
+              )}
             </section>
           </div>
         ) : (
