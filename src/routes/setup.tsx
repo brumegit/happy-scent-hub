@@ -13,7 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isBluetoothOn, isRealLink, sendFrames } from "@/lib/bluetooth";
-import { isBluetoothPermissionDenied, openAppSettings, PERMISSION_ERROR } from "@/lib/native-ble";
+import {
+  isBluetoothPermissionDenied,
+  isLocationServiceEnabled,
+  openAppSettings,
+  openLocationSettings,
+  PERMISSION_ERROR,
+} from "@/lib/native-ble";
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
@@ -100,6 +106,9 @@ function Setup() {
   const [btOff, setBtOff] = useState(false);
   // Distinct from btOff: the adapter is on but the app is not allowed to use it.
   const [btDenied, setBtDenied] = useState(false);
+  // Android returns an empty scan list while the phone's Location service is
+  // off, so we detect that separately and say exactly what to switch on.
+  const [locOff, setLocOff] = useState(false);
   const autostarted = useRef(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
@@ -166,10 +175,11 @@ function Setup() {
     if (phase !== "idle") return;
     let cancelled = false;
     const check = () =>
-      isBluetoothOn()
-        .then((on) => {
+      Promise.all([isBluetoothOn(), isLocationServiceEnabled()])
+        .then(([on, locationOn]) => {
           if (cancelled) return;
           setBtOff(!on);
+          setLocOff(!locationOn);
           setBtDenied(isBluetoothPermissionDenied());
         })
         .catch(() => !cancelled && setBtOff(false));
@@ -325,8 +335,8 @@ function Setup() {
                   <StatusButton
                     state={phase === "idle" ? "idle" : "pairing"}
                     label={phase === "idle" ? "Start pairing" : "Searching"}
-                    disabled={phase === "idle" && btOff}
-                    {...(phase === "idle" && !btOff ? { onClick: handlePair } : {})}
+                    disabled={phase === "idle" && (btOff || locOff)}
+                    {...(phase === "idle" && !btOff && !locOff ? { onClick: handlePair } : {})}
                   />
                 </div>
 
@@ -335,7 +345,21 @@ function Setup() {
                     Bluetooth is off, turn it on to pair your diffuser.
                   </p>
                 )}
-                {phase === "idle" && !btOff && btDenied && (
+                {phase === "idle" && !btOff && locOff && (
+                  <div className="mt-5 space-y-2">
+                    <p className="text-sm text-foreground">
+                      Location is off. Android needs it switched on to find Bluetooth devices.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void openLocationSettings()}
+                      className="text-sm text-foreground underline underline-offset-4"
+                    >
+                      Open location settings
+                    </button>
+                  </div>
+                )}
+                {phase === "idle" && !btOff && !locOff && btDenied && (
                   <div className="mt-5 space-y-2">
                     <p className="text-sm text-foreground">
                       Brume is not allowed to use Bluetooth on this phone.
@@ -349,7 +373,7 @@ function Setup() {
                     </button>
                   </div>
                 )}
-                {phase === "idle" && !btOff && !btDenied && !isBluetoothSupported() && (
+                {phase === "idle" && !btOff && !locOff && !btDenied && !isBluetoothSupported() && (
                   <p className="mt-5 text-xs text-foreground">
                     This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
                     so you can finish. Use Chrome or the mobile app for a real pairing.
