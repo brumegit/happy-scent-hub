@@ -373,7 +373,7 @@ function Setup() {
                     </button>
                   </div>
                 )}
-                {phase === "idle" && !btOff && !btDenied && !isBluetoothSupported() && (
+                {phase === "idle" && !btOff && !locOff && !btDenied && !isBluetoothSupported() && (
                   <p className="mt-5 text-xs text-foreground">
                     This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
                     so you can finish. Use Chrome or the mobile app for a real pairing.
