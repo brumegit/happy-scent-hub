@@ -291,9 +291,9 @@ function Setup() {
                 <h1 className="font-display text-4xl leading-tight">Start now</h1>
 
                 <video
-                  // Fills the full height between the heading and the CTA so the
-                  // frame scales with the screen instead of being cropped.
-                  className="mt-6 w-full flex-1 min-h-0 object-cover object-top"
+                  // Fills the full height between the heading and the CTA. Uses
+                  // contain so the frame is never cropped, only scaled to fit.
+                  className="mt-6 w-full flex-1 min-h-0 object-contain"
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
