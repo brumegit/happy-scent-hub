@@ -242,7 +242,7 @@ function Setup() {
       <GuestBanner />
 
       <div className="mx-auto max-w-2xl px-6 pb-8">
-        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-8">
+        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-5">
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
