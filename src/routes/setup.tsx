@@ -254,7 +254,7 @@ function Setup() {
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
-            className={`mt-8 p-7 transition-all duration-[3000ms] ${
+            className={`mt-4 p-7 transition-all duration-[3000ms] ${
               phase === "paired"
                 ? `border border-transparent ${fading ? "bg-background opacity-0" : "opacity-100"}`
                 : "border border-border opacity-100"
