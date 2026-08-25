@@ -34,6 +34,18 @@ export function useBluetoothRequirements(active = true) {
     setRequirements((current) => ({ ...current, checking: true }));
     try {
       const granted = await ensureBluetoothPermission();
+      const denied = !granted || isBluetoothPermissionDenied();
+      if (denied) {
+        // Without the permission, the radio and location probes are unreliable,
+        // so report only the blocker we are sure about.
+        setRequirements({
+          checking: false,
+          bluetoothOff: false,
+          permissionDenied: true,
+          locationOff: false,
+        });
+        return;
+      }
       const [bluetoothOn, locationOn] = await Promise.all([
         isBluetoothOn(),
         isLocationServiceEnabled(),
@@ -41,7 +53,7 @@ export function useBluetoothRequirements(active = true) {
       setRequirements({
         checking: false,
         bluetoothOff: !bluetoothOn,
-        permissionDenied: !granted || isBluetoothPermissionDenied(),
+        permissionDenied: false,
         locationOff: !locationOn,
       });
     } catch {
