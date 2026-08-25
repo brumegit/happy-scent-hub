@@ -30,7 +30,7 @@ import {
   type Intensity,
 } from "@/lib/diffuser";
 import { useDiffuserStore } from "@/stores/diffuserStore";
-import { useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
+import { bluetoothRequirementPrompt, useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
