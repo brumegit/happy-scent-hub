@@ -312,14 +312,7 @@ export async function connectPickedDevice(device: {
   return { deviceId: device.deviceId, suggestedName: device.name || "The 24/7 Room Diffuser" };
 }
 
-export async function pairDiffuser(opts?: {
-  preferBrume?: boolean;
-  /** Known hardware label ("Device name - Room name") to auto-select when re-connecting. */
-  preferName?: string;
-}): Promise<PairedDevice> {
-  const preferBrume = opts?.preferBrume ?? false;
-  const preferName = opts?.preferName?.trim();
-
+export async function pairDiffuser(): Promise<PairedDevice> {
   // Native iOS / Android build: let the operating system scan and present its
   // own chooser. This is more reliable than maintaining a scanner in the webview.
   if (await isNativePlatform()) {
@@ -335,23 +328,10 @@ export async function pairDiffuser(opts?: {
   if (isBluetoothSupported()) {
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
-      // Re-connecting to a known diffuser: narrow the chooser to its hardware label.
-      // Otherwise show every nearby device.
-      let device: Awaited<ReturnType<BluetoothLike["requestDevice"]>> | null = null;
-      if (preferName) {
-        device = await nav.bluetooth
-          .requestDevice({
-            filters: [{ namePrefix: preferName.slice(0, 20) }],
-            optionalServices: SERVICE_UUIDS,
-          })
-          .catch(() => null);
-      }
-      if (!device) {
-        device = await nav.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: SERVICE_UUIDS,
-        });
-      }
+      const device = await nav.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: SERVICE_UUIDS,
+      });
 
       try {
         await attachLink(device);
@@ -359,7 +339,7 @@ export async function pairDiffuser(opts?: {
         // GATT unavailable — commands fall back to the simulated link.
       }
 
-      const suggested = device.name || (preferBrume ? "BRUME Room Diffuser" : "The 24/7 Room Diffuser");
+      const suggested = device.name || "The 24/7 Room Diffuser";
       return { deviceId: device.id, suggestedName: suggested };
     } catch (error) {
       if ((error as Error)?.name === "NotFoundError") {
@@ -383,7 +363,7 @@ export async function pairDiffuser(opts?: {
   });
   return {
     deviceId,
-    suggestedName: preferBrume ? "BRUME Room Diffuser" : "The 24/7 Room Diffuser",
+    suggestedName: "The 24/7 Room Diffuser",
   };
 }
 
