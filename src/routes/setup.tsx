@@ -450,7 +450,7 @@ function Setup() {
         )}
 
         {phase === "pushing" && (
-          <section className="mt-8 border border-border p-7">
+          <section className="mt-4 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
              <p className="mt-3 text-sm text-foreground">
               Keep the diffuser nearby. It beeps once each command is accepted.
