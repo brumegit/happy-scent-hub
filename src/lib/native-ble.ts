@@ -130,6 +130,7 @@ export async function startDeviceScan(
 ): Promise<() => Promise<void>> {
   const ble = await client();
   const found = new Map<string, ScannedDevice>();
+  let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Android 11 and below return a successful but permanently empty scan when
   // system location services are disabled. Some manufacturers keep that
@@ -144,6 +145,10 @@ export async function startDeviceScan(
   }) => {
     const id = result.device?.deviceId;
     if (!id) return;
+    if (fallbackTimer) {
+      clearTimeout(fallbackTimer);
+      fallbackTimer = undefined;
+    }
     const name = result.localName || result.device?.name;
     const previous = found.get(id);
     found.set(id, {
@@ -166,7 +171,18 @@ export async function startDeviceScan(
     await ble.requestLEScan({ allowDuplicates: true }, handle);
   }
 
+  // Some Android Bluetooth stacks accept low-latency mode but silently emit
+  // no callbacks. Restart once with the most compatible default settings.
+  fallbackTimer = setTimeout(() => {
+    if (found.size > 0) return;
+    void (async () => {
+      await ble.stopLEScan().catch(() => undefined);
+      await ble.requestLEScan({ allowDuplicates: true }, handle).catch(() => undefined);
+    })();
+  }, 6000);
+
   return async () => {
+    if (fallbackTimer) clearTimeout(fallbackTimer);
     await ble.stopLEScan().catch(() => undefined);
   };
 }
@@ -189,9 +205,9 @@ export async function scanForDiffuser(
 
   await ble.requestLEScan({ allowDuplicates: false }, (result) => {
     const name = result.localName || result.device?.name;
-    if (!name) return;
     const device = { deviceId: result.device.deviceId, name };
     seen.push({ device, rssi: result.rssi ?? -999 });
+    if (!name) return;
     const upper = name.toUpperCase();
     if (matched) return;
     // When re-connecting to a known diffuser, match its "Device name - Room name"
