@@ -484,13 +484,9 @@ function Setup() {
                       onClick={() => setIntensity(option.value)}
                       className="p-1 transition-transform active:scale-95"
                     >
-                      <Star
+                      <SharpStar
                         className={`size-10 ${filled ? "text-gold" : "text-muted-foreground"}`}
-                        fill={filled ? "currentColor" : "none"}
-                        strokeWidth={1.25}
-                        strokeLinejoin="miter"
-                        strokeLinecap="butt"
-                        aria-hidden
+                        filled={filled}
                       />
                     </button>
                   );
