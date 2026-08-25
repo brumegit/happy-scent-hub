@@ -300,7 +300,7 @@ function Setup() {
             {phase === "paired" ? (
               // Once connected, everything else is hidden and only the success
               // animation stays, centered, while the tile fades to black.
-              <div className="flex min-h-[18rem] items-center justify-center">
+              <div className="mt-10 flex min-h-[18rem] items-center justify-center">
                 <div className="w-full space-y-6 text-center">
                   <div className="relative mx-auto size-20">
                     <span className="success-ring" />
