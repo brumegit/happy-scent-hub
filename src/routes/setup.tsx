@@ -333,28 +333,24 @@ function Setup() {
                   }
                   // Pairing is hidden entirely until the phone can actually
                   // scan, and the prompt names only what is missing.
-                  const missingBt = btOff || btDenied;
-                  const message = btOff
-                    ? missingBt && locOff
-                      ? "Bluetooth and Location are off. Turn both on to pair your diffuser."
-                      : "Bluetooth is off, turn it on to pair your diffuser."
-                    : btDenied && locOff
-                      ? "Brume needs Bluetooth and Location access to find your diffuser."
-                      : btDenied
-                        ? "Brume needs Bluetooth access to find your diffuser."
-                        : "Location is off. Android needs it switched on to find Bluetooth devices.";
-                  const showLocationCta = locOff && !btDenied;
+                  const prompt = bluetoothRequirementPrompt({
+                    bluetoothOff: btOff,
+                    permissionDenied: btDenied,
+                    locationOff: locOff,
+                  });
                   return (
                     <div className="mt-7 space-y-3 border border-border p-5">
-                      <p className="text-sm text-foreground">{message}</p>
+                      <p className="text-sm text-foreground">{prompt.message}</p>
                       <Button
                         variant="link"
                         onClick={() =>
-                          void (showLocationCta ? openLocationSettings() : openAppSettings())
+                          void (prompt.target === "location"
+                            ? openLocationSettings()
+                            : openAppSettings())
                         }
                         className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
                       >
-                        {showLocationCta ? "Open location settings" : "Open app settings"}
+                        {prompt.cta}
                       </Button>
                     </div>
                   );
