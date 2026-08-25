@@ -76,8 +76,10 @@ function Home() {
   return (
     <div className="relative min-h-screen flex flex-col">
       <GuestBanner />
-      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-8">
-        <AppHeader />
+      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-8">
+        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-8">
+          <AppHeader />
+        </div>
 
         {empty ? (
           <div className="flex flex-1 flex-col justify-center">
