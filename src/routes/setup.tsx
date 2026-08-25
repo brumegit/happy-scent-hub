@@ -330,7 +330,7 @@ function Setup() {
                 {existingCount > 0 && (
                   <button
                     type="button"
-                    onClick={() => navigate({ to: "/home" })}
+                    onClick={() => navigate({ to: "/" })}
                     className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
                   >
                     <ArrowLeft className="size-4" aria-hidden />
@@ -461,7 +461,7 @@ function Setup() {
             <button
               type="button"
               onClick={() =>
-                editing ? void navigate({ to: "/home" }) : setPhase("name")
+                editing ? void navigate({ to: "/" }) : setPhase("name")
               }
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
@@ -576,7 +576,7 @@ function Setup() {
                       last_pushed_intensity: intensity,
                       last_pushed_schedule: schedule,
                     });
-                    navigate({ to: "/home", replace: true });
+                    navigate({ to: "/", replace: true });
                     return;
                   }
                   trackEvent("CompleteRegistration", {
@@ -595,7 +595,7 @@ function Setup() {
                     last_pushed_schedule: schedule,
 
                   });
-                  navigate({ to: "/home", replace: true });
+                  navigate({ to: "/", replace: true });
                 })
               }
             />
