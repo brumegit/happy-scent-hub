@@ -82,6 +82,7 @@ function Setup() {
   const { start, edit } = Route.useSearch();
   const addDiffuser = useDiffuserStore((s) => s.addDiffuser);
   const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
+  const existingCount = useDiffuserStore((s) => s.diffusers.length);
   // Editing an existing diffuser: skip pairing and naming, start on intensity.
   const editing = useDiffuserStore((s) => s.diffusers.find((d) => d.id === edit) ?? null);
 
