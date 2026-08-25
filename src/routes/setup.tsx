@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 
 import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
