@@ -250,7 +250,7 @@ function Setup() {
             <Steps phase={phase} />
           )}
         </div>
-        <div className="flex min-h-[calc(100vh-22rem)] flex-col justify-center pb-[4rem]">
+        <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center pb-[4rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
