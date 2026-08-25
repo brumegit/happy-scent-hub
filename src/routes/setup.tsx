@@ -259,11 +259,18 @@ function Setup() {
             <Steps phase={phase} />
           )}
         </div>
+        {/* Soft fade to black between each step. */}
+        <div
+          key={`veil-${phase}`}
+          className="step-veil pointer-events-none fixed inset-0 z-50 bg-background"
+          aria-hidden
+        />
         {/* Keyed on the phase so each step animates in as it appears. */}
         <div
-          key={phase === "pairing" || phase === "paired" ? "connect" : phase}
+          key={phase === "pairing" ? "idle" : phase}
           className="flex flex-1 flex-col justify-center pb-[5rem] animate-fade-in"
         >
+
 
         {phase === "intro" && (
           <section className="flex flex-1 flex-col justify-center animate-fade-in">
