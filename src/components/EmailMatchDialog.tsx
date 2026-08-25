@@ -23,7 +23,7 @@ export function EmailMatchDialog({ onClose }: { onClose: () => void }) {
     setError(null);
     try {
       const result = await lookupCustomerByEmail({ data: { email: email.trim() } });
-      if (result && result.found) {
+      if (result && result.matched) {
         setMatched({
           email: email.trim(),
           firstName: result.firstName ?? null,
