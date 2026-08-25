@@ -419,10 +419,9 @@ function Setup() {
                     so you can finish. Use Chrome or the mobile app for a real pairing.
                   </p>
                 )}
-              </>
-            )}
           </section>
         )}
+
 
         {phase === "name" && (
           <section className="mt-4 space-y-6 animate-fade-in">
