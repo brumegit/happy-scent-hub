@@ -1,10 +1,8 @@
 /**
  * Native (iOS / Android) Bluetooth transport via Capacitor.
  *
- * On a native build this scans in the background, auto-selects the first
- * advertising device whose name contains "BRUME" and connects without showing
- * any picker. On the web this module is inert — bluetooth.ts falls back to
- * Web Bluetooth.
+ * On a native build this uses the operating system's Bluetooth device chooser.
+ * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
 export type NativeChar = { service: string; characteristic: string };
@@ -69,163 +67,25 @@ async function client() {
   return bleClient;
 }
 
-/** Marker used by the UI to show the "allow Bluetooth" dialog. */
 export const PERMISSION_ERROR =
   "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.";
 
-export function isPermissionError(error: unknown) {
-  return error instanceof Error && error.message === PERMISSION_ERROR;
-}
-
 /**
- * Triggers the OS permission prompt (first run) and reports whether Bluetooth
- * access is usable. Never throws.
+ * Opens the native Android/iOS BLE chooser and returns the device selected by
+ * the user. The plugin owns scanning, permission handling and dialog lifecycle,
+ * avoiding a second scanner implemented inside the web view.
  */
-export async function ensureNativePermissions(): Promise<boolean> {
-  if (!isNativeSync()) return true;
-  try {
-    const mod = await import("@capacitor-community/bluetooth-le");
-    await mod.BleClient.initialize({ androidNeverForLocation: false });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** Opens the OS settings page for this app so the user can grant permissions. */
-export async function openNativeAppSettings() {
-  try {
-    const mod = await import("@capacitor-community/bluetooth-le");
-    await mod.BleClient.openAppSettings();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** Opens Android's location-services screen, which is required for BLE scans
- * on Android 11 and below and on a few vendor-modified Android builds. */
-export async function openNativeLocationSettings() {
-  try {
-    const mod = await import("@capacitor-community/bluetooth-le");
-    await mod.BleClient.openLocationSettings();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export type ScannedDevice = NativeDevice & { rssi: number };
-
-export const LOCATION_SERVICES_ERROR =
-  "Location services are off. Android requires them to discover nearby Bluetooth devices.";
-
-/**
- * Live scan that streams every device it sees, strongest first, so the user can
- * pick manually. Unnamed peripherals are kept (most BLE devices advertise
- * without a local name) and labelled by their id. Returns a stop function.
- */
-export async function startDeviceScan(
-  onUpdate: (devices: ScannedDevice[]) => void,
-): Promise<() => Promise<void>> {
+export async function requestNativeDevice(): Promise<NativeDevice> {
   const ble = await client();
-  const found = new Map<string, ScannedDevice>();
-  let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
-
-  // Android 11 and below return a successful but permanently empty scan when
-  // system location services are disabled. Some manufacturers keep that
-  // behaviour on newer versions, so surface it instead of spinning forever.
-  const locationEnabled = await ble.isLocationEnabled().catch(() => true);
-  if (!locationEnabled) throw new Error(LOCATION_SERVICES_ERROR);
-
-  const handle = (result: {
-    device: { deviceId: string; name?: string };
-    localName?: string;
-    rssi?: number;
-  }) => {
-    const id = result.device?.deviceId;
-    if (!id) return;
-    if (fallbackTimer) {
-      clearTimeout(fallbackTimer);
-      fallbackTimer = undefined;
+  try {
+    return await ble.requestDevice();
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    if (message.includes("cancel") || message.includes("dismiss")) {
+      throw new Error("No device selected.\nDouble-tap the button and try again.");
     }
-    const name = result.localName || result.device?.name;
-    const previous = found.get(id);
-    found.set(id, {
-      deviceId: id,
-      name: name || previous?.name || `Unknown device (${id.slice(-5)})`,
-      rssi: result.rssi ?? previous?.rssi ?? -999,
-    });
-    onUpdate([...found.values()].sort((a, b) => b.rssi - a.rssi));
-  };
-
-  // Brume diffusers use legacy advertisements. Asking Android for extended
-  // advertisements switches the scanner out of legacy mode and is unreliable
-  // on some phone/chipset combinations, where the scan starts successfully but
-  // never emits a result. Keep the filter empty and use the standard low-latency
-  // scan so both named and unnamed legacy peripherals are returned.
-  try {
-    await ble.requestLEScan({ allowDuplicates: true, scanMode: 2 as never }, handle);
-  } catch {
-    // Some vendor Android builds reject the scan-mode hint.
-    await ble.requestLEScan({ allowDuplicates: true }, handle);
+    throw error;
   }
-
-  // Some Android Bluetooth stacks accept low-latency mode but silently emit
-  // no callbacks. Restart once with the most compatible default settings.
-  fallbackTimer = setTimeout(() => {
-    if (found.size > 0) return;
-    void (async () => {
-      await ble.stopLEScan().catch(() => undefined);
-      await ble.requestLEScan({ allowDuplicates: true }, handle).catch(() => undefined);
-    })();
-  }, 6000);
-
-  return async () => {
-    if (fallbackTimer) clearTimeout(fallbackTimer);
-    await ble.stopLEScan().catch(() => undefined);
-  };
-}
-
-
-
-/**
- * Scans for up to `timeoutMs` and resolves with the first device whose name
- * contains "BRUME"; otherwise resolves with the strongest nearby device that
- * exposes a name.
- */
-export async function scanForDiffuser(
-  preferName?: string,
-  timeoutMs = 6000,
-): Promise<NativeDevice | null> {
-  const ble = await client();
-  const seen: { device: NativeDevice; rssi: number }[] = [];
-  let matched: NativeDevice | null = null;
-  const wanted = preferName?.trim().toUpperCase();
-
-  await ble.requestLEScan({ allowDuplicates: false }, (result) => {
-    const name = result.localName || result.device?.name;
-    const device: NativeDevice = name
-      ? { deviceId: result.device.deviceId, name }
-      : { deviceId: result.device.deviceId };
-    seen.push({ device, rssi: result.rssi ?? -999 });
-    if (!name) return;
-    const upper = name.toUpperCase();
-    if (matched) return;
-    // When re-connecting to a known diffuser, match its "Device name - Room name"
-    // hardware label first; otherwise fall back to any BRUME unit.
-    if (wanted ? upper.includes(wanted) : upper.includes("BRUME")) matched = device;
-  });
-
-  const started = Date.now();
-  while (!matched && Date.now() - started < timeoutMs) {
-    await new Promise((r) => setTimeout(r, 250));
-  }
-  await ble.stopLEScan().catch(() => undefined);
-
-  if (matched) return matched;
-  seen.sort((a, b) => b.rssi - a.rssi);
-  return seen[0]?.device ?? null;
 }
 
 /** Connects and returns the writable characteristic to use for the protocol. */
