@@ -241,13 +241,15 @@ function Setup() {
     <div className="min-h-screen">
       <GuestBanner />
 
-      <div className="mx-auto max-w-2xl px-6 py-8">
-        <AppHeader />
-        {editing ? (
-          <h1 className="mt-8 font-display text-3xl">{editing.room}'s settings</h1>
-        ) : (
-          <Steps phase={phase} />
-        )}
+      <div className="mx-auto max-w-2xl px-6 pb-8">
+        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-8">
+          <AppHeader />
+          {editing ? (
+            <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
+          ) : (
+            <Steps phase={phase} />
+          )}
+        </div>
         <div className="flex min-h-[calc(100vh-22rem)] flex-col justify-center pb-[4rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
