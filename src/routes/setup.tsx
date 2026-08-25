@@ -57,22 +57,29 @@ type Phase = "intro" | "idle" | "pairing" | "paired" | "name" | "intensity" | "p
 const STEPS = ["Connect", "Intensity", "Routine"] as const;
 
 const ONBOARDING = [
-  {
-    icon: Bluetooth,
-    title: "Connect your diffuser",
-    body: "Double tap the diffuser button and pick it in the Bluetooth list.",
-  },
-  {
-    icon: Star,
-    title: "Choose your intensity",
-    body: "From one to five stars, set how much scent fills the room.",
-  },
-  {
-    icon: CalendarClock,
-    title: "Set your routines",
-    body: "Pick the days and hours the diffuser should run each week.",
-  },
+  { icon: Bluetooth, title: "Connect your diffuser" },
+  { icon: Star, title: "Choose your intensity" },
+  { icon: CalendarClock, title: "Set your routines" },
 ] as const;
+
+// Lucide's star has softened points; this path keeps the pikes sharp.
+function SharpStar({ className, filled }: { className?: string; filled: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={1.25}
+      strokeLinejoin="miter"
+      strokeMiterlimit={10}
+      strokeLinecap="butt"
+      aria-hidden
+    >
+      <path d="M12 1.2 15 8.7 23 9.3 16.9 14.6 18.8 22.8 12 18.3 5.2 22.8 7.1 14.6 1 9.3 9 8.7Z" />
+    </svg>
+  );
+}
 
 function stepIndex(phase: Phase) {
   if (phase === "intensity") return 1;
@@ -244,7 +251,7 @@ function Setup() {
       <GuestBanner />
 
       <div className="mx-auto flex max-w-2xl flex-1 flex-col px-11 pb-8">
-        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 py-5">
+        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pb-5">
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
@@ -256,7 +263,7 @@ function Setup() {
 
         {phase === "intro" && (
           <section className="flex flex-1 flex-col justify-center animate-fade-in">
-            <h1 className="font-display text-4xl leading-tight">Welcome to Brume</h1>
+            <h1 className="font-display text-4xl leading-tight">Setup</h1>
             <p className="mt-3 text-sm text-foreground">
               Three short steps and your diffuser runs on its own.
             </p>
@@ -272,7 +279,6 @@ function Setup() {
                       Step {index + 1}
                     </p>
                     <p className="mt-1 font-display text-xl leading-tight">{item.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
                   </div>
                 </li>
               ))}
@@ -294,7 +300,7 @@ function Setup() {
             {phase === "paired" ? (
               // Once connected, everything else is hidden and only the success
               // animation stays, centered, while the tile fades to black.
-              <div className="flex min-h-[18rem] items-center justify-center">
+              <div className="mt-10 flex min-h-[18rem] items-center justify-center">
                 <div className="w-full space-y-6 text-center">
                   <div className="relative mx-auto size-20">
                     <span className="success-ring" />
@@ -331,7 +337,7 @@ function Setup() {
                     Back
                   </button>
                 )}
-                <h1 className="font-display text-4xl leading-tight">Start now</h1>
+                <h1 className="font-display text-4xl leading-tight">Pairing</h1>
 
                 <video
                   // Fills the full height between the heading and the CTA. Uses
@@ -478,13 +484,9 @@ function Setup() {
                       onClick={() => setIntensity(option.value)}
                       className="p-1 transition-transform active:scale-95"
                     >
-                      <Star
+                      <SharpStar
                         className={`size-10 ${filled ? "text-gold" : "text-muted-foreground"}`}
-                        fill={filled ? "currentColor" : "none"}
-                        strokeWidth={1.25}
-                        strokeLinejoin="miter"
-                        strokeLinecap="butt"
-                        aria-hidden
+                        filled={filled}
                       />
                     </button>
                   );
