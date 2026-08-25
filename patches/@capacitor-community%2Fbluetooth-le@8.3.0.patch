@@ -2,6 +2,26 @@ diff --git a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle
 index d3b3979..f61a85a 100644
 --- a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
 +++ b/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
+@@ -75,6 +75,20 @@ class DeviceScanner(
+              }
+          }
+      }
++
++        override fun onScanFailed(errorCode: Int) {
++            super.onScanFailed(errorCode)
++            Logger.error(TAG, "Bluetooth scan failed with Android error code $errorCode")
++            stopScanning()
++            dialogHandler?.post {
++                dialog?.dismiss()
++            }
++            savedCallback?.invoke(
++                ScanResponse(false, "Bluetooth scan failed (Android error $errorCode). Restart Bluetooth and try again.", null)
++            )
++            savedCallback = null
++        }
+     }
+ 
+     fun startScanning(
 @@ -93,14 +93,21 @@ class DeviceScanner(
          deviceStrings.clear()
          deviceList.clear()
