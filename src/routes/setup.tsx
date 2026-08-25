@@ -361,7 +361,7 @@ function Setup() {
         )}
 
         {phase === "name" && (
-          <section className="mt-8 space-y-6 border border-border p-7 animate-fade-in">
+          <section className="mt-4 space-y-6 border border-border p-7 animate-fade-in">
             <div>
               <h1 className="font-display text-4xl">Where's it going?</h1>
                <p className="mt-2 text-sm text-foreground">Your diffuser is connected.</p>
