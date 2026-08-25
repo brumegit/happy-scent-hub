@@ -18,7 +18,6 @@ import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
-import { bluetoothRequirementPrompt, useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
@@ -47,7 +46,6 @@ import {
 } from "@/lib/diffuser";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
 import { useIdentityStore } from "@/stores/identityStore";
-import { openAppSettings, openLocationSettings } from "@/lib/native-ble";
 
 
 export const Route = createFileRoute("/")({
@@ -71,62 +69,21 @@ function Home() {
   const status = useIdentityStore((s) => s.status);
 
   const empty = hydrated && diffusers.length === 0;
-  const {
-    checking: checkingRequirements,
-    bluetoothOff,
-    permissionDenied,
-    locationOff,
-  } = useBluetoothRequirements(empty);
 
-  const requirementsMissing = bluetoothOff || permissionDenied || locationOff;
-  const prompt = bluetoothRequirementPrompt({ bluetoothOff, permissionDenied, locationOff });
+  // With no diffuser there is no home to show — setup is the whole app.
+  useEffect(() => {
+    if (empty) void navigate({ to: "/setup", search: { start: false }, replace: true });
+  }, [empty, navigate]);
 
   return (
     <div className="relative min-h-screen flex flex-col">
       <GuestBanner />
       <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pb-8">
-        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-8">
+        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 pb-8">
           <AppHeader />
         </div>
 
-        {empty ? (
-          <div className="flex flex-1 flex-col justify-center">
-            <section className="px-2 py-7">
-              <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
-              <p className="mt-3 text-sm text-muted-foreground">
-                Pair your diffuser to set its intensity and weekly schedule.
-              </p>
-              {checkingRequirements ? (
-                <div className="mt-7 border border-border p-5">
-                  <p className="text-sm text-foreground">Checking Bluetooth and Location access…</p>
-                </div>
-              ) : requirementsMissing ? (
-                <div className="mt-7 space-y-3 border border-border p-5">
-                  <p className="text-sm text-foreground">{prompt.message}</p>
-                  <Button
-                    variant="link"
-                    onClick={() =>
-                      void (prompt.target === "location"
-                        ? openLocationSettings()
-                        : openAppSettings())
-                    }
-                    className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
-                  >
-                    {prompt.cta}
-                  </Button>
-                </div>
-              ) : (
-                <div className="mt-7">
-                  <StatusButton
-                    state="idle"
-                    label="Start now"
-                    onClick={() => navigate({ to: "/setup", search: { start: false } })}
-                  />
-                </div>
-              )}
-            </section>
-          </div>
-        ) : (
+        {empty ? null : (
           <>
             <div className="mt-10 flex items-end justify-between gap-4">
               <div>
