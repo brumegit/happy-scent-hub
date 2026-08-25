@@ -337,7 +337,7 @@ function Setup() {
                     Back
                   </button>
                 )}
-                <h1 className="font-display text-4xl leading-tight">Start now</h1>
+                <h1 className="font-display text-4xl leading-tight">Pairing</h1>
 
                 <video
                   // Fills the full height between the heading and the CTA. Uses
