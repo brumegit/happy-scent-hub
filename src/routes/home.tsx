@@ -120,7 +120,7 @@ function Home() {
                   <StatusButton
                     state="idle"
                     label="Start now"
-                    onClick={() => navigate({ to: "/setup", search: { start: true } })}
+                    onClick={() => navigate({ to: "/setup", search: { start: false } })}
                   />
                 </div>
               )}
@@ -343,7 +343,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               />
               <div
                 role="menu"
-                className={`absolute right-0 top-8 z-20 border border-border p-1 text-sm ${
+                className={`absolute right-0 top-8 z-20 border border-border bg-background p-1 text-sm ${
                   confirmRemove ? "w-60" : "w-44"
                 }`}
               >
