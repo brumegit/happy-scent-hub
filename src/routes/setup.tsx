@@ -230,8 +230,8 @@ function Setup() {
     <div className="min-h-screen">
       <GuestBanner />
 
-      <div className="mx-auto max-w-2xl px-6 pb-8">
-        <div className="sticky top-0 z-40 -mx-6 bg-background px-6 py-5">
+      <div className="mx-auto max-w-2xl px-11 pb-8">
+        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 py-5">
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
@@ -239,11 +239,11 @@ function Setup() {
             <Steps phase={phase} />
           )}
         </div>
-        <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center pb-[4rem]">
+        <div className="flex min-h-[calc(100vh-18rem)] flex-col justify-center pb-[5rem]">
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
-            className={`mt-4 transition-all duration-[3000ms] ${
+            className={`mt-4 flex flex-1 flex-col transition-all duration-[3000ms] ${
               phase === "paired" && fading ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -288,13 +288,12 @@ function Setup() {
                     Back
                   </button>
                 )}
-                <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
+                <h1 className="font-display text-4xl leading-tight">Start now</h1>
 
                 <video
-                  // Cropped from the top (gravity north) so the frame keeps its
-                  // size instead of shrinking on short screens. Max height is
-                  // capped so the CTA always clears the fixed guest bar.
-                  className="mx-auto my-6 w-4/5 h-[clamp(7rem,calc(100vh-30rem),20rem)] object-cover object-top"
+                  // Fills the full height between the heading and the CTA so the
+                  // frame scales with the screen instead of being cropped.
+                  className="mt-6 w-full flex-1 min-h-0 object-cover object-top"
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
