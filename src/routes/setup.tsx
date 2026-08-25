@@ -424,23 +424,34 @@ function Setup() {
             <h1 className="font-display text-4xl">How intense?</h1>
 
 
-            <div className="grid grid-cols-3 gap-2">
-              {INTENSITIES.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={intensity === option.value}
-                  onClick={() => setIntensity(option.value)}
-                  className={`w-full border bg-background px-2 py-4 text-center text-sm uppercase tracking-[0.14em] transition-colors ${
-                    intensity === option.value
-                      ? "border-gold text-gold"
-                      : "border-border text-muted-foreground"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div>
+              <div className="flex items-center justify-center gap-3">
+                {INTENSITIES.map((option) => {
+                  const filled = option.stars <= preset.stars;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={intensity === option.value}
+                      aria-label={option.label}
+                      onClick={() => setIntensity(option.value)}
+                      className="p-1 transition-transform active:scale-95"
+                    >
+                      <Star
+                        className={`size-10 ${filled ? "text-gold" : "text-muted-foreground"}`}
+                        fill={filled ? "currentColor" : "none"}
+                        strokeWidth={1.25}
+                        aria-hidden
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-center text-sm uppercase tracking-[0.14em] text-gold">
+                {preset.label}
+              </p>
             </div>
+
 
              <p className="text-center text-xs leading-relaxed text-foreground">
               Sprays {formatSeconds(preset.onSeconds)}, then stops {formatSeconds(preset.offSeconds)}{" "}
