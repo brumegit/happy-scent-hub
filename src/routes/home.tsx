@@ -220,10 +220,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setConnecting(true);
     setError(null);
     try {
-      // Re-connecting a known diffuser: auto-select it by its hardware label.
-      const paired = await pairDiffuser({
-        preferName: hardwareName(diffuser.name, diffuser.room),
-      });
+      // Always let the user choose; never filter or auto-select a peripheral.
+      const paired = await pairDiffuser();
       updateDiffuser(diffuser.id, { device_id: paired.deviceId });
       setConnected(await checkConnection(paired.deviceId));
     } catch (err) {

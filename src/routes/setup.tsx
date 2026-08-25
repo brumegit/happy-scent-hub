@@ -139,7 +139,7 @@ function Setup() {
     setError(null);
     setPhase("pairing");
     try {
-      const device = await pairDiffuser({ preferBrume: existingCount === 0 });
+      const device = await pairDiffuser();
       await afterPaired(device);
     } catch (err) {
       setPhase("idle");
@@ -313,7 +313,7 @@ function Setup() {
                   playsInline
                 />
 
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-3 text-sm text-foreground">
                   Double tap on the diffuser button to enter pairing mode. The LED should be
                   blinking.
                 </p>
@@ -329,13 +329,13 @@ function Setup() {
                 </div>
 
                 {phase === "idle" && btOff && (
-                  <p className="mt-5 text-sm text-destructive">
+                  <p className="mt-5 text-sm text-foreground">
                     Bluetooth is off, turn it on to pair your diffuser.
                   </p>
                 )}
                 {phase === "idle" && !btOff && btDenied && (
                   <div className="mt-5 space-y-2">
-                    <p className="text-sm text-destructive">
+                    <p className="text-sm text-foreground">
                       Brume is not allowed to use Bluetooth on this phone.
                     </p>
                     <button
@@ -348,7 +348,7 @@ function Setup() {
                   </div>
                 )}
                 {phase === "idle" && !btOff && !btDenied && !isBluetoothSupported() && (
-                  <p className="mt-5 text-xs text-muted-foreground">
+                  <p className="mt-5 text-xs text-foreground">
                     This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
                     so you can finish. Use Chrome or the mobile app for a real pairing.
                   </p>
@@ -362,7 +362,7 @@ function Setup() {
           <section className="mt-8 space-y-6 border border-border p-7 animate-fade-in">
             <div>
               <h1 className="font-display text-4xl">Where's it going?</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Your diffuser is connected.</p>
+               <p className="mt-2 text-sm text-foreground">Your diffuser is connected.</p>
             </div>
 
             <div className="space-y-2">
@@ -434,7 +434,7 @@ function Setup() {
               ))}
             </div>
 
-            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+             <p className="text-center text-xs leading-relaxed text-foreground">
               Sprays {formatSeconds(preset.onSeconds)}, then stops {formatSeconds(preset.offSeconds)}{" "}
               between sprays.
               <br />
@@ -450,7 +450,7 @@ function Setup() {
         {phase === "pushing" && (
           <section className="mt-8 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
+             <p className="mt-3 text-sm text-foreground">
               Keep the diffuser nearby. It beeps once each command is accepted.
             </p>
             <div className="mt-7">
@@ -480,7 +480,7 @@ function Setup() {
                 Back
               </button>
               <h1 className="font-display text-4xl">When?</h1>
-              <p className="mt-2 text-sm text-muted-foreground">
+               <p className="mt-2 text-sm text-foreground">
                 Start about 30 minutes early to fill the room.
               </p>
 
@@ -493,7 +493,7 @@ function Setup() {
             />
 
             {simulated && (
-              <p className="text-xs text-muted-foreground">
+               <p className="text-xs text-foreground">
                 Demo connection. Commands are logged, not sent to hardware.
               </p>
             )}

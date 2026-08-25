@@ -126,7 +126,9 @@ export const PERMISSION_ERROR =
 export async function requestNativeDevice(): Promise<NativeDevice> {
   const ble = await client();
   try {
-    return await ble.requestDevice();
+    // Intentionally pass no filters: the native list must show every nearby
+    // BLE peripheral and wait for the user to choose one.
+    return await ble.requestDevice({});
   } catch (error) {
     const message = error instanceof Error ? error.message.toLowerCase() : "";
     if (message.includes("cancel") || message.includes("dismiss")) {
