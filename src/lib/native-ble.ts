@@ -55,8 +55,8 @@ async function client() {
   if (bleClient) return bleClient;
   const mod = await import("@capacitor-community/bluetooth-le");
   try {
-    // Bluetooth only: `neverForLocation` tells Android the scan is never used
-    // to derive the user's position, so no location permission is requested.
+    // Request only Android's Nearby devices permissions. The manifest omits
+    // neverForLocation because Android may otherwise suppress BLE adverts.
     await mod.BleClient.initialize({ androidNeverForLocation: true });
     permissionDenied = false;
   } catch (error) {
