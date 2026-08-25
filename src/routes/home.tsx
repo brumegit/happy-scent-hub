@@ -25,10 +25,7 @@ import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife
 import {
   checkConnection,
   disconnect,
-  getBatteryStatus,
   pairDiffuser,
-  requestBattery,
-  subscribeBattery,
 } from "@/lib/bluetooth";
 import { pushName, pushSettings } from "@/lib/push";
 import {
@@ -167,40 +164,6 @@ function Home() {
     </div>
   );
 }
-
-/**
- * Battery level of the connected diffuser. The protocol has no "read battery"
- * command: the module reports it inside its runtime status frames (0x21/0x22/
- * 0x23), so the app polls it with the silent query command and acknowledges the
- * reports it receives. Until the first report lands a placeholder is shown.
- */
-function BatteryIndicator({ deviceId }: { deviceId: string | null }) {
-  const [status, setStatus] = useState(() => getBatteryStatus(deviceId));
-
-  useEffect(() => {
-    setStatus(getBatteryStatus(deviceId));
-    const unsubscribe = subscribeBattery(() => setStatus(getBatteryStatus(deviceId)));
-    void requestBattery(deviceId);
-    const poll = setInterval(() => void requestBattery(deviceId), 30_000);
-    return () => {
-      unsubscribe();
-      clearInterval(poll);
-    };
-  }, [deviceId]);
-
-  const low = !!status && (status.lowBattery || status.percent <= 20);
-  return (
-    <p
-      className={`text-xs uppercase tracking-[0.18em] ${
-        low ? "text-destructive" : "text-foreground"
-      }`}
-      aria-label={status ? `Battery ${status.percent} percent` : "Reading battery level"}
-    >
-      {status ? `${status.percent}%` : "--"}
-    </p>
-  );
-}
-
 
 function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const navigate = useNavigate();
@@ -352,13 +315,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             <p className="mt-1 text-sm text-gold">{diffuser.name}</p>
           </div>
           {connected && (
-            <div className="mt-4 flex items-center gap-4">
-              <p className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
-                <Bluetooth className="size-4" aria-hidden />
-                Connected
-              </p>
-              <BatteryIndicator deviceId={diffuser.device_id} />
-            </div>
+            <p className="mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-foreground">
+              <Bluetooth className="size-4" aria-hidden />
+              Connected
+            </p>
           )}
         </div>
 

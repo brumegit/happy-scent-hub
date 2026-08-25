@@ -72,7 +72,7 @@ export const INTENSITIES: {
     label: "High",
     stars: 4,
     onSeconds: 22,
-    offSeconds: 150,
+    offSeconds: 120,
   },
   {
     value: "very-high",

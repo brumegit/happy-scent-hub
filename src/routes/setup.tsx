@@ -316,7 +316,7 @@ function Setup() {
                       <div className="mt-7">
                         <StatusButton
                           state={phase === "idle" ? "idle" : "pairing"}
-                          label={phase === "idle" ? "Connect your diffuser" : "Searching"}
+                          label={phase === "idle" ? "Start pairing" : "Searching"}
                           {...(phase === "idle" ? { onClick: handlePair } : {})}
                         />
                       </div>
@@ -365,7 +365,7 @@ function Setup() {
         )}
 
         {phase === "name" && (
-          <section className="mt-4 space-y-6 border border-border p-7 animate-fade-in">
+          <section className="mt-4 space-y-6 animate-fade-in">
             <div>
               <h1 className="font-display text-4xl">Where's it going?</h1>
                <p className="mt-2 text-sm text-foreground">Your diffuser is connected.</p>
@@ -408,7 +408,7 @@ function Setup() {
         )}
 
         {phase === "intensity" && (
-          <section className="mt-4 space-y-6 border border-border p-7 animate-fade-in">
+          <section className="mt-4 space-y-6 animate-fade-in">
             <button
               type="button"
               onClick={() =>
@@ -439,6 +439,8 @@ function Setup() {
                         className={`size-10 ${filled ? "text-gold" : "text-muted-foreground"}`}
                         fill={filled ? "currentColor" : "none"}
                         strokeWidth={1.25}
+                        strokeLinejoin="miter"
+                        strokeLinecap="butt"
                         aria-hidden
                       />
                     </button>
