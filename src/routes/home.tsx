@@ -83,7 +83,7 @@ function Home() {
 
         {empty ? (
           <div className="flex flex-1 flex-col justify-center">
-            <section className="border border-border p-7">
+            <section className="border border-border px-2 py-7">
               <h1 className="font-display text-4xl leading-tight">Start pairing</h1>
               <p className="mt-3 text-sm text-muted-foreground">
                 Pair your diffuser to set its intensity and weekly schedule.
@@ -263,7 +263,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
   return (
     <article
-      className="relative isolate overflow-hidden border border-border p-7"
+      className="relative isolate overflow-hidden border border-border px-2 py-7"
       style={{ boxShadow: "var(--shadow-soft)" }}
     >
       {editingName && (
