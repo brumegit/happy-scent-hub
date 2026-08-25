@@ -35,13 +35,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <!-- Force the plugin manifest to preserve Bluetooth-only scanning. Without
-         tools:replace, its duplicate declaration can silently drop this flag. -->
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s"
-        tools:replace="android:usesPermissionFlags" />
+    <!-- Do not set neverForLocation here: Android may otherwise filter BLE
+         advertisements from older peripherals before they reach the app. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- The BLE dependency declares these itself. Remove them from the final

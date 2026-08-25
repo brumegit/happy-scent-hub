@@ -55,9 +55,11 @@ async function client() {
   if (bleClient) return bleClient;
   const mod = await import("@capacitor-community/bluetooth-le");
   try {
-    // Request only Android's Nearby devices permissions. The manifest omits
-    // neverForLocation because Android may otherwise suppress BLE adverts.
-    await mod.BleClient.initialize({ androidNeverForLocation: true });
+    // Do not assert neverForLocation: Android documents that this assertion
+    // can filter some BLE advertisements, including packets from older
+    // peripherals. Runtime access remains the Nearby devices permission on
+    // current Android versions.
+    await mod.BleClient.initialize({ androidNeverForLocation: false });
     permissionDenied = false;
   } catch (error) {
     permissionDenied = true;
