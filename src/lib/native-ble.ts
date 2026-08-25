@@ -16,6 +16,20 @@ type BleClientType = typeof import("@capacitor-community/bluetooth-le")["BleClie
 
 let bleClient: BleClientType | null = null;
 
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+function isTransientGattError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    message.includes("gatt") ||
+    message.includes("status 8") ||
+    message.includes("status 62") ||
+    message.includes("status 113") ||
+    message.includes("status 133") ||
+    message.includes("connection timeout")
+  );
+}
+
 /**
  * Synchronous native check. The Capacitor bridge injects `window.Capacitor`
  * into the webview (including when the shell loads a remote URL), so the UI can
@@ -174,7 +188,30 @@ export async function connectNative(
   onNotify?: (value: Uint8Array) => void,
 ): Promise<NativeChar | null> {
   const ble = await client();
-  await ble.connect(deviceId);
+  // Android can reject a GATT connection when it starts in the same radio
+  // timeslice as the chooser's scan teardown. Give scanning time to stop, then
+  // retry only transient GATT failures after fully closing the stale client.
+  await wait(700);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await ble.connect(deviceId, undefined, { timeout: 15_000, skipDescriptorDiscovery: true });
+      lastError = undefined;
+      break;
+    } catch (error) {
+      lastError = error;
+      await ble.disconnect(deviceId).catch(() => undefined);
+      if (!isTransientGattError(error) || attempt === 2) break;
+      await wait(900 * (attempt + 1));
+    }
+  }
+  if (lastError) {
+    const detail = lastError instanceof Error ? lastError.message : String(lastError);
+    throw new Error(
+      `Could not connect to the diffuser (${detail}). Make sure it is not connected to nRF Connect, Scent Tech, or another phone, then restart the diffuser and try again.`,
+      { cause: lastError },
+    );
+  }
   const services = await ble.getServices(deviceId);
 
   let writable: NativeChar | null = null;
@@ -193,6 +230,10 @@ export async function connectNative(
         writable = { service: service.uuid, characteristic: ch.uuid };
       }
     }
+  }
+  if (!writable) {
+    await ble.disconnect(deviceId).catch(() => undefined);
+    throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
   }
   return writable;
 }
