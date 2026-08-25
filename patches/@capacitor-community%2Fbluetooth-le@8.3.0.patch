@@ -2,7 +2,7 @@ diff --git a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle
 index d3b3979..f61a85a 100644
 --- a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
 +++ b/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
-@@ -75,6 +75,20 @@ class DeviceScanner(
+@@ -75,6 +75,19 @@ class DeviceScanner(
               }
           }
       }
