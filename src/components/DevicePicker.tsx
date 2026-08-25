@@ -163,7 +163,7 @@ export function DevicePicker({
 
       {permissionDenied ? (
         <div className="flex flex-1 flex-col justify-center gap-6 px-6">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-foreground">
             Brume needs permission to find nearby devices so it can pair with your diffuser. No
             location data is collected.
           </p>
