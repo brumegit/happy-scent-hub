@@ -332,48 +332,47 @@ function Setup() {
                 </p>
 
 
-                <div className="mt-7">
-                  <StatusButton
-                    state={phase === "idle" ? "idle" : "pairing"}
-                    label={phase === "idle" ? "Start pairing" : "Searching"}
-                    disabled={phase === "idle" && (btOff || locOff)}
-                    {...(phase === "idle" && !btOff && !locOff ? { onClick: handlePair } : {})}
-                  />
-                </div>
-
-                {phase === "idle" && btOff && (
-                  <p className="mt-5 text-sm text-foreground">
-                    Bluetooth is off, turn it on to pair your diffuser.
-                  </p>
-                )}
-                {phase === "idle" && !btOff && locOff && (
-                  <div className="mt-5 space-y-2">
-                    <p className="text-sm text-foreground">
-                      Location is off. Android needs it switched on to find Bluetooth devices.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void openLocationSettings()}
-                      className="text-sm text-foreground underline underline-offset-4"
-                    >
-                      Open location settings
-                    </button>
-                  </div>
-                )}
-                {phase === "idle" && !btOff && !locOff && btDenied && (
-                  <div className="mt-5 space-y-2">
-                    <p className="text-sm text-foreground">
-                      Brume is not allowed to use Bluetooth on this phone.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void openAppSettings()}
-                      className="text-sm text-foreground underline underline-offset-4"
-                    >
-                      Open app settings
-                    </button>
-                  </div>
-                )}
+                {(() => {
+                  const blocked = phase === "idle" && (btOff || btDenied || locOff);
+                  if (!blocked) {
+                    return (
+                      <div className="mt-7">
+                        <StatusButton
+                          state={phase === "idle" ? "idle" : "pairing"}
+                          label={phase === "idle" ? "Start pairing" : "Searching"}
+                          {...(phase === "idle" ? { onClick: handlePair } : {})}
+                        />
+                      </div>
+                    );
+                  }
+                  // Pairing is hidden entirely until the phone can actually
+                  // scan, and the prompt names only what is missing.
+                  const missingBt = btOff || btDenied;
+                  const message = btOff
+                    ? missingBt && locOff
+                      ? "Bluetooth and Location are off. Turn both on to pair your diffuser."
+                      : "Bluetooth is off, turn it on to pair your diffuser."
+                    : btDenied && locOff
+                      ? "Brume needs Bluetooth and Location access to find your diffuser."
+                      : btDenied
+                        ? "Brume needs Bluetooth access to find your diffuser."
+                        : "Location is off. Android needs it switched on to find Bluetooth devices.";
+                  const showLocationCta = locOff && !btDenied;
+                  return (
+                    <div className="mt-7 space-y-3 border border-border p-5">
+                      <p className="text-sm text-foreground">{message}</p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void (showLocationCta ? openLocationSettings() : openAppSettings())
+                        }
+                        className="text-sm text-foreground underline underline-offset-4"
+                      >
+                        {showLocationCta ? "Open location settings" : "Open app settings"}
+                      </button>
+                    </div>
+                  );
+                })()}
                 {phase === "idle" && !btOff && !locOff && !btDenied && !isBluetoothSupported() && (
                   <p className="mt-5 text-xs text-foreground">
                     This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
