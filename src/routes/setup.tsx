@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 
 import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
@@ -243,12 +243,11 @@ function Setup() {
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
-            className={`mt-4 p-7 transition-all duration-[3000ms] ${
-              phase === "paired"
-                ? `border border-transparent ${fading ? "bg-background opacity-0" : "opacity-100"}`
-                : "border border-border opacity-100"
+            className={`mt-4 transition-all duration-[3000ms] ${
+              phase === "paired" && fading ? "opacity-0" : "opacity-100"
             }`}
           >
+
             {phase === "paired" ? (
               // Once connected, everything else is hidden and only the success
               // animation stays, centered, while the tile fades to black.
@@ -289,7 +288,7 @@ function Setup() {
                     Back
                   </button>
                 )}
-                <h1 className="font-display text-4xl leading-tight">Start pairing</h1>
+                <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
 
                 <video
                   // Cropped from the top (gravity north) so the frame keeps its
@@ -318,7 +317,7 @@ function Setup() {
                       <div className="mt-7">
                         <StatusButton
                           state={phase === "idle" ? "idle" : "pairing"}
-                          label={phase === "idle" ? "Start pairing" : "Searching"}
+                          label={phase === "idle" ? "Connect your diffuser" : "Searching"}
                           {...(phase === "idle" ? { onClick: handlePair } : {})}
                         />
                       </div>
@@ -424,23 +423,34 @@ function Setup() {
             <h1 className="font-display text-4xl">How intense?</h1>
 
 
-            <div className="grid grid-cols-3 gap-2">
-              {INTENSITIES.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={intensity === option.value}
-                  onClick={() => setIntensity(option.value)}
-                  className={`w-full border bg-background px-2 py-4 text-center text-sm uppercase tracking-[0.14em] transition-colors ${
-                    intensity === option.value
-                      ? "border-gold text-gold"
-                      : "border-border text-muted-foreground"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div>
+              <div className="flex items-center justify-center gap-3">
+                {INTENSITIES.map((option) => {
+                  const filled = option.stars <= preset.stars;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={intensity === option.value}
+                      aria-label={option.label}
+                      onClick={() => setIntensity(option.value)}
+                      className="p-1 transition-transform active:scale-95"
+                    >
+                      <Star
+                        className={`size-10 ${filled ? "text-gold" : "text-muted-foreground"}`}
+                        fill={filled ? "currentColor" : "none"}
+                        strokeWidth={1.25}
+                        aria-hidden
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-center text-sm uppercase tracking-[0.14em] text-gold">
+                {preset.label}
+              </p>
             </div>
+
 
              <p className="text-center text-xs leading-relaxed text-foreground">
               Sprays {formatSeconds(preset.onSeconds)}, then stops {formatSeconds(preset.offSeconds)}{" "}

@@ -187,6 +187,12 @@ export const PERMISSION_ERROR =
  */
 export async function requestNativeDevice(): Promise<NativeDevice> {
   const ble = await client();
+
+  // A Brume diffuser advertises its own name, so pick it up silently instead of
+  // asking the user to recognise it in a list of nearby phones and headphones.
+  const known = await scanForBrume(ble).catch(() => null);
+  if (known) return known;
+
   try {
     // No filters and Android's default balanced/legacy scan settings give the
     // broadest compatibility across phones and older diffuser chipsets. The
@@ -200,6 +206,36 @@ export async function requestNativeDevice(): Promise<NativeDevice> {
     throw error;
   }
 }
+
+/**
+ * Short unfiltered scan that resolves as soon as a peripheral whose name
+ * contains "BRUME" shows up. Resolves null when none appears in time so the
+ * native chooser can take over.
+ */
+async function scanForBrume(
+  ble: Awaited<ReturnType<typeof client>>,
+): Promise<NativeDevice | null> {
+  return await new Promise<NativeDevice | null>((resolve) => {
+    let settled = false;
+    const finish = (device: NativeDevice | null) => {
+      if (settled) return;
+      settled = true;
+      void ble.stopLEScan().catch(() => undefined);
+      clearTimeout(timer);
+      resolve(device);
+    };
+    const timer = setTimeout(() => finish(null), 5000);
+    void ble
+      .requestLEScan({ allowDuplicates: false }, (result) => {
+        const name = result.localName ?? result.device?.name ?? "";
+        if (name.toUpperCase().includes("BRUME")) {
+          finish({ deviceId: result.device.deviceId, name });
+        }
+      })
+      .catch(() => finish(null));
+  });
+}
+
 
 /** Connects and returns the writable characteristic to use for the protocol. */
 export async function connectNative(
