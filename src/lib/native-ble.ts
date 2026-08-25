@@ -195,7 +195,7 @@ export async function connectNative(
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await ble.connect(deviceId, undefined, { timeout: 15_000 });
+      await ble.connect(deviceId, undefined, { timeout: 15_000, skipDescriptorDiscovery: true });
       lastError = undefined;
       break;
     } catch (error) {
