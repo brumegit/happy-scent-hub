@@ -18,7 +18,6 @@ import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
-import { bluetoothRequirementPrompt, useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
@@ -47,7 +46,6 @@ import {
 } from "@/lib/diffuser";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
 import { useIdentityStore } from "@/stores/identityStore";
-import { openAppSettings, openLocationSettings } from "@/lib/native-ble";
 
 
 export const Route = createFileRoute("/")({
