@@ -40,15 +40,27 @@ export async function isNativePlatform() {
   }
 }
 
+/**
+ * Set as soon as the operating system refuses the Bluetooth permission, so the
+ * UI can tell "Bluetooth is off" apart from "the app is not allowed to use
+ * Bluetooth" and send the user to the right place.
+ */
+let permissionDenied = false;
+
+export function isBluetoothPermissionDenied() {
+  return permissionDenied;
+}
+
 async function client() {
   if (bleClient) return bleClient;
   const mod = await import("@capacitor-community/bluetooth-le");
   try {
-    // Do not use Android's `neverForLocation` assertion here. Android is
-    // allowed to filter BLE advertisements when it is enabled, which hides
-    // some diffuser chipsets even though other scanners can see them.
-    await mod.BleClient.initialize({ androidNeverForLocation: false });
+    // Bluetooth only: `neverForLocation` tells Android the scan is never used
+    // to derive the user's position, so no location permission is requested.
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
+    permissionDenied = false;
   } catch (error) {
+    permissionDenied = true;
     throw new Error(PERMISSION_ERROR, { cause: error });
   }
   try {
@@ -64,7 +76,43 @@ async function client() {
     // isEnabled/requestEnable are unavailable on some platforms — keep going.
   }
   bleClient = mod.BleClient;
+  void requestNotificationPermission();
   return bleClient;
+}
+
+/**
+ * Asked for only after Bluetooth has been granted, so the two system prompts
+ * never overlap. Failure is silent: notifications are optional.
+ */
+let notificationsAsked = false;
+export async function requestNotificationPermission() {
+  if (notificationsAsked) return;
+  notificationsAsked = true;
+  try {
+    if (isNativeSync()) {
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      const current = await LocalNotifications.checkPermissions();
+      if (current.display === "prompt" || current.display === "prompt-with-rationale") {
+        await LocalNotifications.requestPermissions();
+      }
+      return;
+    }
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+  } catch {
+    // optional
+  }
+}
+
+/** Opens this app's system settings page (permissions live there). */
+export async function openAppSettings() {
+  try {
+    const mod = await import("@capacitor-community/bluetooth-le");
+    await mod.BleClient.openAppSettings();
+  } catch {
+    // ignore
+  }
 }
 
 export const PERMISSION_ERROR =

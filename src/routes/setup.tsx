@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isBluetoothOn, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { isBluetoothPermissionDenied, openAppSettings, PERMISSION_ERROR } from "@/lib/native-ble";
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
@@ -97,6 +98,8 @@ function Setup() {
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [btOff, setBtOff] = useState(false);
+  // Distinct from btOff: the adapter is on but the app is not allowed to use it.
+  const [btDenied, setBtDenied] = useState(false);
   const autostarted = useRef(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
@@ -140,6 +143,9 @@ function Setup() {
       await afterPaired(device);
     } catch (err) {
       setPhase("idle");
+      if (isBluetoothPermissionDenied() || (err as Error).message === PERMISSION_ERROR) {
+        setBtDenied(true);
+      }
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
     }
   }
@@ -161,7 +167,11 @@ function Setup() {
     let cancelled = false;
     const check = () =>
       isBluetoothOn()
-        .then((on) => !cancelled && setBtOff(!on))
+        .then((on) => {
+          if (cancelled) return;
+          setBtOff(!on);
+          setBtDenied(isBluetoothPermissionDenied());
+        })
         .catch(() => !cancelled && setBtOff(false));
     void check();
     const interval = setInterval(check, 4000);
@@ -323,7 +333,21 @@ function Setup() {
                     Bluetooth is off, turn it on to pair your diffuser.
                   </p>
                 )}
-                {phase === "idle" && !btOff && !isBluetoothSupported() && (
+                {phase === "idle" && !btOff && btDenied && (
+                  <div className="mt-5 space-y-2">
+                    <p className="text-sm text-destructive">
+                      Brume is not allowed to use Bluetooth on this phone.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void openAppSettings()}
+                      className="text-sm text-foreground underline underline-offset-4"
+                    >
+                      Open app settings
+                    </button>
+                  </div>
+                )}
+                {phase === "idle" && !btOff && !btDenied && !isBluetoothSupported() && (
                   <p className="mt-5 text-xs text-muted-foreground">
                     This browser doesn't support Bluetooth pairing, so we'll set up a demo connection
                     so you can finish. Use Chrome or the mobile app for a real pairing.
