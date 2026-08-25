@@ -205,7 +205,9 @@ export async function scanForDiffuser(
 
   await ble.requestLEScan({ allowDuplicates: false }, (result) => {
     const name = result.localName || result.device?.name;
-    const device = { deviceId: result.device.deviceId, name };
+    const device: NativeDevice = name
+      ? { deviceId: result.device.deviceId, name }
+      : { deviceId: result.device.deviceId };
     seen.push({ device, rssi: result.rssi ?? -999 });
     if (!name) return;
     const upper = name.toUpperCase();
