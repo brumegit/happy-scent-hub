@@ -12,14 +12,10 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { pairDiffuser, isBluetoothSupported, isBluetoothOn, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
 import {
-  ensureBluetoothPermission,
-  isBluetoothPermissionDenied,
-  isLocationServiceEnabled,
   openAppSettings,
   openLocationSettings,
-  PERMISSION_ERROR,
 } from "@/lib/native-ble";
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
