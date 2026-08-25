@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Star } from "lucide-react";
+import { ArrowLeft, Bluetooth, CalendarClock, Star } from "lucide-react";
 
 import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
@@ -52,9 +52,27 @@ export const Route = createFileRoute("/setup")({
 
 const DEFAULT_NAME = "The 24/7 Room Diffuser";
 
-type Phase = "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
+type Phase = "intro" | "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
 
 const STEPS = ["Connect", "Intensity", "Routine"] as const;
+
+const ONBOARDING = [
+  {
+    icon: Bluetooth,
+    title: "Connect your diffuser",
+    body: "Double tap the diffuser button and pick it in the Bluetooth list.",
+  },
+  {
+    icon: Star,
+    title: "Choose your intensity",
+    body: "From one to five stars, set how much scent fills the room.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Set your routines",
+    body: "Pick the days and hours the diffuser should run each week.",
+  },
+] as const;
 
 function stepIndex(phase: Phase) {
   if (phase === "intensity") return 1;
@@ -90,7 +108,7 @@ function Setup() {
   // Editing an existing diffuser: skip pairing and naming, start on intensity.
   const editing = useDiffuserStore((s) => s.diffusers.find((d) => d.id === edit) ?? null);
 
-  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "idle");
+  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "intro");
   const [fading, setFading] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(editing?.device_id ?? null);
   // The app-side device name is fixed; only the room is user provided.
@@ -158,20 +176,15 @@ function Setup() {
   }
 
 
+  // Arriving with ?start=true skips the onboarding and lands straight on the
+  // pairing screen. Pairing itself is always started by the user.
   useEffect(() => {
-    if (
-      start &&
-      !checkingRequirements &&
-      !btOff &&
-      !btDenied &&
-      !locOff &&
-      !autostarted.current
-    ) {
+    if (start && !autostarted.current) {
       autostarted.current = true;
-      void handlePair();
+      setPhase("intro" === phase ? "idle" : phase);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start, checkingRequirements, btOff, btDenied, locOff]);
+  }, [start]);
 
   // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
@@ -235,11 +248,41 @@ function Setup() {
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
-          ) : (
+          ) : phase === "intro" ? null : (
             <Steps phase={phase} />
           )}
         </div>
         <div className="flex flex-1 flex-col justify-center pb-[5rem]">
+
+        {phase === "intro" && (
+          <section className="flex flex-1 flex-col justify-center animate-fade-in">
+            <h1 className="font-display text-4xl leading-tight">Welcome to Brume</h1>
+            <p className="mt-3 text-sm text-foreground">
+              Three short steps and your diffuser runs on its own.
+            </p>
+
+            <ol className="mt-9 space-y-5">
+              {ONBOARDING.map((item, index) => (
+                <li key={item.title} className="flex items-start gap-4">
+                  <span className="flex size-12 shrink-0 items-center justify-center border border-gold text-gold">
+                    <item.icon className="size-5" aria-hidden />
+                  </span>
+                  <div className="min-w-0 pt-1">
+                    <p className="text-xs uppercase tracking-[0.18em] text-gold">
+                      Step {index + 1}
+                    </p>
+                    <p className="mt-1 font-display text-xl leading-tight">{item.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-10">
+              <StatusButton state="idle" icon={false} label="Start now" onClick={() => setPhase("idle")} />
+            </div>
+          </section>
+        )}
 
         {(phase === "idle" || phase === "pairing" || phase === "paired") && (
           <section
