@@ -81,8 +81,10 @@ function PrivacyPage() {
   return (
     <div className="relative min-h-screen flex flex-col">
       <GuestBanner />
-      <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-8">
-        <AppHeader />
+      <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-11 pb-8">
+        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-8 pb-8">
+          <AppHeader />
+        </div>
 
         <h1 className="mt-10 font-display text-4xl">Privacy policy</h1>
 

@@ -506,6 +506,7 @@ function Setup() {
               Sprays {formatSeconds(preset.onSeconds)}, then stops {formatSeconds(preset.offSeconds)}{" "}
               between sprays.
               <br />
+              <br />
               Allow 30 minutes for the room to adapt before judging the strength.
             </p>
 
@@ -548,10 +549,6 @@ function Setup() {
                 Back
               </button>
               <h1 className="font-display text-4xl">When?</h1>
-               <p className="mt-2 text-sm text-foreground">
-                Start about 30 minutes early to fill the room.
-              </p>
-
             </div>
             <ScheduleGrid
               schedule={schedule}
