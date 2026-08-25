@@ -55,11 +55,11 @@ async function client() {
   if (bleClient) return bleClient;
   const mod = await import("@capacitor-community/bluetooth-le");
   try {
-    // Do not assert neverForLocation: Android documents that this assertion
-    // can filter some BLE advertisements, including packets from older
-    // peripherals. Runtime access remains the Nearby devices permission on
-    // current Android versions.
-    await mod.BleClient.initialize({ androidNeverForLocation: false });
+    // Brume never derives physical location from BLE scans. Keep this aligned
+    // with AndroidManifest.xml so Android 12+ requests only Nearby devices and
+    // does not wait for a location permission that the app intentionally does
+    // not declare.
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
     permissionDenied = false;
   } catch (error) {
     permissionDenied = true;

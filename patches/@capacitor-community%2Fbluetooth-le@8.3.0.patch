@@ -1,17 +1,33 @@
 diff --git a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt b/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
-index d3b3979..f61a85a 100644
+index 5584781..5b45092 100644
 --- a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
 +++ b/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
-@@ -93,14 +93,21 @@ class DeviceScanner(
+@@ -75,6 +75,19 @@ class DeviceScanner(
+                 }
+             }
+         }
++
++        override fun onScanFailed(errorCode: Int) {
++            super.onScanFailed(errorCode)
++            Logger.error(TAG, "Bluetooth scan failed with Android error code $errorCode")
++            stopScanning()
++            dialogHandler?.post {
++                dialog?.dismiss()
++            }
++            savedCallback?.invoke(
++                ScanResponse(false, "Bluetooth scan failed (Android error $errorCode). Restart Bluetooth and try again.", null)
++            )
++            savedCallback = null
++        }
+     }
+ 
+     fun startScanning(
+@@ -93,14 +106,17 @@ class DeviceScanner(
          deviceStrings.clear()
          deviceList.clear()
          if (!isScanning) {
 +            // Prepare the dialog before starting the scanner. Some Android
-+            // chipsets deliver the first advertisement synchronously; when the
-+            // handler was created after startScan(), that first result was
-+            // added to deviceList but never to the visible adapter. Subsequent
-+            // advertisements were then ignored as duplicates, leaving an
-+            // apparently empty chooser even though scanning worked.
++            // chipsets deliver their first advertisement immediately.
 +            if (showDialog) {
 +                dialogHandler = Handler(Looper.getMainLooper())
 +                showDeviceList()
