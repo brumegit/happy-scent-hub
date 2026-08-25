@@ -130,6 +130,7 @@ export async function startDeviceScan(
 ): Promise<() => Promise<void>> {
   const ble = await client();
   const found = new Map<string, ScannedDevice>();
+  let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Android 11 and below return a successful but permanently empty scan when
   // system location services are disabled. Some manufacturers keep that
@@ -144,6 +145,10 @@ export async function startDeviceScan(
   }) => {
     const id = result.device?.deviceId;
     if (!id) return;
+    if (fallbackTimer) {
+      clearTimeout(fallbackTimer);
+      fallbackTimer = undefined;
+    }
     const name = result.localName || result.device?.name;
     const previous = found.get(id);
     found.set(id, {
@@ -154,17 +159,30 @@ export async function startDeviceScan(
     onUpdate([...found.values()].sort((a, b) => b.rssi - a.rssi));
   };
 
+  // Brume diffusers use legacy advertisements. Asking Android for extended
+  // advertisements switches the scanner out of legacy mode and is unreliable
+  // on some phone/chipset combinations, where the scan starts successfully but
+  // never emits a result. Keep the filter empty and use the standard low-latency
+  // scan so both named and unnamed legacy peripherals are returned.
   try {
-    await ble.requestLEScan(
-      { allowDuplicates: true, scanMode: 2 as never, allowExtendedAdvertising: true },
-      handle,
-    );
+    await ble.requestLEScan({ allowDuplicates: true, scanMode: 2 as never }, handle);
   } catch {
-    // Some platforms reject the scanMode hint — retry with the plain options.
+    // Some vendor Android builds reject the scan-mode hint.
     await ble.requestLEScan({ allowDuplicates: true }, handle);
   }
 
+  // Some Android Bluetooth stacks accept low-latency mode but silently emit
+  // no callbacks. Restart once with the most compatible default settings.
+  fallbackTimer = setTimeout(() => {
+    if (found.size > 0) return;
+    void (async () => {
+      await ble.stopLEScan().catch(() => undefined);
+      await ble.requestLEScan({ allowDuplicates: true }, handle).catch(() => undefined);
+    })();
+  }, 6000);
+
   return async () => {
+    if (fallbackTimer) clearTimeout(fallbackTimer);
     await ble.stopLEScan().catch(() => undefined);
   };
 }
@@ -187,9 +205,11 @@ export async function scanForDiffuser(
 
   await ble.requestLEScan({ allowDuplicates: false }, (result) => {
     const name = result.localName || result.device?.name;
-    if (!name) return;
-    const device = { deviceId: result.device.deviceId, name };
+    const device: NativeDevice = name
+      ? { deviceId: result.device.deviceId, name }
+      : { deviceId: result.device.deviceId };
     seen.push({ device, rssi: result.rssi ?? -999 });
+    if (!name) return;
     const upper = name.toUpperCase();
     if (matched) return;
     // When re-connecting to a known diffuser, match its "Device name - Room name"
