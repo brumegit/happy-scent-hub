@@ -12,14 +12,10 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { pairDiffuser, isBluetoothSupported, isBluetoothOn, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
 import {
-  ensureBluetoothPermission,
-  isBluetoothPermissionDenied,
-  isLocationServiceEnabled,
   openAppSettings,
   openLocationSettings,
-  PERMISSION_ERROR,
 } from "@/lib/native-ble";
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
@@ -34,6 +30,7 @@ import {
   type Intensity,
 } from "@/lib/diffuser";
 import { useDiffuserStore } from "@/stores/diffuserStore";
+import { useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
@@ -104,12 +101,12 @@ function Setup() {
   const [schedule, setSchedule] = useState<DaySchedule[]>(() => editing?.schedule ?? defaultSchedule());
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [btOff, setBtOff] = useState(false);
-  // Distinct from btOff: the adapter is on but the app is not allowed to use it.
-  const [btDenied, setBtDenied] = useState(false);
-  // Android returns an empty scan list while the phone's Location service is
-  // off, so we detect that separately and say exactly what to switch on.
-  const [locOff, setLocOff] = useState(false);
+  const {
+    checking: checkingRequirements,
+    bluetoothOff: btOff,
+    permissionDenied: btDenied,
+    locationOff: locOff,
+  } = useBluetoothRequirements(!editing && phase === "idle");
   const autostarted = useRef(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
@@ -146,6 +143,9 @@ function Setup() {
   }
 
   async function handlePair() {
+    // The UI is gated too, but keep the native action itself unreachable until
+    // Android has returned every permission and service-state check.
+    if (checkingRequirements || btOff || btDenied || locOff) return;
     setError(null);
     setPhase("pairing");
     try {
@@ -153,47 +153,25 @@ function Setup() {
       await afterPaired(device);
     } catch (err) {
       setPhase("idle");
-      if (isBluetoothPermissionDenied() || (err as Error).message === PERMISSION_ERROR) {
-        setBtDenied(true);
-      }
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
     }
   }
 
 
   useEffect(() => {
-    if (start && !autostarted.current) {
+    if (
+      start &&
+      !checkingRequirements &&
+      !btOff &&
+      !btDenied &&
+      !locOff &&
+      !autostarted.current
+    ) {
       autostarted.current = true;
       void handlePair();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start]);
-
-  // Proactively detect whether Bluetooth is switched off so we can warn the
-  // user before they tap "Start pairing". Re-checks while idle and when the app
-  // returns to the foreground.
-  useEffect(() => {
-    if (phase !== "idle") return;
-    let cancelled = false;
-    const check = () =>
-      Promise.all([ensureBluetoothPermission(), isBluetoothOn(), isLocationServiceEnabled()])
-        .then(([granted, on, locationOn]) => {
-          if (cancelled) return;
-          setBtOff(!on);
-          setLocOff(!locationOn);
-          setBtDenied(!granted || isBluetoothPermissionDenied());
-        })
-        .catch(() => !cancelled && setBtOff(false));
-    void check();
-    const interval = setInterval(check, 4000);
-    const onResume = () => void check();
-    document.addEventListener("visibilitychange", onResume);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onResume);
-    };
-  }, [phase]);
+  }, [start, checkingRequirements, btOff, btDenied, locOff]);
 
   // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
@@ -333,7 +311,8 @@ function Setup() {
 
 
                 {(() => {
-                  const blocked = phase === "idle" && (btOff || btDenied || locOff);
+                  const blocked =
+                    phase === "idle" && (checkingRequirements || btOff || btDenied || locOff);
                   if (!blocked) {
                     return (
                       <div className="mt-7">
@@ -342,6 +321,13 @@ function Setup() {
                           label={phase === "idle" ? "Start pairing" : "Searching"}
                           {...(phase === "idle" ? { onClick: handlePair } : {})}
                         />
+                      </div>
+                    );
+                  }
+                  if (checkingRequirements) {
+                    return (
+                      <div className="mt-7 border border-border p-5">
+                        <p className="text-sm text-foreground">Checking Bluetooth and Location access…</p>
                       </div>
                     );
                   }
@@ -361,15 +347,15 @@ function Setup() {
                   return (
                     <div className="mt-7 space-y-3 border border-border p-5">
                       <p className="text-sm text-foreground">{message}</p>
-                      <button
-                        type="button"
+                      <Button
+                        variant="link"
                         onClick={() =>
                           void (showLocationCta ? openLocationSettings() : openAppSettings())
                         }
-                        className="text-sm text-foreground underline underline-offset-4"
+                        className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
                       >
                         {showLocationCta ? "Open location settings" : "Open app settings"}
-                      </button>
+                      </Button>
                     </div>
                   );
                 })()}
