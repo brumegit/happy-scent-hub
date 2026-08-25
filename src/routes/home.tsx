@@ -82,16 +82,7 @@ function Home() {
   } = useBluetoothRequirements(empty);
 
   const requirementsMissing = bluetoothOff || permissionDenied || locationOff;
-  const missingMessage = bluetoothOff
-    ? locationOff
-      ? "Bluetooth and Location are off. Turn both on to pair your diffuser."
-      : "Bluetooth is off, turn it on to pair your diffuser."
-    : permissionDenied && locationOff
-      ? "Brume needs Bluetooth and Location access to find your diffuser."
-      : permissionDenied
-        ? "Brume needs Bluetooth access to find your diffuser."
-        : "Location is off. Android needs it switched on to find Bluetooth devices.";
-  const openLocationOnly = locationOff && !permissionDenied && !bluetoothOff;
+  const prompt = bluetoothRequirementPrompt({ bluetoothOff, permissionDenied, locationOff });
 
   return (
     <div className="relative min-h-screen flex flex-col">
