@@ -145,7 +145,7 @@ export async function openLocationSettings() {
 }
 
 export const PERMISSION_ERROR =
-  "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.";
+  "Bluetooth permission was refused. Allow \"Nearby devices\" and \"Location\" for Brume in your phone settings, then try again.";
 
 /**
  * Opens the native Android/iOS BLE chooser and returns the device selected by
