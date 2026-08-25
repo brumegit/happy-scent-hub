@@ -259,21 +259,21 @@ function Setup() {
             <Steps phase={phase} />
           )}
         </div>
-        {/* Soft fade to black between each step. */}
+        {/* The new step starts behind black, then the veil fades away. Pairing
+            reuses the connect screen, so starting a scan does not retrigger it. */}
         <div
-          key={`veil-${phase}`}
+          key={`veil-${phase === "pairing" ? "idle" : phase}`}
           className="step-veil pointer-events-none fixed inset-0 z-50 bg-background"
           aria-hidden
         />
-        {/* Keyed on the phase so each step animates in as it appears. */}
         <div
           key={phase === "pairing" ? "idle" : phase}
-          className="flex flex-1 flex-col justify-center pb-[5rem] animate-fade-in"
+          className="flex flex-1 flex-col justify-center pb-[5rem]"
         >
 
 
         {phase === "intro" && (
-          <section className="flex flex-1 flex-col justify-center animate-fade-in">
+          <section className="flex flex-1 flex-col justify-center">
             <h1 className="font-display text-4xl leading-tight">Setup</h1>
             <p className="mt-3 text-sm text-foreground">
               Three short steps and your diffuser runs on its own.
@@ -305,7 +305,7 @@ function Setup() {
           // Same section shell as the intensity and routine steps so the header
           // spacing is identical across every step.
           <section
-            className={`mt-4 space-y-6 animate-fade-in transition-opacity duration-[3000ms] ${
+            className={`mt-4 space-y-6 transition-opacity duration-[3000ms] ${
               fading ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -426,7 +426,7 @@ function Setup() {
 
 
         {phase === "name" && (
-          <section className="mt-4 space-y-6 animate-fade-in">
+          <section className="mt-4 space-y-6">
             <div>
               <h1 className="font-display text-4xl">Where's it going?</h1>
                <p className="mt-2 text-sm text-foreground">Your diffuser is connected.</p>
@@ -469,7 +469,7 @@ function Setup() {
         )}
 
         {phase === "intensity" && (
-          <section className="mt-4 space-y-6 animate-fade-in">
+          <section className="mt-4 space-y-6">
             <button
               type="button"
               onClick={() =>
@@ -544,7 +544,7 @@ function Setup() {
         )}
 
         {phase === "schedule" && (
-          <section className="mt-4 space-y-6 animate-fade-in">
+          <section className="mt-4 space-y-6">
             <div>
               <button
                 type="button"
