@@ -188,7 +188,7 @@ export function DevicePicker({
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-foreground">
             Pick your diffuser, or wait and we connect it automatically once we recognise it.
           </p>
           <ul className="mt-5 divide-y divide-border border-y border-border">
@@ -200,8 +200,8 @@ export function DevicePicker({
                   onClick={() => void connect(device)}
                   className="flex w-full items-center justify-between gap-4 py-4 text-left disabled:opacity-50"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm">{device.name}</span>
-                  <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="min-w-0 flex-1 truncate text-base text-foreground">{device.name}</span>
+                  <span className="flex items-center gap-3 text-sm text-muted-foreground">
                     {connectingId === device.deviceId ? (
                       <Loader2 className="size-4 animate-spin" aria-hidden />
                     ) : (
@@ -215,7 +215,7 @@ export function DevicePicker({
               </li>
             ))}
           </ul>
-          {scanError && <p className="mt-8 text-sm text-destructive">{scanError}</p>}
+          {scanError && <p className="mt-8 text-base text-destructive">{scanError}</p>}
           {scanError === LOCATION_SERVICES_ERROR && (
             <Button
               size="lg"
@@ -229,13 +229,13 @@ export function DevicePicker({
           )}
           {!scanError && devices.length === 0 && (
             <div className="mt-8 space-y-3">
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2 text-base text-foreground">
                 <Loader2 className="size-4 animate-spin" aria-hidden />
                 Searching for devices, double tap the diffuser button.
               </p>
               {slowScan && (
                 <>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-base text-foreground">
                     Still nothing. Make sure the diffuser LED is blinking and keep your phone close
                     to it.
                   </p>
