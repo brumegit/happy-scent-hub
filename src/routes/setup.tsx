@@ -263,7 +263,7 @@ function Setup() {
 
         {phase === "intro" && (
           <section className="flex flex-1 flex-col justify-center animate-fade-in">
-            <h1 className="font-display text-4xl leading-tight">Welcome to Brume</h1>
+            <h1 className="font-display text-4xl leading-tight">Setup</h1>
             <p className="mt-3 text-sm text-foreground">
               Three short steps and your diffuser runs on its own.
             </p>
@@ -279,7 +279,6 @@ function Setup() {
                       Step {index + 1}
                     </p>
                     <p className="mt-1 font-display text-xl leading-tight">{item.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
                   </div>
                 </li>
               ))}
