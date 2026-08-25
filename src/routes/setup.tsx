@@ -301,48 +301,50 @@ function Setup() {
           </section>
         )}
 
-        {(phase === "idle" || phase === "pairing" || phase === "paired") && (
+        {phase === "paired" && (
+          // Same section shell as the intensity and routine steps so the header
+          // spacing is identical across every step.
           <section
-            className={`mt-4 flex flex-1 flex-col transition-all duration-[3000ms] ${
-              phase === "paired" && fading ? "opacity-0" : "opacity-100"
+            className={`mt-4 space-y-6 animate-fade-in transition-opacity duration-[3000ms] ${
+              fading ? "opacity-0" : "opacity-100"
             }`}
           >
-
-            {phase === "paired" ? (
-              // Once connected, everything else is hidden and only the success
-              // animation stays, centered, while the tile fades to black.
-              <div className="mt-10 flex min-h-[18rem] items-center justify-center">
-                <div className="w-full space-y-6 text-center">
-                  <div className="relative mx-auto size-20">
-                    <span className="success-ring" />
-                    <span className="success-ring" style={{ animationDelay: "0.7s" }} />
-                    <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-emerald-400">
-                      <svg
-                        className="success-check size-9 text-emerald-400"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <path className="text-emerald-400" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
-                      </svg>
-                    </span>
-                  </div>
-                  <p className="success-pop text-center text-sm text-emerald-400">
-                    Diffuser paired successfully
-                  </p>
+            <div className="flex min-h-[18rem] items-center justify-center">
+              <div className="w-full space-y-6 text-center">
+                <div className="relative mx-auto size-20">
+                  <span className="success-ring" />
+                  <span className="success-ring" style={{ animationDelay: "0.7s" }} />
+                  <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-emerald-400">
+                    <svg
+                      className="success-check size-9 text-emerald-400"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path className="text-emerald-400" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
+                    </svg>
+                  </span>
                 </div>
+                <p className="success-pop text-center text-sm text-emerald-400">
+                  Diffuser paired successfully
+                </p>
               </div>
-            ) : (
-              <>
-                {existingCount > 0 && (
+            </div>
+          </section>
+        )}
+
+        {(phase === "idle" || phase === "pairing") && (
+          <section className="mt-4 flex flex-1 flex-col">
+            {existingCount > 0 && (
                   <button
                     type="button"
                     onClick={() => navigate({ to: "/" })}
                     className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+
                   >
                     <ArrowLeft className="size-4" aria-hidden />
                     Back
