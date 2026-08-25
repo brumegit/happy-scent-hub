@@ -57,22 +57,29 @@ type Phase = "intro" | "idle" | "pairing" | "paired" | "name" | "intensity" | "p
 const STEPS = ["Connect", "Intensity", "Routine"] as const;
 
 const ONBOARDING = [
-  {
-    icon: Bluetooth,
-    title: "Connect your diffuser",
-    body: "Double tap the diffuser button and pick it in the Bluetooth list.",
-  },
-  {
-    icon: Star,
-    title: "Choose your intensity",
-    body: "From one to five stars, set how much scent fills the room.",
-  },
-  {
-    icon: CalendarClock,
-    title: "Set your routines",
-    body: "Pick the days and hours the diffuser should run each week.",
-  },
+  { icon: Bluetooth, title: "Connect your diffuser" },
+  { icon: Star, title: "Choose your intensity" },
+  { icon: CalendarClock, title: "Set your routines" },
 ] as const;
+
+// Lucide's star has softened points; this path keeps the pikes sharp.
+function SharpStar({ className, filled }: { className?: string; filled: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={1.25}
+      strokeLinejoin="miter"
+      strokeMiterlimit={10}
+      strokeLinecap="butt"
+      aria-hidden
+    >
+      <path d="M12 1.2 15 8.7 23 9.3 16.9 14.6 18.8 22.8 12 18.3 5.2 22.8 7.1 14.6 1 9.3 9 8.7Z" />
+    </svg>
+  );
+}
 
 function stepIndex(phase: Phase) {
   if (phase === "intensity") return 1;
