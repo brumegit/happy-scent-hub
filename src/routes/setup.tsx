@@ -175,10 +175,11 @@ function Setup() {
     if (phase !== "idle") return;
     let cancelled = false;
     const check = () =>
-      isBluetoothOn()
-        .then((on) => {
+      Promise.all([isBluetoothOn(), isLocationServiceEnabled()])
+        .then(([on, locationOn]) => {
           if (cancelled) return;
           setBtOff(!on);
+          setLocOff(!locationOn);
           setBtDenied(isBluetoothPermissionDenied());
         })
         .catch(() => !cancelled && setBtOff(false));
