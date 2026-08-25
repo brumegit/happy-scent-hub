@@ -288,7 +288,7 @@ function Setup() {
                     Back
                   </button>
                 )}
-                <h1 className="font-display text-4xl leading-tight">Start pairing</h1>
+                <h1 className="font-display text-4xl leading-tight">Connect your diffuser</h1>
 
                 <video
                   // Cropped from the top (gravity north) so the frame keeps its
@@ -317,7 +317,7 @@ function Setup() {
                       <div className="mt-7">
                         <StatusButton
                           state={phase === "idle" ? "idle" : "pairing"}
-                          label={phase === "idle" ? "Start pairing" : "Searching"}
+                          label={phase === "idle" ? "Connect your diffuser" : "Searching"}
                           {...(phase === "idle" ? { onClick: handlePair } : {})}
                         />
                       </div>
