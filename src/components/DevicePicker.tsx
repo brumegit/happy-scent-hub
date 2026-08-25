@@ -236,8 +236,8 @@ export function DevicePicker({
               {slowScan && (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Still nothing. Check that Bluetooth is on, that the diffuser LED is blinking,
-                    and that nearby devices permission is allowed for Brume.
+                    Still nothing. Make sure the diffuser LED is blinking and keep your phone close
+                    to it.
                   </p>
                   <Button
                     size="lg"

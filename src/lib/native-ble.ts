@@ -154,13 +154,15 @@ export async function startDeviceScan(
     onUpdate([...found.values()].sort((a, b) => b.rssi - a.rssi));
   };
 
+  // Brume diffusers use legacy advertisements. Asking Android for extended
+  // advertisements switches the scanner out of legacy mode and is unreliable
+  // on some phone/chipset combinations, where the scan starts successfully but
+  // never emits a result. Keep the filter empty and use the standard low-latency
+  // scan so both named and unnamed legacy peripherals are returned.
   try {
-    await ble.requestLEScan(
-      { allowDuplicates: true, scanMode: 2 as never, allowExtendedAdvertising: true },
-      handle,
-    );
+    await ble.requestLEScan({ allowDuplicates: true, scanMode: 2 as never }, handle);
   } catch {
-    // Some platforms reject the scanMode hint — retry with the plain options.
+    // Some vendor Android builds reject the scan-mode hint.
     await ble.requestLEScan({ allowDuplicates: true }, handle);
   }
 
