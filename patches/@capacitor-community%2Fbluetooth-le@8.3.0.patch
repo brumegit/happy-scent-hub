@@ -1,8 +1,30 @@
 diff --git a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt b/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
-index 5584781..5b45092 100644
 --- a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
 +++ b/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle/DeviceScanner.kt
-@@ -75,6 +75,19 @@ class DeviceScanner(
+@@ -61,11 +61,21 @@
+                     return
+                 }
+             }
++            val deviceName = try {
++                result.device.name ?: result.scanRecord?.deviceName
++            } catch (e: SecurityException) {
++                null
++            }
++            if (showDialog && deviceName.isNullOrBlank()) {
++                // Hide unnamed peripherals: users pick their diffuser by name,
++                // and raw MAC addresses are noise in the chooser.
++                return
++            }
+             val isNew = deviceList.addDevice(result.device)
+             if (showDialog) {
+                 if (isNew) {
+                     dialogHandler?.post {
+-                        deviceStrings.add("[${result.device.address}] ${result.device.name ?: "Unknown"}")
++                        deviceStrings.add(deviceName ?: result.device.address)
+                         adapter?.notifyDataSetChanged()
+                     }
+                 }
+@@ -75,6 +85,19 @@
                  }
              }
          }
@@ -22,7 +44,7 @@ index 5584781..5b45092 100644
      }
  
      fun startScanning(
-@@ -93,14 +106,17 @@ class DeviceScanner(
+@@ -93,14 +116,17 @@
          deviceStrings.clear()
          deviceList.clear()
          if (!isScanning) {

@@ -120,6 +120,25 @@ export async function requestNotificationPermission() {
   }
 }
 
+/**
+ * Asks the operating system for the Bluetooth (and, on Android, Location)
+ * permissions without starting a scan. Safe to call on mount so the pairing
+ * screen can hide the pairing option until access is granted.
+ */
+export async function ensureBluetoothPermission(): Promise<boolean> {
+  if (!isNativeSync()) return true;
+  try {
+    const mod = await import("@capacitor-community/bluetooth-le");
+    await mod.BleClient.initialize({ androidNeverForLocation: false });
+    permissionDenied = false;
+    void requestNotificationPermission();
+    return true;
+  } catch {
+    permissionDenied = true;
+    return false;
+  }
+}
+
 /** Opens this app's system settings page (permissions live there). */
 export async function openAppSettings() {
   try {
