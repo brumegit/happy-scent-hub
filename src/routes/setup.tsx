@@ -62,7 +62,7 @@ function stepIndex(phase: Phase) {
 function Steps({ phase }: { phase: Phase }) {
   const current = stepIndex(phase);
   return (
-    <div className="mt-8 grid grid-cols-3 gap-4">
+    <div className="mt-4 grid grid-cols-3 gap-4">
       {STEPS.map((step, index) => (
         <div key={step}>
           <div className={`h-0.5 ${index <= current ? "bg-gold" : "bg-border"}`} />
