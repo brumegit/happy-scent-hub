@@ -9,7 +9,7 @@ import {
 } from "@/lib/scentlife";
 import { is24Hour } from "@/stores/clockStore";
 
-export type Intensity = "low" | "medium" | "high";
+export type Intensity = "very-low" | "low" | "medium" | "high" | "very-high";
 
 export type DaySchedule = {
   /** 0 = Sunday … 6 = Saturday */
