@@ -41,31 +41,59 @@ export const DAYS = [
 export const INTENSITIES: {
   value: Intensity;
   label: string;
+  /** 1–5, the number of filled stars shown in the picker. */
+  stars: number;
   onSeconds: number;
   offSeconds: number;
 }[] = [
   {
-    value: "low",
-    label: "Low",
+    value: "very-low",
+    label: "Very low",
+    stars: 1,
     onSeconds: 12,
     offSeconds: 600,
   },
   {
+    value: "low",
+    label: "Low",
+    stars: 2,
+    onSeconds: 16,
+    offSeconds: 420,
+  },
+  {
     value: "medium",
     label: "Medium",
+    stars: 3,
     onSeconds: 20,
     offSeconds: 240,
   },
   {
     value: "high",
     label: "High",
+    stars: 4,
+    onSeconds: 22,
+    offSeconds: 150,
+  },
+  {
+    value: "very-high",
+    label: "Very high",
+    stars: 5,
     onSeconds: 25,
     offSeconds: 60,
   },
 ];
 
 export function intensityPreset(intensity: Intensity) {
-  return INTENSITIES.find((i) => i.value === intensity) ?? INTENSITIES[1]!;
+  return INTENSITIES.find((i) => i.value === intensity) ?? INTENSITIES[2]!;
+}
+
+/** Star count (1–5) of an intensity, and the reverse lookup. */
+export function intensityStars(intensity: Intensity) {
+  return intensityPreset(intensity).stars;
+}
+
+export function intensityFromStars(stars: number): Intensity {
+  return (INTENSITIES.find((i) => i.stars === stars) ?? INTENSITIES[2]!).value;
 }
 
 export function formatSeconds(seconds: number) {
