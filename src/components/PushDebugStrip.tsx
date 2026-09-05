@@ -5,7 +5,6 @@ import {
   type PushStepKey,
   type PushStepStatus,
 } from "@/stores/pushDebugStore";
-import { useIdentityStore } from "@/stores/identityStore";
 import { useHydrated } from "@/hooks/useHydrated";
 
 const KEYS: PushStepKey[] = ["name", "modes", "intensity", "schedule"];
@@ -32,12 +31,11 @@ const textClass: Record<PushStepStatus, string> = {
  */
 export function PushDebugStrip() {
   const { steps, startedAt, linkError, log } = usePushDebugStore();
-  const email = useIdentityStore((s) => s.email);
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
-  // Debug tooling is only visible to internal Brume accounts.
-  if (!hydrated || !email?.toLowerCase().includes("@brume")) return null;
+  // Debug tooling is opt-in: enable with localStorage "brume-debug" = "1".
+  if (!hydrated || window.localStorage.getItem("brume-debug") !== "1") return null;
 
 
   return (
