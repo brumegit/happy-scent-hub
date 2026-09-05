@@ -82,23 +82,10 @@ function isCartNotFoundError(userErrors: UserErrors): boolean {
   );
 }
 
-// Ties the Shopify cart/checkout to the same email the customer uses in the app,
-// so their order lands on their existing Shopify customer account.
-async function getAccountEmail(): Promise<string | null> {
-  try {
-    const { getIdentityEmail } = await import("@/stores/identityStore");
-    return getIdentityEmail();
-  } catch {
-    return null;
-  }
-}
-
 async function createShopifyCart(item: CartItem) {
-  const email = await getAccountEmail();
   const data = await storefrontApiRequest(CART_CREATE_MUTATION, {
     input: {
       lines: [{ quantity: item.quantity, merchandiseId: item.variantId }],
-      ...(email ? { buyerIdentity: { email } } : {}),
     },
   });
 
