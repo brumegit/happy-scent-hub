@@ -5,7 +5,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { CartDrawer } from "@/components/CartDrawer";
-import { GuestBanner } from "@/components/GuestBanner";
 import { Button } from "@/components/ui/button";
 import { fetchProductByHandle, formatPrice } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
@@ -53,7 +52,6 @@ function ProductPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      <GuestBanner />
       <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col">
         <main className="flex-1 bg-white text-black">
           <div className="flex items-center justify-between px-6 pt-8">

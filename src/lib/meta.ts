@@ -17,7 +17,6 @@ import {
   getFbc,
   generateFbp,
 } from "./meta-pixel";
-import { getIdentityEmail } from "@/stores/identityStore";
 
 let pixelReady = false;
 
@@ -55,7 +54,6 @@ export function trackEvent(
   }
 
   // 2. Server-side CAPI (fire-and-forget, never blocks the UI)
-  const email = getIdentityEmail();
   const fbp = getFbp() ?? generateFbp();
   const fbc = getFbc() ?? undefined;
   const eventSourceUrl = window.location.href;
@@ -67,7 +65,7 @@ export function trackEvent(
       eventName,
       eventId,
       customData: data,
-      email,
+      email: undefined,
       fbp,
       fbc,
       eventSourceUrl,

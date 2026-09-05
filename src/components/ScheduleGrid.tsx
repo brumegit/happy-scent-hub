@@ -153,7 +153,7 @@ export function ScheduleGrid({
       )}
 
       {showTimeFormat && (
-        <div className="sticky bottom-[3.75rem] z-40 bg-background">
+        <div className="sticky bottom-4 z-40 bg-background">
           <TimeFormatToggle />
         </div>
       )}

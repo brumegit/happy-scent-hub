@@ -5,7 +5,6 @@ import {
   type ReadStepKey,
   type ReadStepStatus,
 } from "@/stores/readDebugStore";
-import { useIdentityStore } from "@/stores/identityStore";
 import { useHydrated } from "@/hooks/useHydrated";
 
 const KEYS: ReadStepKey[] = ["link", "modes", "intensity", "schedule"];
@@ -29,11 +28,11 @@ const textClass: Record<ReadStepStatus, string> = {
 /** Development strip: what we read back from the diffuser right after pairing. */
 export function ReadDebugStrip() {
   const { steps, startedAt, log } = useReadDebugStore();
-  const email = useIdentityStore((s) => s.email);
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
-  if (!hydrated || !email?.toLowerCase().includes("@brume")) return null;
+  // Debug tooling is opt-in: enable with localStorage "brume-debug" = "1".
+  if (!hydrated || window.localStorage.getItem("brume-debug") !== "1") return null;
 
   return (
     <div className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
