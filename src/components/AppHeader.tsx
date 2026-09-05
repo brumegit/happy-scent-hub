@@ -1,15 +1,8 @@
 import { Link } from "@tanstack/react-router";
 
 import { BrandLogo } from "@/components/BrandLogo";
-import { useIdentityStore } from "@/stores/identityStore";
 
 export function AppHeader() {
-  const firstName = useIdentityStore((s) => s.firstName);
-  const status = useIdentityStore((s) => s.status);
-
-  const diffusersLabel =
-    status === "matched" && firstName ? `${firstName}'s Diffusers` : "My Diffusers";
-
   return (
     <header className="flex items-center justify-between gap-4 pb-5">
       <Link to="/" className="flex items-center">
@@ -17,7 +10,7 @@ export function AppHeader() {
       </Link>
       <nav className="flex items-center gap-5 text-sm normal-case">
         <Link to="/" className="text-foreground hover:underline underline-offset-4">
-          {diffusersLabel}
+          My Diffusers
         </Link>
         <Link to="/shop" className="text-foreground hover:underline underline-offset-4">
           Shop

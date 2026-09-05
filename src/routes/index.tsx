@@ -14,7 +14,6 @@ import {
 
 import { AppHeader } from "@/components/AppHeader";
 
-import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -45,7 +44,6 @@ import {
   type Intensity,
 } from "@/lib/diffuser";
 import { useDiffuserStore, type Diffuser } from "@/stores/diffuserStore";
-import { useIdentityStore } from "@/stores/identityStore";
 
 
 export const Route = createFileRoute("/")({
@@ -65,8 +63,6 @@ function Home() {
   const navigate = useNavigate();
   const diffusers = useDiffuserStore((s) => s.diffusers);
   const hydrated = useHydrated();
-  const firstName = useIdentityStore((s) => s.firstName);
-  const status = useIdentityStore((s) => s.status);
 
   const empty = hydrated && diffusers.length === 0;
 
@@ -77,7 +73,6 @@ function Home() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      <GuestBanner />
       <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-11 pb-8">
         <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-8 pb-8">
           <AppHeader />
@@ -88,7 +83,7 @@ function Home() {
             <div className="mt-10 flex items-end justify-between gap-4">
               <div>
                 <h1 className="font-display text-4xl">
-                  {status === "matched" && firstName ? `${firstName}'s diffusers` : "Your diffusers"}
+                  Your diffusers
                 </h1>
               </div>
               <Button asChild variant="secondary" size="sm">
