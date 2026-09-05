@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
-import { GuestBanner } from "@/components/GuestBanner";
 
 const STORE_URL = "https://brume.me";
 
@@ -67,7 +66,6 @@ function ShopPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col">
-      <GuestBanner />
       <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-11 pb-8">
         <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-8 pb-8">
           <AppHeader />

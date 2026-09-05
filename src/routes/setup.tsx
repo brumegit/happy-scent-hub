@@ -5,7 +5,6 @@ import { ArrowLeft, Bluetooth, CalendarClock, Star } from "lucide-react";
 
 import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
-import { GuestBanner } from "@/components/GuestBanner";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { TimeFormatToggle } from "@/components/TimeFormatToggle";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
@@ -248,8 +247,6 @@ function Setup() {
 
   return (
     <div className="flex h-screen flex-col">
-      <GuestBanner />
-
       <div className="mx-auto flex max-w-2xl flex-1 flex-col px-11 pb-8">
         <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-8 pb-8">
           <AppHeader />
@@ -268,7 +265,7 @@ function Setup() {
         />
         <div
           key={phase === "pairing" ? "idle" : phase}
-          className="flex flex-1 flex-col justify-center pb-[5rem]"
+          className="flex flex-1 flex-col justify-center pb-8"
         >
 
 
@@ -608,7 +605,7 @@ function Setup() {
                 })
               }
             />
-            <div className="sticky bottom-[3.75rem] z-40 bg-background">
+            <div className="sticky bottom-4 z-40 bg-background">
               <TimeFormatToggle />
             </div>
           </section>
