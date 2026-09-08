@@ -388,9 +388,6 @@ export async function pairDiffuser(): Promise<PairedDevice> {
       if (err?.name === "NotFoundError") {
         throw new Error("No device selected.\nDouble-tap the button and try again.");
       }
-      if (err?.name === "NetworkError" || err?.name === "SecurityError" || !err?.name) {
-        throw err;
-      }
       throw err;
     }
   }
