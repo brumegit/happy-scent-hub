@@ -59,27 +59,36 @@ export async function pushSettings(opts: {
     // One user action, one protocol command, one hardware confirmation sound.
     // Name changes are sent separately at the moment the user saves the name.
     const label = opts.hardwareName ? sanitizeBroadcastName(opts.hardwareName) : null;
-    const acks = await sendBatch(
-      opts.deviceId,
-      [buildTimerList(slots)],
-      log,
-    );
+    // Sequential request/response: the module answers 0x93 on the notify
+    // channel. Batched streaming proved unreliable — some firmware drops the
+    // frame when it arrives without a preceding read gap.
+    const acks = await sendFrames(opts.deviceId, [buildTimerList(slots)], log);
     const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
 
     debug.set("name", "idle", label ? `"${label}" · unchanged by settings push` : "not sent");
 
     const timerAck = ackFor(0x13);
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
-      log(`0x13 rejected (code ${timerAck.code}) — falling back to per-timer 0x14`);
+      log(`0x13 rejected (code ${timerAck.code})`);
     }
 
     // Read back the persisted working modes — the only real proof.
     let readback = await queryTimers(opts.deviceId, log);
 
-    // Never auto-send a second command after verification: that retry was the
-    // source of another confirmation beep. Surface a mismatch instead.
+    // Fallback: some firmware ignores the whole-list command (0x13) and only
+    // accepts per-timer writes (0x14). Retry that way when nothing landed.
     if (!readback || !matches(readback, slots)) {
-      log("Timer list did not match after the single settings command");
+      log("Timer list did not land — retrying with per-timer 0x14 commands");
+      try {
+        await sendFrames(
+          opts.deviceId,
+          slots.map((slot) => buildModifyTimer(slot)),
+          log,
+        );
+        readback = await queryTimers(opts.deviceId, log);
+      } catch (retryError) {
+        log(`0x14 fallback failed: ${(retryError as Error).message}`);
+      }
     }
 
     if (!readback) {
@@ -92,6 +101,7 @@ export async function pushSettings(opts: {
 
     verify(readback, slots);
     return acks;
+
 
   } catch (error) {
     const message = (error as Error).message;
