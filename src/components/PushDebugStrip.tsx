@@ -34,8 +34,8 @@ export function PushDebugStrip() {
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
-  // Debug tooling is opt-in: enable with localStorage "brume-debug" = "1".
-  if (!hydrated || window.localStorage.getItem("brume-debug") !== "1") return null;
+  // Debug tooling is opt-in: 10 taps on the logo toggle it.
+  if (!hydrated || !debug) return null;
 
 
   return (
