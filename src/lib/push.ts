@@ -77,7 +77,9 @@ export async function pushSettings(opts: {
       log(`0x13 rejected (code ${timerAck.code})`);
     }
 
-    // Read back the persisted working modes — the only real proof.
+    // Read back the persisted working modes — the only real proof. The module
+    // needs a moment to write them to flash before it answers correctly.
+    await new Promise((r) => setTimeout(r, 500));
     let readback = await queryTimers(opts.deviceId, log);
 
     // Fallback: this firmware ignores the whole-list command (0x13) and only
@@ -97,12 +99,14 @@ export async function pushSettings(opts: {
             differing.map((slot) => buildModifyTimer(slot)),
             log,
           );
+          await new Promise((r) => setTimeout(r, 500));
           readback = await queryTimers(opts.deviceId, log);
         }
       } catch (retryError) {
         log(`0x14 fallback failed: ${(retryError as Error).message}`);
       }
     }
+
 
 
     if (!readback) {
@@ -136,7 +140,9 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
   const sameMinute = (a: number, b: number) =>
     a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
   const d = readback?.find((s) => s.index === wanted.index);
-  if (!d) return false;
+  // Firmware only reports the working modes it holds: a slot we want switched
+  // off and that the device does not list at all is already in the right state.
+  if (!d) return !wanted.enabled;
   if (!wanted.enabled) return !d.enabled;
   return (
     d.enabled &&
@@ -147,6 +153,7 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
     d.offSeconds === wanted.offSeconds
   );
 }
+
 
 /** True when the device's persisted modes already match what we want to push. */
 function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
