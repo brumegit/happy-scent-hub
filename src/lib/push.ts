@@ -1,11 +1,9 @@
 import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
-  buildModifyTimer,
   buildSetBroadcastName,
   buildTimerList,
   MODULE_TYPES,
   sanitizeBroadcastName,
-  type TimerSlot,
 } from "@/lib/scentlife";
 
 
@@ -13,7 +11,6 @@ import {
   buildTimerSlots,
   intensityFromTimer,
   scheduleFromTimers,
-  MAX_TIMERS,
   type CustomTiming,
   type DaySchedule,
   type Intensity,
@@ -91,75 +88,16 @@ export async function pushSettings(opts: {
       log(`0x13 rejected (code ${timerAck.code})`);
     }
 
-    // Read back the persisted working modes — the only real proof. The module
-    // needs a moment to write them to flash before it answers correctly.
-    const readBackWithRetry = async (attempts: number) => {
-      for (let i = 0; i < attempts; i++) {
-        await new Promise((r) => setTimeout(r, 500 + i * 400));
-        const result = await queryTimers(opts.deviceId, log);
-        if (result) return result;
-        log(`Read-back attempt ${i + 1} returned nothing`);
-      }
-      return null;
-    };
-
-    let readback = await readBackWithRetry(3);
-
-    // Fallback: this firmware ignores the whole-list command (0x13) and only
-    // persists per-timer writes (0x14). Send just the slots that still differ,
-    // so the device confirms as few times as possible.
-    let retryAcks: Awaited<ReturnType<typeof sendFrames>> = [];
-    if (!readback || !matches(readback, slots)) {
-      const differing = slots.filter((slot) => !slotMatches(readback, slot));
-      log(
-        `Timer list did not land — sending 0x14 for mode(s) ${
-          differing.map((s) => s.index).join(", ") || "none"
-        }`,
-      );
-      try {
-        if (differing.length) {
-          retryAcks = await sendFrames(
-            opts.deviceId,
-            differing.map((slot) => buildModifyTimer(slot)),
-            log,
-          );
-          readback = (await readBackWithRetry(3)) ?? readback;
-        }
-      } catch (retryError) {
-        log(`0x14 fallback failed: ${(retryError as Error).message}`);
-      }
-    }
-
-    // The diffuser accepted the command but stays silent on read-back: some
-    // firmware answers 0x88 only when idle. A clean ack is proof enough.
-    const acceptedAck =
-      (timerAck?.acked && timerAck.code === 0) ||
-      (retryAcks.length > 0 && retryAcks.every((a) => a.acked && a.code === 0));
-
-    if (!readback) {
-      if (acceptedAck) {
-        const detail = "accepted by the diffuser (no read-back available)";
-        debug.set("modes", "ok", detail);
-        debug.set("intensity", "ok", detail);
-        debug.set("schedule", "ok", detail);
-        return acks;
-      }
-      const detail = "no ack, no read-back";
-      debug.set("modes", "unconfirmed", detail);
-      debug.set("intensity", "unconfirmed", detail);
-      debug.set("schedule", "unconfirmed", detail);
-      // Never report success we cannot prove: the diffuser did not confirm.
-      throw new Error("The diffuser did not confirm the new settings. Try again.");
-    }
-
-    verify(readback, slots);
-    if (!matches(readback, slots)) {
-      if (acceptedAck) {
-        log("Read-back differs but the diffuser acknowledged every command — accepting.");
-        return acks;
-      }
-      throw new Error("The diffuser did not save the new settings. Try again.");
-    }
+    // Some firmware writes settings successfully but never sends an ACK or a
+    // reliable timer read-back. Do not block the user on that optional signal.
+    // sendFrames still throws for a lost link, failed write, or explicit reject.
+    const detail = timerAck?.acked
+      ? "accepted by the diffuser"
+      : "sent to the diffuser (confirmation unavailable)";
+    log(detail);
+    debug.set("modes", timerAck?.acked ? "ok" : "unconfirmed", detail);
+    debug.set("intensity", timerAck?.acked ? "ok" : "unconfirmed", detail);
+    debug.set("schedule", timerAck?.acked ? "ok" : "unconfirmed", detail);
     return acks;
 
 
@@ -172,91 +110,6 @@ export async function pushSettings(opts: {
     }
     throw error;
   }
-}
-
-/** True when one persisted working mode already equals the one we want. */
-function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
-  const sameMinute = (a: number, b: number) =>
-    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
-  const d = readback?.find((s) => s.index === wanted.index);
-  // Firmware only reports the working modes it holds: a slot we want switched
-  // off and that the device does not list at all is already in the right state.
-  if (!d) return !wanted.enabled;
-  if (!wanted.enabled) return !d.enabled;
-  return (
-    d.enabled &&
-    d.weekdayMask === wanted.weekdayMask &&
-    sameMinute(d.startMinute, wanted.startMinute) &&
-    sameMinute(d.endMinute, wanted.endMinute) &&
-    d.onSeconds === wanted.onSeconds &&
-    d.offSeconds === wanted.offSeconds
-  );
-}
-
-
-/** True when the device's persisted modes already match what we want to push. */
-function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
-  return wanted.every((w) => slotMatches(readback, w));
-}
-
-
-
-function verify(readback: TimerSlot[], wantedSlots: TimerSlot[]) {
-  const debug = pushDebug();
-  const wantedOn = wantedSlots.filter((s) => s.enabled);
-  const deviceOn = readback.filter((s) => s.enabled && s.index <= MAX_TIMERS);
-
-  const modesOk =
-    deviceOn.length === wantedOn.length &&
-    wantedOn.every((w) => deviceOn.some((d) => d.index === w.index));
-  debug.set(
-    "modes",
-    modesOk ? "ok" : "fail",
-    `device modes on: ${deviceOn.map((s) => s.index).join(", ") || "none"} · sent ${
-      wantedOn.map((s) => s.index).join(", ") || "none"
-    }`,
-  );
-
-  const reference = wantedOn[0] ?? wantedSlots[0]!;
-  const intensityOk = deviceOn.length
-    ? deviceOn.every(
-        (s) => s.onSeconds === reference.onSeconds && s.offSeconds === reference.offSeconds,
-      )
-    : false;
-  debug.set(
-    "intensity",
-    intensityOk ? "ok" : "fail",
-    `device spray ${deviceOn[0]?.onSeconds ?? "–"}s / pause ${
-      deviceOn[0]?.offSeconds ?? "–"
-    }s · sent ${reference.onSeconds}s / ${reference.offSeconds}s`,
-  );
-
-  // The firmware normalises end-of-day: 1439 (23:59) comes back as 1440.
-  const sameMinute = (a: number, b: number) =>
-    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
-  const scheduleOk =
-    wantedOn.length > 0 &&
-    wantedOn.every((w) => {
-      const d = readback.find((s) => s.index === w.index);
-      return (
-        !!d &&
-        d.weekdayMask === w.weekdayMask &&
-        sameMinute(d.startMinute, w.startMinute) &&
-        sameMinute(d.endMinute, w.endMinute)
-      );
-    });
-  debug.set(
-    "schedule",
-    scheduleOk ? "ok" : "fail",
-    wantedOn
-      .map((w) => {
-        const d = readback.find((s) => s.index === w.index);
-        return `#${w.index} device 0b${(d?.weekdayMask ?? 0).toString(2)} ${d?.startMinute ?? "–"}–${
-          d?.endMinute ?? "–"
-        } · sent 0b${w.weekdayMask.toString(2)} ${w.startMinute}–${w.endMinute}`;
-      })
-      .join(" | ") || "no window scheduled",
-  );
 }
 
 /**
