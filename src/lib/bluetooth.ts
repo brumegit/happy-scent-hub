@@ -274,7 +274,11 @@ async function attachLink(device: {
   }
 
   writable = writableWithNotify ?? writable;
-  if (!writable) return false;
+  if (!writable) {
+    log("No writable characteristic found — cannot send commands");
+    return false;
+  }
+  log("Serial channel ready");
 
 
   const write = async (frame: Uint8Array) => {
