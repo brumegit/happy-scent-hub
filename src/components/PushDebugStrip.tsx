@@ -6,6 +6,7 @@ import {
   type PushStepStatus,
 } from "@/stores/pushDebugStore";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useDebugMode } from "@/hooks/useDebugMode";
 
 const KEYS: PushStepKey[] = ["name", "modes", "intensity", "schedule"];
 
@@ -31,11 +32,12 @@ const textClass: Record<PushStepStatus, string> = {
  */
 export function PushDebugStrip() {
   const { steps, startedAt, linkError, log } = usePushDebugStore();
+  const debug = useDebugMode();
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
-  // Debug tooling is opt-in: enable with localStorage "brume-debug" = "1".
-  if (!hydrated || window.localStorage.getItem("brume-debug") !== "1") return null;
+  // Debug tooling is opt-in: 10 taps on the logo toggle it.
+  if (!hydrated || !debug) return null;
 
 
   return (

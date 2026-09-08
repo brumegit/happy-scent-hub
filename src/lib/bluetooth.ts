@@ -33,10 +33,15 @@ export type PairedDevice = { deviceId: string; suggestedName: string };
 /** Common transparent-serial services used by ScentLife modules. */
 const SERVICE_UUIDS = [
   0xffe0,
+  0xffe5,
   0xfff0,
   0xfee7,
+  0xfd00,
+  0xae00,
   "0000ffe0-0000-1000-8000-00805f9b34fb",
   "6e400001-b5a3-f393-e0a9-e50e24dcca9e", // Nordic UART
+  "49535343-fe7d-4ae5-8fa9-9fafd205e455", // Microchip transparent UART
+  "0000ffe5-0000-1000-8000-00805f9b34fb",
 ];
 
 const CHUNK_SIZE = 20;
@@ -209,15 +214,39 @@ async function attachLink(device: {
     connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }>;
   };
 }) {
+  const log = (line: string) => {
+    console.info("[ScentLife]", line);
+    pushDebug().addLog(line);
+  };
   const server = await device.gatt?.connect();
-  if (!server) return false;
-  const services = await server.getPrimaryServices();
+  if (!server) {
+    log("GATT connect returned no server");
+    return false;
+  }
+  const services = await server.getPrimaryServices().catch((error: Error) => {
+    log(`getPrimaryServices failed: ${error.message}`);
+    return [] as { getCharacteristics: () => Promise<Char[]> }[];
+  });
+  log(`GATT connected · ${services.length} accessible service(s)`);
   const responses = createResponseChannel((frame) => captureBattery(device.id, frame));
 
   let writable: Char | undefined;
   let writableWithNotify: Char | undefined;
   for (const service of services) {
-    const characteristics = await service.getCharacteristics();
+    const characteristics = await service.getCharacteristics().catch((error: Error) => {
+      log(`getCharacteristics failed: ${error.message}`);
+      return [] as Char[];
+    });
+    log(
+      `service chars: ${characteristics
+        .map(
+          (c) =>
+            `${c.properties?.notify ? "N" : ""}${c.properties?.write ? "W" : ""}${
+              c.properties?.writeWithoutResponse ? "w" : ""
+            }` || "-",
+        )
+        .join(" ")}`,
+    );
 
     // Subscribe to the notify characteristic so acknowledgments are visible.
     const notify = characteristics.find((c) => c.properties?.notify);
@@ -245,7 +274,11 @@ async function attachLink(device: {
   }
 
   writable = writableWithNotify ?? writable;
-  if (!writable) return false;
+  if (!writable) {
+    log("No writable characteristic found — cannot send commands");
+    return false;
+  }
+  log("Serial channel ready");
 
 
   const write = async (frame: Uint8Array) => {
@@ -333,19 +366,29 @@ export async function pairDiffuser(): Promise<PairedDevice> {
         optionalServices: SERVICE_UUIDS,
       });
 
+      let attached = false;
       try {
-        await attachLink(device);
-      } catch {
-        // GATT unavailable — commands fall back to the simulated link.
+        attached = await attachLink(device);
+      } catch (gattError) {
+        pushDebug().addLog(`GATT setup failed: ${(gattError as Error).message}`);
       }
 
       const suggested = device.name || "The 24/7 Room Diffuser";
+      if (!attached) {
+        // Without a writable serial channel nothing can be pushed — say so now
+        // instead of failing silently at the schedule step.
+        throw new Error(
+          "Connected, but this device did not expose its settings channel. Turn the diffuser off and on, then pair again.",
+        );
+      }
       return { deviceId: device.id, suggestedName: suggested };
     } catch (error) {
-      if ((error as Error)?.name === "NotFoundError") {
+      const err = error as Error;
+      pushDebug().addLog(`Pairing error: ${err.name ?? "Error"} — ${err.message}`);
+      if (err?.name === "NotFoundError") {
         throw new Error("No device selected.\nDouble-tap the button and try again.");
       }
-      // Fall through to simulated pairing on unsupported/blocked environments.
+      throw err;
     }
   }
 
