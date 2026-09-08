@@ -576,6 +576,56 @@ function Setup() {
             {/* Nothing is written to the hardware yet — everything is pushed
                 once the schedule is confirmed. */}
             <StatusButton state="idle" icon={false} label="Next" onClick={() => setPhase("schedule")} />
+
+            {/* Discreet switch between the presets and hand-set durations. */}
+            <button
+              type="button"
+              onClick={() => {
+                if (custom) {
+                  setCustom(null);
+                  return;
+                }
+                if (localStorage.getItem("brume-advanced-seen") !== "1") {
+                  setExplainAdvanced(true);
+                  return;
+                }
+                setCustom(clampCustomTiming({ onSeconds: preset.onSeconds, offSeconds: preset.offSeconds }));
+              }}
+              className="mx-auto block text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              {custom ? "Back to basic mode" : "Switch to advanced mode"}
+            </button>
+
+            <Dialog open={explainAdvanced} onOpenChange={setExplainAdvanced}>
+              <DialogContent className="border-border bg-background">
+                <DialogHeader>
+                  <DialogTitle className="font-display text-2xl">Advanced mode</DialogTitle>
+                  <DialogDescription className="text-sm text-foreground">
+                    Basic mode uses our ready-made intensities. Advanced mode lets you set your own
+                    timing: how long each spray lasts ({RUN_SECONDS.min}–{RUN_SECONDS.max} seconds)
+                    and how long the diffuser waits between sprays ({PAUSE_SECONDS.min}–
+                    {PAUSE_SECONDS.max} seconds). You can go back to basic mode at any time.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      localStorage.setItem("brume-advanced-seen", "1");
+                      setCustom(
+                        clampCustomTiming({
+                          onSeconds: preset.onSeconds,
+                          offSeconds: preset.offSeconds,
+                        }),
+                      );
+                      setExplainAdvanced(false);
+                    }}
+                  >
+                    Got it
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </section>
         )}
 
