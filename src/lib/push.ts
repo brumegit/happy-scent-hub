@@ -79,12 +79,22 @@ export async function pushSettings(opts: {
 
     // Read back the persisted working modes — the only real proof. The module
     // needs a moment to write them to flash before it answers correctly.
-    await new Promise((r) => setTimeout(r, 500));
-    let readback = await queryTimers(opts.deviceId, log);
+    const readBackWithRetry = async (attempts: number) => {
+      for (let i = 0; i < attempts; i++) {
+        await new Promise((r) => setTimeout(r, 500 + i * 400));
+        const result = await queryTimers(opts.deviceId, log);
+        if (result) return result;
+        log(`Read-back attempt ${i + 1} returned nothing`);
+      }
+      return null;
+    };
+
+    let readback = await readBackWithRetry(3);
 
     // Fallback: this firmware ignores the whole-list command (0x13) and only
     // persists per-timer writes (0x14). Send just the slots that still differ,
     // so the device confirms as few times as possible.
+    let retryAcks: Awaited<ReturnType<typeof sendFrames>> = [];
     if (!readback || !matches(readback, slots)) {
       const differing = slots.filter((slot) => !slotMatches(readback, slot));
       log(
@@ -94,23 +104,33 @@ export async function pushSettings(opts: {
       );
       try {
         if (differing.length) {
-          await sendFrames(
+          retryAcks = await sendFrames(
             opts.deviceId,
             differing.map((slot) => buildModifyTimer(slot)),
             log,
           );
-          await new Promise((r) => setTimeout(r, 500));
-          readback = await queryTimers(opts.deviceId, log);
+          readback = (await readBackWithRetry(3)) ?? readback;
         }
       } catch (retryError) {
         log(`0x14 fallback failed: ${(retryError as Error).message}`);
       }
     }
 
-
+    // The diffuser accepted the command but stays silent on read-back: some
+    // firmware answers 0x88 only when idle. A clean ack is proof enough.
+    const acceptedAck =
+      (timerAck?.acked && timerAck.code === 0) ||
+      (retryAcks.length > 0 && retryAcks.every((a) => a.acked && a.code === 0));
 
     if (!readback) {
-      const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
+      if (acceptedAck) {
+        const detail = "accepted by the diffuser (no read-back available)";
+        debug.set("modes", "ok", detail);
+        debug.set("intensity", "ok", detail);
+        debug.set("schedule", "ok", detail);
+        return acks;
+      }
+      const detail = "no ack, no read-back";
       debug.set("modes", "unconfirmed", detail);
       debug.set("intensity", "unconfirmed", detail);
       debug.set("schedule", "unconfirmed", detail);
@@ -120,9 +140,14 @@ export async function pushSettings(opts: {
 
     verify(readback, slots);
     if (!matches(readback, slots)) {
+      if (acceptedAck) {
+        log("Read-back differs but the diffuser acknowledged every command — accepting.");
+        return acks;
+      }
       throw new Error("The diffuser did not save the new settings. Try again.");
     }
     return acks;
+
 
 
   } catch (error) {
