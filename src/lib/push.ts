@@ -77,21 +77,30 @@ export async function pushSettings(opts: {
     // Read back the persisted working modes — the only real proof.
     let readback = await queryTimers(opts.deviceId, log);
 
-    // Fallback: some firmware ignores the whole-list command (0x13) and only
-    // accepts per-timer writes (0x14). Retry that way when nothing landed.
+    // Fallback: this firmware ignores the whole-list command (0x13) and only
+    // persists per-timer writes (0x14). Send just the slots that still differ,
+    // so the device confirms as few times as possible.
     if (!readback || !matches(readback, slots)) {
-      log("Timer list did not land — retrying with per-timer 0x14 commands");
+      const differing = slots.filter((slot) => !slotMatches(readback, slot));
+      log(
+        `Timer list did not land — sending 0x14 for mode(s) ${
+          differing.map((s) => s.index).join(", ") || "none"
+        }`,
+      );
       try {
-        await sendFrames(
-          opts.deviceId,
-          slots.map((slot) => buildModifyTimer(slot)),
-          log,
-        );
-        readback = await queryTimers(opts.deviceId, log);
+        if (differing.length) {
+          await sendFrames(
+            opts.deviceId,
+            differing.map((slot) => buildModifyTimer(slot)),
+            log,
+          );
+          readback = await queryTimers(opts.deviceId, log);
+        }
       } catch (retryError) {
         log(`0x14 fallback failed: ${(retryError as Error).message}`);
       }
     }
+
 
     if (!readback) {
       const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
@@ -115,24 +124,28 @@ export async function pushSettings(opts: {
   }
 }
 
-/** True when the device's persisted modes already match what we want to push. */
-function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
+/** True when one persisted working mode already equals the one we want. */
+function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
   const sameMinute = (a: number, b: number) =>
     a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
-  return wanted.every((w) => {
-    const d = readback.find((s) => s.index === w.index);
-    if (!d) return false;
-    if (!w.enabled) return !d.enabled;
-    return (
-      d.enabled &&
-      d.weekdayMask === w.weekdayMask &&
-      sameMinute(d.startMinute, w.startMinute) &&
-      sameMinute(d.endMinute, w.endMinute) &&
-      d.onSeconds === w.onSeconds &&
-      d.offSeconds === w.offSeconds
-    );
-  });
+  const d = readback?.find((s) => s.index === wanted.index);
+  if (!d) return false;
+  if (!wanted.enabled) return !d.enabled;
+  return (
+    d.enabled &&
+    d.weekdayMask === wanted.weekdayMask &&
+    sameMinute(d.startMinute, wanted.startMinute) &&
+    sameMinute(d.endMinute, wanted.endMinute) &&
+    d.onSeconds === wanted.onSeconds &&
+    d.offSeconds === wanted.offSeconds
+  );
 }
+
+/** True when the device's persisted modes already match what we want to push. */
+function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
+  return wanted.every((w) => slotMatches(readback, w));
+}
+
 
 
 function verify(readback: TimerSlot[], wantedSlots: TimerSlot[]) {
