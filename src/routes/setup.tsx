@@ -483,11 +483,26 @@ function Setup() {
                       {prompt.cta ? (
                         <Button
                           variant="link"
-                          onClick={() =>
-                            void (prompt.target === "location"
-                              ? openLocationSettings()
-                              : openAppSettings())
-                          }
+                          onClick={() => {
+                            if (prompt.target === "location") {
+                              void openLocationSettings();
+                              return;
+                            }
+                            if (prompt.target === "permission") {
+                              // Re-trigger the native permission popup. If the
+                              // system keeps refusing (permanently denied), the
+                              // only way left is the app's settings page.
+                              void (async () => {
+                                const granted = await ensureBluetoothPermission();
+                                const next = await refreshRequirements();
+                                if (!granted && next.permissionDenied) {
+                                  await openAppSettings();
+                                }
+                              })();
+                              return;
+                            }
+                            void openAppSettings();
+                          }}
                           className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
                         >
                           {prompt.cta}
