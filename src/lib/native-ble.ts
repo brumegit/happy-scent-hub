@@ -188,23 +188,54 @@ export async function openLocationSettings() {
 export const PERMISSION_ERROR =
   "Bluetooth permission was refused. Allow \"Nearby devices\" and \"Location\" for Brume in your phone settings, then try again.";
 
+/** A caller-supplied chooser: receives live scan results, resolves with a pick. */
+export type DeviceChooser = (
+  subscribe: (listener: (devices: NativeDevice[]) => void) => void,
+) => Promise<NativeDevice | null>;
+
+/** Nameless peripherals are noise — the user recognises their diffuser by name. */
+function isNamed(name: string | undefined): name is string {
+  const n = (name ?? "").trim();
+  return n.length > 0 && n.toLowerCase() !== "unknown";
+}
+
 /**
- * Opens the native Android/iOS BLE chooser and returns the device selected by
- * the user. The plugin owns scanning, permission handling and dialog lifecycle,
- * avoiding a second scanner implemented inside the web view.
+ * Finds the diffuser. A Brume peripheral is picked up silently; otherwise the
+ * app's own list of *named* nearby devices is shown (the system chooser lists
+ * every nameless peripheral, which is unusable).
  */
-export async function requestNativeDevice(): Promise<NativeDevice> {
+export async function requestNativeDevice(choose?: DeviceChooser): Promise<NativeDevice> {
   const ble = await client();
 
-  // A Brume diffuser advertises its own name, so pick it up silently instead of
-  // asking the user to recognise it in a list of nearby phones and headphones.
   const known = await scanForBrume(ble).catch(() => null);
   if (known) return known;
 
+  if (choose) {
+    const found = new Map<string, NativeDevice>();
+    let notify: ((devices: NativeDevice[]) => void) | null = null;
+    const emit = () => notify?.([...found.values()]);
+    await ble
+      .requestLEScan({ allowDuplicates: false }, (result) => {
+        const name = result.localName ?? result.device?.name;
+        if (!isNamed(name)) return;
+        found.set(result.device.deviceId, { deviceId: result.device.deviceId, name });
+        emit();
+      })
+      .catch(() => undefined);
+    try {
+      const picked = await choose((listener) => {
+        notify = listener;
+        emit();
+      });
+      if (!picked) throw new Error("No device selected.\nDouble-tap the button and try again.");
+      return picked;
+    } finally {
+      notify = null;
+      await ble.stopLEScan().catch(() => undefined);
+    }
+  }
+
   try {
-    // No filters and Android's default balanced/legacy scan settings give the
-    // broadest compatibility across phones and older diffuser chipsets. The
-    // native chooser lists results only; it never auto-selects a device.
     return await ble.requestDevice({});
   } catch (error) {
     const message = error instanceof Error ? error.message.toLowerCase() : "";
@@ -214,6 +245,7 @@ export async function requestNativeDevice(): Promise<NativeDevice> {
     throw error;
   }
 }
+
 
 /**
  * Short unfiltered scan that resolves as soon as a peripheral whose name
