@@ -150,8 +150,10 @@ function Setup() {
     locationOff: locOff,
   } = useBluetoothRequirements(!editing && phase === "idle");
   const autostarted = useRef(false);
-  // "Start now" goes straight into a Bluetooth search once the phone is ready.
-  const [autoPair, setAutoPair] = useState(false);
+  // In-app Bluetooth chooser (named devices only).
+  const [picker, setPicker] = useState<NativeDevice[] | null>(null);
+  const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
+
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
   const loadedEdit = useRef(false);
