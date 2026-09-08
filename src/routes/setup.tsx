@@ -272,7 +272,7 @@ function Setup() {
   const simulated = deviceId !== null && !isRealLink(deviceId);
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden">
+    <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
       <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
         <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
@@ -291,7 +291,9 @@ function Setup() {
         />
         <div
           key={phase === "pairing" ? "idle" : phase}
-          className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto"
+          className={`flex min-h-0 flex-1 flex-col justify-center overflow-x-hidden overscroll-none ${
+            phase === "schedule" ? "overflow-y-auto" : "overflow-y-hidden"
+          }`}
         >
 
 
