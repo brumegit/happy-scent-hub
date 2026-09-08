@@ -736,6 +736,14 @@ function Setup() {
         )}
         </div>
       </div>
+      {picker && (
+        <DevicePicker
+          devices={picker}
+          onSelect={(device) => settlePicker(device)}
+          onCancel={() => settlePicker(null)}
+        />
+      )}
     </div>
+
   );
 }
