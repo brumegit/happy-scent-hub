@@ -214,9 +214,20 @@ async function attachLink(device: {
     connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }>;
   };
 }) {
+  const log = (line: string) => {
+    console.info("[ScentLife]", line);
+    pushDebug().addLog(line);
+  };
   const server = await device.gatt?.connect();
-  if (!server) return false;
-  const services = await server.getPrimaryServices();
+  if (!server) {
+    log("GATT connect returned no server");
+    return false;
+  }
+  const services = await server.getPrimaryServices().catch((error: Error) => {
+    log(`getPrimaryServices failed: ${error.message}`);
+    return [] as { getCharacteristics: () => Promise<Char[]> }[];
+  });
+  log(`GATT connected · ${services.length} accessible service(s)`);
   const responses = createResponseChannel((frame) => captureBattery(device.id, frame));
 
   let writable: Char | undefined;
