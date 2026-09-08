@@ -26,7 +26,9 @@ import {
   isNativeSync,
   requestNativeDevice,
   writeNative,
+  type DeviceChooser,
 } from "@/lib/native-ble";
+
 
 export type PairedDevice = { deviceId: string; suggestedName: string };
 
