@@ -568,18 +568,38 @@ export async function queryTimers(
   onLog?: (line: string) => void,
 ): Promise<TimerSlot[] | null> {
   const link = deviceId ? links.get(deviceId) : undefined;
-  if (!link || link.simulated) return null;
+  if (!link || link.simulated) {
+    onLog?.("Read-back skipped: no live link");
+    return null;
+  }
+  exchangeBusy = true;
   try {
     const frame = buildGetTimers();
-    onLog?.(`TX ${toHex(frame)}`);
+    onLog?.(`TX read 0x08 ${toHex(frame)}`);
     const response = await link.request(frame, 0x88);
-    onLog?.(`RX ${toHex(response)}`);
-    return parseTimerListResponse(response);
+    onLog?.(`RX read 0x88 ${toHex(response)}`);
+    const slots = parseTimerListResponse(response);
+    onLog?.(
+      `Device holds ${slots.length} mode(s): ${
+        slots
+          .map(
+            (s) =>
+              `#${s.index}${s.enabled ? "" : "(off)"} d0b${s.weekdayMask.toString(2)} ${
+                s.startMinute
+              }-${s.endMinute} ${s.onSeconds}s/${s.offSeconds}s`,
+          )
+          .join(" | ") || "none"
+      }`,
+    );
+    return slots;
   } catch (error) {
     onLog?.(`Read-back failed: ${(error as Error).message}`);
     return null;
+  } finally {
+    exchangeBusy = false;
   }
 }
+
 
 
 
