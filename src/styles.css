@@ -173,7 +173,10 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-body);
+    /* Kill the iOS rubber-band scroll when the content already fits. */
+    overscroll-behavior-y: none;
   }
+
 
   h1, h2, h3 {
     font-family: var(--font-display);
