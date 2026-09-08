@@ -79,7 +79,7 @@ function Home() {
         </div>
 
         {empty ? null : (
-          <>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div className="mt-10 flex items-end justify-between gap-4">
               <div>
                 <h1 className="font-display text-4xl">
@@ -110,7 +110,7 @@ function Home() {
                 )}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
