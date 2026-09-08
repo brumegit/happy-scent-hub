@@ -20,10 +20,14 @@ import {
 import { WheelPicker } from "@/components/WheelPicker";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { DevicePicker } from "@/components/DevicePicker";
 import {
   openAppSettings,
   openLocationSettings,
+  type DeviceChooser,
+  type NativeDevice,
 } from "@/lib/native-ble";
+
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
