@@ -83,6 +83,24 @@ export const INTENSITIES: {
   },
 ];
 
+/**
+ * Advanced mode: the user's own spray/pause durations, replacing the intensity
+ * preset. Ranges are what the hardware accepts.
+ */
+export type CustomTiming = { onSeconds: number; offSeconds: number };
+
+export const RUN_SECONDS = { min: 3, max: 60, step: 1 } as const;
+export const PAUSE_SECONDS = { min: 30, max: 600, step: 5 } as const;
+
+export function clampCustomTiming(timing: CustomTiming): CustomTiming {
+  const round = (v: number, s: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, Math.round(v / s) * s));
+  return {
+    onSeconds: round(timing.onSeconds, RUN_SECONDS.step, RUN_SECONDS.min, RUN_SECONDS.max),
+    offSeconds: round(timing.offSeconds, PAUSE_SECONDS.step, PAUSE_SECONDS.min, PAUSE_SECONDS.max),
+  };
+}
+
 export function intensityPreset(intensity: Intensity) {
   return INTENSITIES.find((i) => i.value === intensity) ?? INTENSITIES[2]!;
 }
