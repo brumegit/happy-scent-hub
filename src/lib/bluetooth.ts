@@ -458,26 +458,39 @@ export async function sendFrames(
   // One frame per command — the module beeps once per accepted command, so the
   // schedule is pushed as a single timer-list frame (0x13), never expanded.
   const acks: FrameAck[] = [];
-  for (const frame of frames) {
-    const hex = toHex(frame);
-    console.info("[ScentLife] TX", hex);
-    onLog?.(`TX ${hex}`);
-    const fn = frame[3] ?? 0;
-    let response: Uint8Array | null = null;
-    try {
-      response = await link.request(frame, (fn + 0x80) & 0xff);
-      onLog?.(`RX ${toHex(response)}`);
-    } catch {
-      // Some modules acknowledge silently (no notify characteristic).
-      response = null;
-      onLog?.(`RX none for 0x${fn.toString(16)}`);
+  exchangeBusy = true;
+  try {
+    for (const frame of frames) {
+      const hex = toHex(frame);
+      console.info("[ScentLife] TX", hex);
+      const fn = frame[3] ?? 0;
+      onLog?.(`TX fn=0x${fn.toString(16).padStart(2, "0")} (${frame.length} bytes) ${hex}`);
+      let response: Uint8Array | null = null;
+      const startedAt = Date.now();
+      try {
+        response = await link.request(frame, (fn + 0x80) & 0xff);
+        onLog?.(`RX ${toHex(response)} after ${Date.now() - startedAt}ms`);
+      } catch (error) {
+        // Some modules acknowledge silently (no notify characteristic).
+        response = null;
+        onLog?.(
+          `RX none for 0x${fn.toString(16)} after ${Date.now() - startedAt}ms — ${
+            (error as Error).message
+          }`,
+        );
+      }
+      const code = response && response.length >= 6 ? (response[4] ?? null) : null;
+      onLog?.(
+        `ACK 0x${fn.toString(16)} → ${response ? `code ${code}` : "no reply"}`,
+      );
+      acks.push({ fn, acked: !!response, code, hex });
+      if (response && response.length === 7 && response[4] !== 0) {
+        throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
+      }
+      await wait(200);
     }
-    const code = response && response.length >= 6 ? (response[4] ?? null) : null;
-    acks.push({ fn, acked: !!response, code, hex });
-    if (response && response.length === 7 && response[4] !== 0) {
-      throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
-    }
-    await wait(200);
+  } finally {
+    exchangeBusy = false;
   }
 
   if (link.isLive && !(await link.isLive())) {
@@ -486,6 +499,7 @@ export async function sendFrames(
   }
   return acks;
 }
+
 
 /**
  * Writes protocol frames as one continuous stream and collects acknowledgments.
