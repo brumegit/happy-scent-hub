@@ -401,9 +401,10 @@ function Setup() {
                 <h1 className="font-display text-4xl leading-tight">Pairing</h1>
 
                 <video
-                  // Fills the full height between the heading and the CTA. Uses
-                  // contain so the frame is never cropped, only scaled to fit.
-                  className="mt-6 w-full flex-1 min-h-0 object-contain"
+                  // Responsive: it shrinks with the screen and never grows past
+                  // 38% of the viewport height, so the CTA always stays visible.
+                  className="mt-6 w-full flex-1 min-h-0 max-h-[38dvh] object-contain"
+
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
