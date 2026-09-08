@@ -24,10 +24,10 @@ import {
   isBluetoothSupported,
   isRealLink,
   sendFrames,
+  checkConnection,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
-  ensureBluetoothPermission,
   openAppSettings,
   openLocationSettings,
   type DeviceChooser,
@@ -259,9 +259,8 @@ function Setup() {
     const previous = phase;
     setError(null);
 
-    // Keep the OS-level safeguards, but let the actual write determine whether
-    // the saved BLE link is usable. The separate connection probe produced
-    // false negatives and stopped the command before debug logging even began.
+    // Nothing can be saved without a live link: check the radio, the app's
+    // permissions and the actual connection before pretending to send.
     const req = await refreshRequirements();
     if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
       const prompt = bluetoothRequirementPrompt({
@@ -272,6 +271,14 @@ function Setup() {
       toast.error(prompt.message, { className: "whitespace-pre-line" });
       return;
     }
+    const live = await checkConnection(deviceId);
+    if (!live) {
+      toast.error("Your diffuser is not connected. Pair it again to change its settings.");
+      setDeviceId(null);
+      setPhase("idle");
+      return;
+    }
+
     setPhase("pushing");
     setResult("pairing");
     try {
@@ -471,48 +478,19 @@ function Setup() {
                     locationOff: locOff,
                   });
                   return (
-                    <div
-                      className={
-                        "mt-7 space-y-3 border p-5 " +
-                        (prompt.tone === "destructive" ? "border-destructive" : "border-border")
-                      }
-                    >
-                      <p
-                        className={
-                          "text-sm " +
-                          (prompt.tone === "destructive" ? "text-destructive" : "text-foreground")
+                    <div className="mt-7 space-y-3 border border-border p-5">
+                      <p className="text-sm text-foreground">{prompt.message}</p>
+                      <Button
+                        variant="link"
+                        onClick={() =>
+                          void (prompt.target === "location"
+                            ? openLocationSettings()
+                            : openAppSettings())
                         }
+                        className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
                       >
-                        {prompt.message}
-                      </p>
-                      {prompt.cta ? (
-                        <Button
-                          variant={prompt.tone === "destructive" ? "destructive" : "link"}
-                          onClick={() => {
-                            if (prompt.target === "location") {
-                              void openLocationSettings();
-                              return;
-                            }
-                            if (prompt.target === "permission") {
-                              // Re-trigger the native permission popup. If the
-                              // system keeps refusing (permanently denied), the
-                              // only way left is the app's settings page.
-                              void (async () => {
-                                const granted = await ensureBluetoothPermission();
-                                const next = await refreshRequirements();
-                                if (!granted && next.permissionDenied) {
-                                  await openAppSettings();
-                                }
-                              })();
-                              return;
-                            }
-                            void openAppSettings();
-                          }}
-                          className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
-                        >
-                          {prompt.cta}
-                        </Button>
-                      ) : null}
+                        {prompt.cta}
+                      </Button>
                     </div>
                   );
                 })()}
