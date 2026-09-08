@@ -436,7 +436,15 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
         </>
       )}
+      {picker && (
+        <DevicePicker
+          devices={picker}
+          onSelect={(device) => settlePicker(device)}
+          onCancel={() => settlePicker(null)}
+        />
+      )}
     </article>
+
   );
 }
 
