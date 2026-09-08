@@ -97,7 +97,10 @@ function createResponseChannel(onFrame?: (frame: Uint8Array) => void) {
     }
   };
 
-  const waitFor = (fn: number, timeoutMs = 1200) =>
+  // This diffuser can take over two seconds to acknowledge a timer write while
+  // persisting it to flash. Keep the proven 2.5-second response window: the
+  // shorter timeout caused valid 0x93 and 0x88 replies to be discarded.
+  const waitFor = (fn: number, timeoutMs = 2500) =>
     new Promise<Uint8Array>((resolve, reject) => {
       const entry = { fn, resolve };
       pending.push(entry);
@@ -247,7 +250,7 @@ async function attachLink(device: {
     simulated: false,
     write,
     request: async (frame, responseFn) => {
-      const response = responses.waitFor(responseFn);
+      const response = responses.waitFor(responseFn, 2500);
       await write(frame);
       return response;
     },
@@ -283,7 +286,7 @@ export async function connectPickedDevice(device: {
       simulated: false,
       write,
       request: async (frame, responseFn) => {
-        const response = responses.waitFor(responseFn);
+        const response = responses.waitFor(responseFn, 2500);
         await write(frame);
         return response;
       },
