@@ -10,7 +10,7 @@ diff --git a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle
 +            } catch (e: SecurityException) {
 +                null
 +            }
-+            if (showDialog && deviceName.isNullOrBlank()) {
++            if (showDialog && (deviceName.isNullOrBlank() || deviceName.equals("Unknown", true))) {
 +                // Hide unnamed peripherals: users pick their diffuser by name,
 +                // and raw MAC addresses are noise in the chooser.
 +                return
@@ -66,3 +66,23 @@ diff --git a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle
                  savedCallback?.invoke(
                      ScanResponse(
                          true, "Started scanning.", null
+@@ -140,6 +166,7 @@
+         dialogHandler?.post {
+             val builder = AlertDialog.Builder(context)
+             builder.setTitle(displayStrings.scanning)
++            builder.setMessage("Double tap your diffuser button to enter pairing mode and edit settings")
+             builder.setCancelable(true)
+             adapter = ArrayAdapter(
+                 context, android.R.layout.simple_selectable_list_item, deviceStrings
+@@ -173,6 +200,11 @@
+             }
+             dialog = builder.create()
+             dialog?.show()
++            // Make "Cancel" unmistakable: red, square, no rounded chrome.
++            dialog?.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
++                setTextColor(android.graphics.Color.parseColor("#E5484D"))
++                background = null
++            }
+         }
+     }
+ 
