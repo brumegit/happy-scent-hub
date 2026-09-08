@@ -136,7 +136,9 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
   const sameMinute = (a: number, b: number) =>
     a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
   const d = readback?.find((s) => s.index === wanted.index);
-  if (!d) return false;
+  // Firmware only reports the working modes it holds: a slot we want switched
+  // off and that the device does not list at all is already in the right state.
+  if (!d) return !wanted.enabled;
   if (!wanted.enabled) return !d.enabled;
   return (
     d.enabled &&
@@ -147,6 +149,7 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
     d.offSeconds === wanted.offSeconds
   );
 }
+
 
 /** True when the device's persisted modes already match what we want to push. */
 function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
