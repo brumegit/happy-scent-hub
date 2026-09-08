@@ -257,9 +257,30 @@ function Setup() {
 
   async function push(next: Phase, onDone?: () => void) {
     const previous = phase;
+    setError(null);
+
+    // Nothing can be saved without a live link: check the radio, the app's
+    // permissions and the actual connection before pretending to send.
+    await refreshRequirements();
+    if (btOff || btDenied || locOff) {
+      const prompt = bluetoothRequirementPrompt({
+        bluetoothOff: btOff,
+        permissionDenied: btDenied,
+        locationOff: locOff,
+      });
+      toast.error(prompt.message, { className: "whitespace-pre-line" });
+      return;
+    }
+    const live = await checkConnection(deviceId);
+    if (!live) {
+      toast.error("Your diffuser is not connected. Pair it again to change its settings.");
+      setDeviceId(null);
+      setPhase("idle");
+      return;
+    }
+
     setPhase("pushing");
     setResult("pairing");
-    setError(null);
     try {
       await pushSettings({
         deviceId,
