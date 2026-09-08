@@ -104,6 +104,7 @@ export function bluetoothRequirementPrompt(req: {
       // the system refuses again does the caller fall back to app settings.
       cta: "Allow Bluetooth" as const,
       target: "permission" as const,
+      tone: "default" as const,
     };
   }
   // Case 1: the phone's Bluetooth radio is switched off, but Brume already
@@ -113,14 +114,16 @@ export function bluetoothRequirementPrompt(req: {
     return {
       message: locationOff
         ? "Turn Bluetooth and Location on to pair your diffuser."
-        : "Turn Bluetooth ON on your iPhone or Android to pair your diffuser.",
+        : "Turn Bluetooth ON",
       cta: locationOff ? ("Open location settings" as const) : ("" as const),
       target: locationOff ? ("location" as const) : ("app" as const),
+      tone: "destructive" as const,
     };
   }
   return {
     message: "Bluetooth is on, but Location is off. Android needs Location switched on to find Bluetooth devices.",
     cta: "Open location settings" as const,
     target: "location" as const,
+    tone: "default" as const,
   };
 }

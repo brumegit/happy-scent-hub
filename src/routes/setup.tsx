@@ -479,11 +479,23 @@ function Setup() {
                     locationOff: locOff,
                   });
                   return (
-                    <div className="mt-7 space-y-3 border border-border p-5">
-                      <p className="text-sm text-foreground">{prompt.message}</p>
+                    <div
+                      className={
+                        "mt-7 space-y-3 border p-5 " +
+                        (prompt.tone === "destructive" ? "border-destructive" : "border-border")
+                      }
+                    >
+                      <p
+                        className={
+                          "text-sm " +
+                          (prompt.tone === "destructive" ? "text-destructive" : "text-foreground")
+                        }
+                      >
+                        {prompt.message}
+                      </p>
                       {prompt.cta ? (
                         <Button
-                          variant="link"
+                          variant={prompt.tone === "destructive" ? "destructive" : "link"}
                           onClick={() => {
                             if (prompt.target === "location") {
                               void openLocationSettings();
