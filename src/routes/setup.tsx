@@ -341,8 +341,8 @@ function Setup() {
                 icon={false}
                 label="Start now"
                 onClick={() => {
-                  setAutoPair(true);
                   setPhase("idle");
+
                 }}
               />
             </div>
