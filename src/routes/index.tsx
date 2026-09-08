@@ -72,7 +72,7 @@ function Home() {
   }, [empty, navigate]);
 
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className="relative min-h-[100dvh] flex flex-col">
       <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-11 pb-8">
         <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
