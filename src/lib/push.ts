@@ -36,6 +36,12 @@ export async function pushSettings(opts: {
   debug.begin();
   const log = (line: string) => pushDebug().addLog(line);
 
+  log(
+    `Push start · device ${opts.deviceId ?? "none"} · link ${
+      isRealLink(opts.deviceId) ? "live" : "not live (simulated or missing)"
+    }`,
+  );
+
   const slots = buildTimerSlots(opts.schedule, opts.intensity);
 
   try {
