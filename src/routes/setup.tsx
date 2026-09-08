@@ -19,7 +19,13 @@ import {
 } from "@/components/ui/dialog";
 import { WheelPicker } from "@/components/WheelPicker";
 import { Label } from "@/components/ui/label";
-import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import {
+  pairDiffuser,
+  isBluetoothSupported,
+  isRealLink,
+  sendFrames,
+  checkConnection,
+} from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
   openAppSettings,
