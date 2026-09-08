@@ -1,6 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
 
-import { TimeFormatToggle } from "@/components/TimeFormatToggle";
 import {
   DAYS,
   MAX_TIMERS,
@@ -30,12 +29,10 @@ export function ScheduleGrid({
   schedule,
   onChange,
   showNames = true,
-  showTimeFormat = true,
 }: {
   schedule: DaySchedule[];
   onChange: (schedule: DaySchedule[]) => void;
   showNames?: boolean;
-  showTimeFormat?: boolean;
 }) {
   const blocks = blocksFromSchedule(schedule);
 
@@ -152,11 +149,6 @@ export function ScheduleGrid({
         </p>
       )}
 
-      {showTimeFormat && (
-        <div className="sticky bottom-4 z-40 bg-background">
-          <TimeFormatToggle />
-        </div>
-      )}
     </div>
   );
 }

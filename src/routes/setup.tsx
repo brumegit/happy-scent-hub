@@ -6,7 +6,6 @@ import { ArrowLeft, Bluetooth, CalendarClock, Star } from "lucide-react";
 import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
 import { AppHeader } from "@/components/AppHeader";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
-import { TimeFormatToggle } from "@/components/TimeFormatToggle";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -247,8 +246,8 @@ function Setup() {
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden">
-      <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col overflow-y-auto px-11 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
-        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
+      <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+        <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
@@ -265,7 +264,7 @@ function Setup() {
         />
         <div
           key={phase === "pairing" ? "idle" : phase}
-          className="flex min-h-0 flex-1 flex-col justify-center"
+          className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto"
         >
 
 
@@ -375,7 +374,7 @@ function Setup() {
                       <div className="mt-7">
                         <StatusButton
                           state={phase === "idle" ? "idle" : "pairing"}
-                          label={phase === "idle" ? "Start pairing" : "Searching"}
+                          label={phase === "idle" ? "Start pairing" : "Double tap your diffuser"}
                           {...(phase === "idle" ? { onClick: handlePair } : {})}
                         />
                       </div>
@@ -559,7 +558,6 @@ function Setup() {
               schedule={schedule}
               onChange={setSchedule}
               showNames={false}
-              showTimeFormat={false}
             />
 
             {simulated && (
@@ -605,9 +603,6 @@ function Setup() {
                 })
               }
             />
-            <div className="sticky bottom-4 z-40 bg-background">
-              <TimeFormatToggle />
-            </div>
           </section>
         )}
         </div>

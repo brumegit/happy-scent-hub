@@ -72,9 +72,9 @@ function Home() {
   }, [empty, navigate]);
 
   return (
-    <div className="relative min-h-[100dvh] flex flex-col">
-      <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col px-11 pb-8">
-        <div className="sticky top-0 z-40 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden">
+      <div className="relative mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+        <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
         </div>
 
@@ -375,7 +375,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
-            label={connecting ? "Searching" : "Tap to edit"}
+            label={connecting ? "Double tap your diffuser" : "Tap to edit"}
             onClick={() => void connect()}
           />
           {error && <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>}
