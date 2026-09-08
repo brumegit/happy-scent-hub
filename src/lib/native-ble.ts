@@ -16,6 +16,14 @@ type BleClientType = typeof import("@capacitor-community/bluetooth-le")["BleClie
 
 let bleClient: BleClientType | null = null;
 
+/**
+ * Devices we hold an open GATT link to. iOS cannot answer
+ * `getConnectedDevices([])` (CoreBluetooth requires service UUIDs), so the
+ * plugin's disconnect callback is the reliable source of truth on both
+ * platforms.
+ */
+const connectedIds = new Set<string>();
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function isTransientGattError(error: unknown) {
@@ -250,7 +258,11 @@ export async function connectNative(
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await ble.connect(deviceId, undefined, { timeout: 15_000, skipDescriptorDiscovery: true });
+      await ble.connect(deviceId, (id) => connectedIds.delete(id), {
+        timeout: 15_000,
+        skipDescriptorDiscovery: true,
+      });
+      connectedIds.add(deviceId);
       lastError = undefined;
       break;
     } catch (error) {
@@ -304,18 +316,13 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
 }
 
 export async function isNativeConnected(deviceId: string) {
-  try {
-    const ble = await client();
-    const devices = await ble.getConnectedDevices([]);
-    return devices.some((d) => d.deviceId === deviceId);
-  } catch {
-    return false;
-  }
+  return connectedIds.has(deviceId);
 }
 
 /** Disconnects the GATT link on a native build. */
 export async function disconnectNative(deviceId: string) {
   const ble = await client();
+  connectedIds.delete(deviceId);
   await ble.disconnect(deviceId);
 }
 
