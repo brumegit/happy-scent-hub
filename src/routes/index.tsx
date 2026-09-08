@@ -134,6 +134,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(diffuser.name);
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
+  const [picker, setPicker] = useState<NativeDevice[] | null>(null);
+  const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
+
 
   // Only the room name is broadcast over Bluetooth, so only it is validated.
   const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
