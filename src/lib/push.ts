@@ -14,6 +14,7 @@ import {
   intensityFromTimer,
   scheduleFromTimers,
   MAX_TIMERS,
+  type CustomTiming,
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
@@ -32,6 +33,8 @@ export async function pushSettings(opts: {
   deviceId: string | null;
   schedule: DaySchedule[];
   intensity: Intensity;
+  /** Advanced mode: user-set spray/pause durations replacing the preset. */
+  custom?: CustomTiming | null;
   hardwareName?: string;
 }) {
   const debug = pushDebug();
@@ -44,7 +47,7 @@ export async function pushSettings(opts: {
     }`,
   );
 
-  const slots = buildTimerSlots(opts.schedule, opts.intensity);
+  const slots = buildTimerSlots(opts.schedule, opts.intensity, opts.custom ?? null);
 
   try {
     // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes

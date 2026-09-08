@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-import { defaultSchedule, type DaySchedule, type Intensity } from "@/lib/diffuser";
+import { defaultSchedule, type CustomTiming, type DaySchedule, type Intensity } from "@/lib/diffuser";
 
 export type Diffuser = {
   id: string;
@@ -9,6 +9,8 @@ export type Diffuser = {
   room: string;
   device_id: string | null;
   intensity: Intensity;
+  /** Advanced mode timings; null/undefined means the intensity preset is used. */
+  custom_timing?: CustomTiming | null;
   schedule: DaySchedule[];
   schedule_active: boolean;
   last_pushed_at: string | null;
