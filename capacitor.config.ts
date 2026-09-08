@@ -14,9 +14,19 @@ const config: CapacitorConfig = {
   server: {
     url: PRODUCTION_URL,
     cleartext: false,
+    // Without this list the native shell treats the remote app as an external
+    // site and kicks the user out to Safari (black webview + Safari opening
+    // app.brume.me on launch). Everything on brume.me stays inside the app.
+    allowNavigation: ["app.brume.me", "*.brume.me", "brume.me", "*.lovable.app"],
   },
   ios: {
-    contentInset: "always",
+    contentInset: "never",
+    limitsNavigationsToAppBoundDomains: false,
+    backgroundColor: "#000000",
+    scrollEnabled: false,
+  },
+  android: {
+    backgroundColor: "#000000",
   },
   plugins: {
     BluetoothLe: {
