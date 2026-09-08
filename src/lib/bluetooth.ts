@@ -67,16 +67,27 @@ const links = new Map<string, Link>();
 const batteries = new Map<string, BatteryStatus>();
 const batteryListeners = new Set<() => void>();
 
+/**
+ * True while a command/response exchange is in flight. The module drops frames
+ * that arrive while it is answering, so the spontaneous status-report ack must
+ * never be written in the middle of a settings push.
+ */
+let exchangeBusy = false;
+
 function captureBattery(deviceId: string, frame: Uint8Array) {
   // Status reports must be acknowledged, otherwise the module stops sending
   // them and the battery level never refreshes.
   const fn = frame[3] ?? 0;
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
-    void links
-      .get(deviceId)
-      ?.write(buildReportAck(fn))
-      .catch(() => {});
+    if (exchangeBusy) {
+      pushDebug().addLog(`Status report 0x${fn.toString(16)} not acked (command in flight)`);
+    } else {
+      void links
+        .get(deviceId)
+        ?.write(buildReportAck(fn))
+        .catch(() => {});
+    }
   }
   const status = parseBatteryReport(frame);
   if (!status) return;
@@ -84,6 +95,7 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   batteries.set(deviceId, status);
   batteryListeners.forEach((listener) => listener());
 }
+
 
 /** Last known battery status for a device, or null when it has not reported yet. */
 export function getBatteryStatus(deviceId: string | null): BatteryStatus | null {
