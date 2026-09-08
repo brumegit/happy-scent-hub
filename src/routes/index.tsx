@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { DevicePicker } from "@/components/DevicePicker";
+import type { DeviceChooser, NativeDevice } from "@/lib/native-ble";
+
 import {
   Bluetooth,
   CalendarClock,
