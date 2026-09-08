@@ -29,42 +29,46 @@ const INITIAL_REQUIREMENTS: BluetoothRequirements = {
 export function useBluetoothRequirements(active = true) {
   const [requirements, setRequirements] = useState<BluetoothRequirements>(INITIAL_REQUIREMENTS);
 
-  const refresh = useCallback(async () => {
-    if (!active) return;
+  // Returns the fresh result too, so callers can gate an action on it without
+  // waiting for React state to settle.
+  const refresh = useCallback(async (): Promise<BluetoothRequirements> => {
     setRequirements((current) => ({ ...current, checking: true }));
+    let next: BluetoothRequirements;
     try {
       const granted = await ensureBluetoothPermission();
       const denied = !granted || isBluetoothPermissionDenied();
       if (denied) {
         // Without the permission, the radio and location probes are unreliable,
         // so report only the blocker we are sure about.
-        setRequirements({
+        next = {
           checking: false,
           bluetoothOff: false,
           permissionDenied: true,
           locationOff: false,
-        });
-        return;
+        };
+      } else {
+        const [bluetoothOn, locationOn] = await Promise.all([
+          isBluetoothOn(),
+          isLocationServiceEnabled(),
+        ]);
+        next = {
+          checking: false,
+          bluetoothOff: !bluetoothOn,
+          permissionDenied: false,
+          locationOff: !locationOn,
+        };
       }
-      const [bluetoothOn, locationOn] = await Promise.all([
-        isBluetoothOn(),
-        isLocationServiceEnabled(),
-      ]);
-      setRequirements({
-        checking: false,
-        bluetoothOff: !bluetoothOn,
-        permissionDenied: false,
-        locationOff: !locationOn,
-      });
     } catch {
-      setRequirements({
+      next = {
         checking: false,
         bluetoothOff: false,
         permissionDenied: true,
         locationOff: false,
-      });
+      };
     }
-  }, [active]);
+    setRequirements(next);
+    return next;
+  }, []);
 
   useEffect(() => {
     if (!active) return;

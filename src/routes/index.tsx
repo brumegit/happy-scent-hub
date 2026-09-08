@@ -428,9 +428,18 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               state="idle"
               icon={false}
               label="Edit settings"
-              onClick={() =>
-                void navigate({ to: "/setup", search: { edit: diffuser.id } })
-              }
+              onClick={() => {
+                // Re-check the link at the moment of the tap: settings can only
+                // be changed while the diffuser is really connected.
+                void checkConnection(diffuser.device_id).then((live) => {
+                  setConnected(live);
+                  if (live) {
+                    void navigate({ to: "/setup", search: { edit: diffuser.id } });
+                  } else {
+                    setError("Your diffuser is not connected. Pair it again to change its settings.");
+                  }
+                });
+              }}
             />
           </div>
 

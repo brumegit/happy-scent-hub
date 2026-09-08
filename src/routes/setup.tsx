@@ -19,7 +19,13 @@ import {
 } from "@/components/ui/dialog";
 import { WheelPicker } from "@/components/WheelPicker";
 import { Label } from "@/components/ui/label";
-import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import {
+  pairDiffuser,
+  isBluetoothSupported,
+  isRealLink,
+  sendFrames,
+  checkConnection,
+} from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
   openAppSettings,
@@ -148,7 +154,10 @@ function Setup() {
     bluetoothOff: btOff,
     permissionDenied: btDenied,
     locationOff: locOff,
-  } = useBluetoothRequirements(!editing && phase === "idle");
+    refresh: refreshRequirements,
+    // Editing an existing diffuser still needs Bluetooth on and allowed: the
+    // settings can only be saved over a live link.
+  } = useBluetoothRequirements(!!editing || phase === "idle");
   const autostarted = useRef(false);
   // In-app Bluetooth chooser (named devices only).
   const [picker, setPicker] = useState<NativeDevice[] | null>(null);
@@ -248,9 +257,30 @@ function Setup() {
 
   async function push(next: Phase, onDone?: () => void) {
     const previous = phase;
+    setError(null);
+
+    // Nothing can be saved without a live link: check the radio, the app's
+    // permissions and the actual connection before pretending to send.
+    const req = await refreshRequirements();
+    if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
+      const prompt = bluetoothRequirementPrompt({
+        bluetoothOff: req.bluetoothOff,
+        permissionDenied: req.permissionDenied,
+        locationOff: req.locationOff,
+      });
+      toast.error(prompt.message, { className: "whitespace-pre-line" });
+      return;
+    }
+    const live = await checkConnection(deviceId);
+    if (!live) {
+      toast.error("Your diffuser is not connected. Pair it again to change its settings.");
+      setDeviceId(null);
+      setPhase("idle");
+      return;
+    }
+
     setPhase("pushing");
     setResult("pairing");
-    setError(null);
     try {
       await pushSettings({
         deviceId,
@@ -427,7 +457,7 @@ function Setup() {
                       <div className="mt-7">
                         <StatusButton
                           state={phase === "idle" ? "idle" : "pairing"}
-                          label={phase === "idle" ? "Start pairing" : "Double tap your diffuser"}
+                          label={phase === "idle" ? "Start pairing" : "Pairing"}
                           {...(phase === "idle" ? { onClick: handlePair } : {})}
                         />
                       </div>

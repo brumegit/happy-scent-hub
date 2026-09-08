@@ -110,10 +110,14 @@ export async function pushSettings(opts: {
       debug.set("modes", "unconfirmed", detail);
       debug.set("intensity", "unconfirmed", detail);
       debug.set("schedule", "unconfirmed", detail);
-      return acks;
+      // Never report success we cannot prove: the diffuser did not confirm.
+      throw new Error("The diffuser did not confirm the new settings. Try again.");
     }
 
     verify(readback, slots);
+    if (!matches(readback, slots)) {
+      throw new Error("The diffuser did not save the new settings. Try again.");
+    }
     return acks;
 
 
