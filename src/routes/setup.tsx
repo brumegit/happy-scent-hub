@@ -480,17 +480,19 @@ function Setup() {
                   return (
                     <div className="mt-7 space-y-3 border border-border p-5">
                       <p className="text-sm text-foreground">{prompt.message}</p>
-                      <Button
-                        variant="link"
-                        onClick={() =>
-                          void (prompt.target === "location"
-                            ? openLocationSettings()
-                            : openAppSettings())
-                        }
-                        className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
-                      >
-                        {prompt.cta}
-                      </Button>
+                      {prompt.cta ? (
+                        <Button
+                          variant="link"
+                          onClick={() =>
+                            void (prompt.target === "location"
+                              ? openLocationSettings()
+                              : openAppSettings())
+                          }
+                          className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
+                        >
+                          {prompt.cta}
+                        </Button>
+                      ) : null}
                     </div>
                   );
                 })()}
