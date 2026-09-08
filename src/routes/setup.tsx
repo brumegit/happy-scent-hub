@@ -9,6 +9,15 @@ import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { WheelPicker } from "@/components/WheelPicker";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
 import {
@@ -20,6 +29,10 @@ import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
 import {
   INTENSITIES,
+  PAUSE_SECONDS,
+  RUN_SECONDS,
+  clampCustomTiming,
+  type CustomTiming,
   hardwareName,
   defaultSchedule,
   formatSeconds,
@@ -122,6 +135,8 @@ function Setup() {
   const [roomTouched, setRoomTouched] = useState(false);
   const [intensity, setIntensity] = useState<Intensity>(editing?.intensity ?? "high");
   const [schedule, setSchedule] = useState<DaySchedule[]>(() => editing?.schedule ?? defaultSchedule());
+  const [custom, setCustom] = useState<CustomTiming | null>(editing?.custom_timing ?? null);
+  const [explainAdvanced, setExplainAdvanced] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const {
@@ -131,6 +146,8 @@ function Setup() {
     locationOff: locOff,
   } = useBluetoothRequirements(!editing && phase === "idle");
   const autostarted = useRef(false);
+  // "Start now" goes straight into a Bluetooth search once the phone is ready.
+  const [autoPair, setAutoPair] = useState(false);
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
   const loadedEdit = useRef(false);
@@ -140,6 +157,7 @@ function Setup() {
     setDeviceId(editing.device_id);
     setRoom(editing.room);
     setIntensity(editing.intensity);
+    setCustom(editing.custom_timing ?? null);
     setSchedule(editing.schedule);
     setPhase("intensity");
   }, [editing]);
@@ -191,6 +209,14 @@ function Setup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start]);
 
+  useEffect(() => {
+    if (!autoPair || phase !== "idle") return;
+    if (checkingRequirements || btOff || btDenied || locOff) return;
+    setAutoPair(false);
+    void handlePair();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPair, phase, checkingRequirements, btOff, btDenied, locOff]);
+
   // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
     if (phase !== "paired") return;
@@ -215,6 +241,7 @@ function Setup() {
         deviceId,
         schedule,
         intensity,
+        custom,
         hardwareName: hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
       });
       setResult("success");
@@ -292,7 +319,15 @@ function Setup() {
             </ol>
 
             <div className="mt-10">
-              <StatusButton state="idle" icon={false} label="Start now" onClick={() => setPhase("idle")} />
+              <StatusButton
+                state="idle"
+                icon={false}
+                label="Start now"
+                onClick={() => {
+                  setAutoPair(true);
+                  setPhase("idle");
+                }}
+              />
             </div>
           </section>
         )}
@@ -524,7 +559,7 @@ function Setup() {
           <section className="mt-4 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
              <p className="mt-3 text-sm text-foreground">
-              Keep the diffuser nearby. It beeps once each command is accepted.
+              Keep the diffuser nearby. You'll hear it beep to confirm new settings.
             </p>
             <div className="mt-7">
               <StatusButton
@@ -574,6 +609,7 @@ function Setup() {
                   if (editing) {
                     updateDiffuser(editing.id, {
                       intensity,
+                      custom_timing: custom,
                       schedule,
                       schedule_active: true,
                       last_pushed_at: new Date().toISOString(),
@@ -592,6 +628,7 @@ function Setup() {
                     room: room.trim(),
                     device_id: deviceId,
                     intensity,
+                    custom_timing: custom,
                     schedule,
                     schedule_active: true,
                     last_pushed_at: new Date().toISOString(),
