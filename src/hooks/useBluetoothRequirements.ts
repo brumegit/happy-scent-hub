@@ -92,6 +92,9 @@ export function bluetoothRequirementPrompt(req: {
   locationOff: boolean;
 }) {
   const { bluetoothOff, permissionDenied, locationOff } = req;
+  // Case 2: the app has not been granted Bluetooth/Location permission.
+  // This is distinct from the radio being off — send the user to the app's
+  // permission settings so they can allow Brume to use Bluetooth.
   if (permissionDenied) {
     return {
       message: locationOff
@@ -101,12 +104,15 @@ export function bluetoothRequirementPrompt(req: {
       target: "app" as const,
     };
   }
+  // Case 1: the phone's Bluetooth radio is switched off, but Brume already
+  // has permission. The fix is on the phone itself, so just tell the user to
+  // turn Bluetooth on — no settings page to open.
   if (bluetoothOff) {
     return {
       message: locationOff
-        ? "Bluetooth and Location are off. Turn both on to pair your diffuser."
-        : "Bluetooth is off, turn it on to pair your diffuser.",
-      cta: locationOff ? ("Open location settings" as const) : ("Open app settings" as const),
+        ? "Turn Bluetooth and Location on to pair your diffuser."
+        : "Turn Bluetooth ON on your iPhone or Android to pair your diffuser.",
+      cta: locationOff ? ("Open location settings" as const) : ("" as const),
       target: locationOff ? ("location" as const) : ("app" as const),
     };
   }
