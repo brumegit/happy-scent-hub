@@ -148,7 +148,10 @@ function Setup() {
     bluetoothOff: btOff,
     permissionDenied: btDenied,
     locationOff: locOff,
-  } = useBluetoothRequirements(!editing && phase === "idle");
+    refresh: refreshRequirements,
+    // Editing an existing diffuser still needs Bluetooth on and allowed: the
+    // settings can only be saved over a live link.
+  } = useBluetoothRequirements(!!editing || phase === "idle");
   const autostarted = useRef(false);
   // In-app Bluetooth chooser (named devices only).
   const [picker, setPicker] = useState<NativeDevice[] | null>(null);
@@ -427,7 +430,7 @@ function Setup() {
                       <div className="mt-7">
                         <StatusButton
                           state={phase === "idle" ? "idle" : "pairing"}
-                          label={phase === "idle" ? "Start pairing" : "Double tap your diffuser"}
+                          label={phase === "idle" ? "Start pairing" : "Pairing"}
                           {...(phase === "idle" ? { onClick: handlePair } : {})}
                         />
                       </div>
