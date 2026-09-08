@@ -21,7 +21,7 @@ const config: CapacitorConfig = {
   plugins: {
     BluetoothLe: {
       displayStrings: {
-        scanning: "Looking for your diffuser…",
+        scanning: "Searching",
         cancel: "Cancel",
         availableDevices: "Nearby devices",
         noDeviceFound: "No diffuser found",
