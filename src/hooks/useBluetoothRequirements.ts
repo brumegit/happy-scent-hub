@@ -99,9 +99,11 @@ export function bluetoothRequirementPrompt(req: {
     return {
       message: locationOff
         ? "Brume is not allowed to use Bluetooth on this phone, and Location is off. Allow Nearby devices and Location for Brume, then turn Location on."
-        : "Brume is not allowed to use Bluetooth on this phone. Allow Nearby devices and Location for Brume in the app settings.",
-      cta: "Open app settings" as const,
-      target: "app" as const,
+        : "Brume is not allowed to use Bluetooth on this phone. Allow access so the app can find your diffuser.",
+      // Ask the OS again first — that shows the native "Allow" popup. Only if
+      // the system refuses again does the caller fall back to app settings.
+      cta: "Allow Bluetooth" as const,
+      target: "permission" as const,
     };
   }
   // Case 1: the phone's Bluetooth radio is switched off, but Brume already
