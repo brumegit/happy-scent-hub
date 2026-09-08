@@ -24,7 +24,6 @@ import {
   isBluetoothSupported,
   isRealLink,
   sendFrames,
-  checkConnection,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
@@ -260,8 +259,9 @@ function Setup() {
     const previous = phase;
     setError(null);
 
-    // Nothing can be saved without a live link: check the radio, the app's
-    // permissions and the actual connection before pretending to send.
+    // Keep the OS-level safeguards, but let the actual write determine whether
+    // the saved BLE link is usable. The separate connection probe produced
+    // false negatives and stopped the command before debug logging even began.
     const req = await refreshRequirements();
     if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
       const prompt = bluetoothRequirementPrompt({
@@ -272,14 +272,6 @@ function Setup() {
       toast.error(prompt.message, { className: "whitespace-pre-line" });
       return;
     }
-    const live = await checkConnection(deviceId);
-    if (!live) {
-      toast.error("Your diffuser is not connected. Pair it again to change its settings.");
-      setDeviceId(null);
-      setPhase("idle");
-      return;
-    }
-
     setPhase("pushing");
     setResult("pairing");
     try {
