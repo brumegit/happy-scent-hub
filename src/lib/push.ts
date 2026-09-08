@@ -1,11 +1,13 @@
-import { isRealLink, queryTimers, sendBatch, sendFrames } from "@/lib/bluetooth";
+import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
+  buildModifyTimer,
   buildSetBroadcastName,
   buildTimerList,
   MODULE_TYPES,
   sanitizeBroadcastName,
   type TimerSlot,
 } from "@/lib/scentlife";
+
 
 import {
   buildTimerSlots,
