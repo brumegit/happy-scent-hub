@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { PushDebugStrip } from "@/components/PushDebugStrip";
 import { ReadDebugStrip } from "@/components/ReadDebugStrip";
+import { DebugExitBanner } from "@/components/DebugExitBanner";
 import { useCartSync } from "@/hooks/useCartSync";
 import { initMetaPixel, trackEvent } from "@/lib/meta";
 
