@@ -189,6 +189,19 @@ function Setup() {
     }
   }
 
+  const chooseDevice: DeviceChooser = (subscribe) =>
+    new Promise<NativeDevice | null>((resolve) => {
+      pickerResolve.current = resolve;
+      setPicker([]);
+      subscribe((devices) => setPicker(devices));
+    });
+
+  function settlePicker(device: NativeDevice | null) {
+    pickerResolve.current?.(device);
+    pickerResolve.current = null;
+    setPicker(null);
+  }
+
   async function handlePair() {
     // The UI is gated too, but keep the native action itself unreachable until
     // Android has returned every permission and service-state check.
@@ -196,11 +209,14 @@ function Setup() {
     setError(null);
     setPhase("pairing");
     try {
-      const device = await pairDiffuser();
+      const device = await pairDiffuser(chooseDevice);
       await afterPaired(device);
     } catch (err) {
       setPhase("idle");
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
+    } finally {
+      pickerResolve.current = null;
+      setPicker(null);
     }
   }
 
@@ -215,13 +231,6 @@ function Setup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start]);
 
-  useEffect(() => {
-    if (!autoPair || phase !== "idle") return;
-    if (checkingRequirements || btOff || btDenied || locOff) return;
-    setAutoPair(false);
-    void handlePair();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPair, phase, checkingRequirements, btOff, btDenied, locOff]);
 
   // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
