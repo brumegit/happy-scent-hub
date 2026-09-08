@@ -233,7 +233,20 @@ async function attachLink(device: {
   let writable: Char | undefined;
   let writableWithNotify: Char | undefined;
   for (const service of services) {
-    const characteristics = await service.getCharacteristics();
+    const characteristics = await service.getCharacteristics().catch((error: Error) => {
+      log(`getCharacteristics failed: ${error.message}`);
+      return [] as Char[];
+    });
+    log(
+      `service chars: ${characteristics
+        .map(
+          (c) =>
+            `${c.properties?.notify ? "N" : ""}${c.properties?.write ? "W" : ""}${
+              c.properties?.writeWithoutResponse ? "w" : ""
+            }` || "-",
+        )
+        .join(" ")}`,
+    );
 
     // Subscribe to the notify characteristic so acknowledgments are visible.
     const notify = characteristics.find((c) => c.properties?.notify);
