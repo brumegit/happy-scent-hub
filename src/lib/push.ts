@@ -77,21 +77,30 @@ export async function pushSettings(opts: {
     // Read back the persisted working modes — the only real proof.
     let readback = await queryTimers(opts.deviceId, log);
 
-    // Fallback: some firmware ignores the whole-list command (0x13) and only
-    // accepts per-timer writes (0x14). Retry that way when nothing landed.
+    // Fallback: this firmware ignores the whole-list command (0x13) and only
+    // persists per-timer writes (0x14). Send just the slots that still differ,
+    // so the device confirms as few times as possible.
     if (!readback || !matches(readback, slots)) {
-      log("Timer list did not land — retrying with per-timer 0x14 commands");
+      const differing = slots.filter((slot) => !slotMatches(readback, slot));
+      log(
+        `Timer list did not land — sending 0x14 for mode(s) ${
+          differing.map((s) => s.index).join(", ") || "none"
+        }`,
+      );
       try {
-        await sendFrames(
-          opts.deviceId,
-          slots.map((slot) => buildModifyTimer(slot)),
-          log,
-        );
-        readback = await queryTimers(opts.deviceId, log);
+        if (differing.length) {
+          await sendFrames(
+            opts.deviceId,
+            differing.map((slot) => buildModifyTimer(slot)),
+            log,
+          );
+          readback = await queryTimers(opts.deviceId, log);
+        }
       } catch (retryError) {
         log(`0x14 fallback failed: ${(retryError as Error).message}`);
       }
     }
+
 
     if (!readback) {
       const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
