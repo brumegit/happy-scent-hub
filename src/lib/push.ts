@@ -32,6 +32,8 @@ export async function pushSettings(opts: {
   deviceId: string | null;
   schedule: DaySchedule[];
   intensity: Intensity;
+  /** Advanced mode: user-set spray/pause durations replacing the preset. */
+  custom?: CustomTiming | null;
   hardwareName?: string;
 }) {
   const debug = pushDebug();
