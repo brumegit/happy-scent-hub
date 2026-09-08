@@ -77,7 +77,9 @@ export async function pushSettings(opts: {
       log(`0x13 rejected (code ${timerAck.code})`);
     }
 
-    // Read back the persisted working modes — the only real proof.
+    // Read back the persisted working modes — the only real proof. The module
+    // needs a moment to write them to flash before it answers correctly.
+    await new Promise((r) => setTimeout(r, 500));
     let readback = await queryTimers(opts.deviceId, log);
 
     // Fallback: this firmware ignores the whole-list command (0x13) and only
@@ -97,12 +99,14 @@ export async function pushSettings(opts: {
             differing.map((slot) => buildModifyTimer(slot)),
             log,
           );
+          await new Promise((r) => setTimeout(r, 500));
           readback = await queryTimers(opts.deviceId, log);
         }
       } catch (retryError) {
         log(`0x14 fallback failed: ${(retryError as Error).message}`);
       }
     }
+
 
 
     if (!readback) {
