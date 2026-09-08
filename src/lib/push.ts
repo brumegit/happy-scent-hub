@@ -48,6 +48,20 @@ export async function pushSettings(opts: {
   );
 
   const slots = buildTimerSlots(opts.schedule, opts.intensity, opts.custom ?? null);
+  log(
+    `Wanted ${slots.filter((s) => s.enabled).length} active mode(s): ${slots
+      .map(
+        (s) =>
+          `#${s.index}${s.enabled ? "" : "(off)"} d0b${s.weekdayMask.toString(2)} ${
+            s.startMinute
+          }-${s.endMinute} ${s.onSeconds}s/${s.offSeconds}s`,
+      )
+      .join(" | ")}`,
+  );
+  log(
+    `Intensity ${opts.intensity}${opts.custom ? " (advanced timing)" : " (preset)"}`,
+  );
+
 
   try {
     // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes
