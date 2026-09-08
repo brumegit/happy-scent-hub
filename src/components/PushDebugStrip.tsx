@@ -34,7 +34,7 @@ export function PushDebugStrip() {
   const { steps, startedAt, linkError, log } = usePushDebugStore();
   const debug = useDebugMode();
   const hydrated = useHydrated();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   // Debug tooling is opt-in: 10 taps on the logo toggle it.
   if (!hydrated || !debug) return null;
