@@ -401,8 +401,13 @@ export const MAX_TIMERS = 5;
  * are merged into the last mode (widest start → end) so nothing is lost.
  * Unused modes are pushed disabled so leftover factory programs can never run.
  */
-export function buildTimerSlots(schedule: DaySchedule[], intensity: Intensity): TimerSlot[] {
-  const preset = intensityPreset(intensity);
+export function buildTimerSlots(
+  schedule: DaySchedule[],
+  intensity: Intensity,
+  custom?: CustomTiming | null,
+): TimerSlot[] {
+  const base = intensityPreset(intensity);
+  const preset = custom ? { onSeconds: custom.onSeconds, offSeconds: custom.offSeconds } : base;
 
   // window key (minutes of the day) → weekday mask
   const windows = new Map<string, { start: number; end: number; mask: number }>();
