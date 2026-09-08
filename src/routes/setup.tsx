@@ -28,6 +28,7 @@ import {
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
+  ensureBluetoothPermission,
   openAppSettings,
   openLocationSettings,
   type DeviceChooser,
