@@ -514,40 +514,64 @@ function Setup() {
             <h1 className="font-display text-4xl">How intense?</h1>
 
 
-            <div>
-              <div className="flex items-center justify-center gap-3">
-                {INTENSITIES.map((option) => {
-                  const filled = option.stars <= preset.stars;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      aria-pressed={intensity === option.value}
-                      aria-label={option.label}
-                      onClick={() => setIntensity(option.value)}
-                      className="p-1 transition-transform active:scale-95"
-                    >
-                      <SharpStar
-                        className={`size-10 ${filled ? "text-gold" : "text-muted-foreground"}`}
-                        filled={filled}
-                      />
-                    </button>
-                  );
-                })}
+            {custom ? (
+              <div className="flex gap-4">
+                <WheelPicker
+                  label="Spray"
+                  suffix="s"
+                  min={RUN_SECONDS.min}
+                  max={RUN_SECONDS.max}
+                  step={RUN_SECONDS.step}
+                  value={custom.onSeconds}
+                  onChange={(onSeconds) => setCustom((c) => ({ ...(c ?? preset), onSeconds }))}
+                />
+                <WheelPicker
+                  label="Pause"
+                  suffix="s"
+                  min={PAUSE_SECONDS.min}
+                  max={PAUSE_SECONDS.max}
+                  step={PAUSE_SECONDS.step}
+                  value={custom.offSeconds}
+                  onChange={(offSeconds) => setCustom((c) => ({ ...(c ?? preset), offSeconds }))}
+                />
               </div>
-              <p className="mt-4 text-center text-sm uppercase tracking-[0.14em] text-gold">
-                {preset.label}
-              </p>
-            </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-center gap-3">
+                  {INTENSITIES.map((option) => {
+                    const filled = option.stars <= preset.stars;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={intensity === option.value}
+                        aria-label={option.label}
+                        onClick={() => setIntensity(option.value)}
+                        className="p-1 transition-transform active:scale-95"
+                      >
+                        <SharpStar
+                          className={`size-10 ${filled ? "text-gold" : "text-muted-foreground"}`}
+                          filled={filled}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-4 text-center text-sm uppercase tracking-[0.14em] text-gold">
+                  {preset.label}
+                </p>
+              </div>
+            )}
 
 
              <p className="text-center text-xs leading-relaxed text-foreground">
-              Sprays {formatSeconds(preset.onSeconds)}, then stops {formatSeconds(preset.offSeconds)}{" "}
-              between sprays.
+              Sprays {formatSeconds(custom ? custom.onSeconds : preset.onSeconds)}, then stops{" "}
+              {formatSeconds(custom ? custom.offSeconds : preset.offSeconds)} between sprays.
               <br />
               <br />
               Allow 30 minutes for the room to adapt before judging the strength.
             </p>
+
 
             {/* Nothing is written to the hardware yet — everything is pushed
                 once the schedule is confirmed. */}
