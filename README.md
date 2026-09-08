@@ -14,7 +14,7 @@ Then on the home screen they must be able to see their diffuser with its info (l
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://happy-scent-hub.lovable.app
+**Live app**: https://app.brume.me
 
 ## Build with Lovable
 
