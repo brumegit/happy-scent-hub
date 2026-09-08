@@ -8,13 +8,8 @@
  */
 import {
   buildGetTimers,
-  buildQuery,
-  buildReportAck,
-  isStatusReport,
-  parseBatteryReport,
   parseTimerListResponse,
   toHex,
-  type BatteryStatus,
   type TimerSlot,
 } from "@/lib/scentlife";
 import { pushDebug } from "@/stores/pushDebugStore";
@@ -63,72 +58,12 @@ type Link = {
 
 const links = new Map<string, Link>();
 
-/** Last battery reading pushed by each device (the protocol has no read command). */
-const batteries = new Map<string, BatteryStatus>();
-const batteryListeners = new Set<() => void>();
-
-/**
- * True while a command/response exchange is in flight. The module drops frames
- * that arrive while it is answering, so the spontaneous status-report ack must
- * never be written in the middle of a settings push.
- */
-let exchangeBusy = false;
-
-function captureBattery(deviceId: string, frame: Uint8Array) {
-  // Status reports must be acknowledged, otherwise the module stops sending
-  // them and the battery level never refreshes.
+/** Logs unsolicited status frames without writing anything back. Status-report
+ * acknowledgements previously competed with timer commands on this serial link
+ * and could make a valid settings write disappear. */
+function captureIncoming(frame: Uint8Array) {
   const fn = frame[3] ?? 0;
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
-  if (isStatusReport(fn)) {
-    if (exchangeBusy) {
-      pushDebug().addLog(`Status report 0x${fn.toString(16)} not acked (command in flight)`);
-    } else {
-      void links
-        .get(deviceId)
-        ?.write(buildReportAck(fn))
-        .catch(() => {});
-    }
-  }
-  const status = parseBatteryReport(frame);
-  if (!status) return;
-  pushDebug().addLog(`Battery ${status.percent}%`);
-  batteries.set(deviceId, status);
-  batteryListeners.forEach((listener) => listener());
-}
-
-
-/** Last known battery status for a device, or null when it has not reported yet. */
-export function getBatteryStatus(deviceId: string | null): BatteryStatus | null {
-  return (deviceId && batteries.get(deviceId)) || null;
-}
-
-/** Subscribes to battery updates; returns an unsubscribe function. */
-export function subscribeBattery(listener: () => void) {
-  batteryListeners.add(listener);
-  return () => {
-    batteryListeners.delete(listener);
-  };
-}
-
-/**
- * Polls the module so it emits a runtime status report (which carries the
- * battery percentage). The query command is silent — the diffuser does not beep.
- * Different firmware revisions answer different query sub-types, so we probe
- * the documented ones in sequence and keep whichever replies.
- */
-export async function requestBattery(deviceId: string | null) {
-  const link = deviceId ? links.get(deviceId) : undefined;
-  if (!link || link.simulated) return;
-  for (const subType of [0x01, 0x02, 0x03]) {
-    try {
-      pushDebug().addLog(`TX query 0x09 type=0x0${subType}`);
-      await link.write(buildQuery(subType));
-      await wait(250);
-    } catch {
-      // Link dropped — the connection poll will surface it.
-      return;
-    }
-  }
 }
 
 
@@ -242,7 +177,7 @@ async function attachLink(device: {
     return [] as { getCharacteristics: () => Promise<Char[]> }[];
   });
   log(`GATT connected · ${services.length} accessible service(s)`);
-  const responses = createResponseChannel((frame) => captureBattery(device.id, frame));
+  const responses = createResponseChannel(captureIncoming);
 
   let writable: Char | undefined;
   let writableWithNotify: Char | undefined;
@@ -335,7 +270,7 @@ export async function connectPickedDevice(device: {
   deviceId: string;
   name?: string;
 }): Promise<PairedDevice> {
-  const responses = createResponseChannel((frame) => captureBattery(device.deviceId, frame));
+  const responses = createResponseChannel(captureIncoming);
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
     const write = async (frame: Uint8Array) => {
@@ -458,39 +393,32 @@ export async function sendFrames(
   // One frame per command — the module beeps once per accepted command, so the
   // schedule is pushed as a single timer-list frame (0x13), never expanded.
   const acks: FrameAck[] = [];
-  exchangeBusy = true;
-  try {
-    for (const frame of frames) {
-      const hex = toHex(frame);
-      console.info("[ScentLife] TX", hex);
-      const fn = frame[3] ?? 0;
-      onLog?.(`TX fn=0x${fn.toString(16).padStart(2, "0")} (${frame.length} bytes) ${hex}`);
-      let response: Uint8Array | null = null;
-      const startedAt = Date.now();
-      try {
-        response = await link.request(frame, (fn + 0x80) & 0xff);
-        onLog?.(`RX ${toHex(response)} after ${Date.now() - startedAt}ms`);
-      } catch (error) {
-        // Some modules acknowledge silently (no notify characteristic).
-        response = null;
-        onLog?.(
-          `RX none for 0x${fn.toString(16)} after ${Date.now() - startedAt}ms — ${
-            (error as Error).message
-          }`,
-        );
-      }
-      const code = response && response.length >= 6 ? (response[4] ?? null) : null;
+  for (const frame of frames) {
+    const hex = toHex(frame);
+    console.info("[ScentLife] TX", hex);
+    const fn = frame[3] ?? 0;
+    onLog?.(`TX fn=0x${fn.toString(16).padStart(2, "0")} (${frame.length} bytes) ${hex}`);
+    let response: Uint8Array | null = null;
+    const startedAt = Date.now();
+    try {
+      response = await link.request(frame, (fn + 0x80) & 0xff);
+      onLog?.(`RX ${toHex(response)} after ${Date.now() - startedAt}ms`);
+    } catch (error) {
+      // Some modules acknowledge silently (no notify characteristic).
+      response = null;
       onLog?.(
-        `ACK 0x${fn.toString(16)} → ${response ? `code ${code}` : "no reply"}`,
+        `RX none for 0x${fn.toString(16)} after ${Date.now() - startedAt}ms — ${
+          (error as Error).message
+        }`,
       );
-      acks.push({ fn, acked: !!response, code, hex });
-      if (response && response.length === 7 && response[4] !== 0) {
-        throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
-      }
-      await wait(200);
     }
-  } finally {
-    exchangeBusy = false;
+    const code = response && response.length >= 6 ? (response[4] ?? null) : null;
+    onLog?.(`ACK 0x${fn.toString(16)} → ${response ? `code ${code}` : "no reply"}`);
+    acks.push({ fn, acked: !!response, code, hex });
+    if (response && response.length === 7 && response[4] !== 0) {
+      throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
+    }
+    await wait(200);
   }
 
   if (link.isLive && !(await link.isLive())) {
@@ -572,7 +500,6 @@ export async function queryTimers(
     onLog?.("Read-back skipped: no live link");
     return null;
   }
-  exchangeBusy = true;
   try {
     const frame = buildGetTimers();
     onLog?.(`TX read 0x08 ${toHex(frame)}`);
@@ -595,8 +522,6 @@ export async function queryTimers(
   } catch (error) {
     onLog?.(`Read-back failed: ${(error as Error).message}`);
     return null;
-  } finally {
-    exchangeBusy = false;
   }
 }
 
