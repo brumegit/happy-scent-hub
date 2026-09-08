@@ -261,12 +261,12 @@ function Setup() {
 
     // Nothing can be saved without a live link: check the radio, the app's
     // permissions and the actual connection before pretending to send.
-    await refreshRequirements();
-    if (btOff || btDenied || locOff) {
+    const req = await refreshRequirements();
+    if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
       const prompt = bluetoothRequirementPrompt({
-        bluetoothOff: btOff,
-        permissionDenied: btDenied,
-        locationOff: locOff,
+        bluetoothOff: req.bluetoothOff,
+        permissionDenied: req.permissionDenied,
+        locationOff: req.locationOff,
       });
       toast.error(prompt.message, { className: "whitespace-pre-line" });
       return;
