@@ -366,13 +366,21 @@ export async function pairDiffuser(): Promise<PairedDevice> {
         optionalServices: SERVICE_UUIDS,
       });
 
+      let attached = false;
       try {
-        await attachLink(device);
-      } catch {
-        // GATT unavailable — commands fall back to the simulated link.
+        attached = await attachLink(device);
+      } catch (gattError) {
+        pushDebug().addLog(`GATT setup failed: ${(gattError as Error).message}`);
       }
 
       const suggested = device.name || "The 24/7 Room Diffuser";
+      if (!attached) {
+        // Without a writable serial channel nothing can be pushed — say so now
+        // instead of failing silently at the schedule step.
+        throw new Error(
+          "Connected, but this device did not expose its settings channel. Turn the diffuser off and on, then pair again.",
+        );
+      }
       return { deviceId: device.id, suggestedName: suggested };
     } catch (error) {
       if ((error as Error)?.name === "NotFoundError") {
