@@ -6,6 +6,7 @@ import {
   type PushStepStatus,
 } from "@/stores/pushDebugStore";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useDebugMode } from "@/hooks/useDebugMode";
 
 const KEYS: PushStepKey[] = ["name", "modes", "intensity", "schedule"];
 
@@ -31,6 +32,7 @@ const textClass: Record<PushStepStatus, string> = {
  */
 export function PushDebugStrip() {
   const { steps, startedAt, linkError, log } = usePushDebugStore();
+  const debug = useDebugMode();
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
