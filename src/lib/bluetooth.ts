@@ -33,10 +33,15 @@ export type PairedDevice = { deviceId: string; suggestedName: string };
 /** Common transparent-serial services used by ScentLife modules. */
 const SERVICE_UUIDS = [
   0xffe0,
+  0xffe5,
   0xfff0,
   0xfee7,
+  0xfd00,
+  0xae00,
   "0000ffe0-0000-1000-8000-00805f9b34fb",
   "6e400001-b5a3-f393-e0a9-e50e24dcca9e", // Nordic UART
+  "49535343-fe7d-4ae5-8fa9-9fafd205e455", // Microchip transparent UART
+  "0000ffe5-0000-1000-8000-00805f9b34fb",
 ];
 
 const CHUNK_SIZE = 20;
