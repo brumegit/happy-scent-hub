@@ -72,7 +72,7 @@ function Home() {
   }, [empty, navigate]);
 
   return (
-    <div className="relative flex h-[100dvh] flex-col overflow-hidden">
+    <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
       <div className="relative mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
