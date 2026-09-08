@@ -383,10 +383,15 @@ export async function pairDiffuser(): Promise<PairedDevice> {
       }
       return { deviceId: device.id, suggestedName: suggested };
     } catch (error) {
-      if ((error as Error)?.name === "NotFoundError") {
+      const err = error as Error;
+      pushDebug().addLog(`Pairing error: ${err.name ?? "Error"} — ${err.message}`);
+      if (err?.name === "NotFoundError") {
         throw new Error("No device selected.\nDouble-tap the button and try again.");
       }
-      // Fall through to simulated pairing on unsupported/blocked environments.
+      if (err?.name === "NetworkError" || err?.name === "SecurityError" || !err?.name) {
+        throw err;
+      }
+      throw err;
     }
   }
 
