@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { DevicePicker } from "@/components/DevicePicker";
+import type { DeviceChooser, NativeDevice } from "@/lib/native-ble";
+
 import {
   Bluetooth,
   CalendarClock,
@@ -131,6 +134,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(diffuser.name);
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
+  const [picker, setPicker] = useState<NativeDevice[] | null>(null);
+  const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
+
 
   // Only the room name is broadcast over Bluetooth, so only it is validated.
   const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
@@ -165,20 +171,36 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const preset = intensityPreset(diffuser.intensity);
 
 
+  const chooseDevice: DeviceChooser = (subscribe) =>
+    new Promise<NativeDevice | null>((resolve) => {
+      pickerResolve.current = resolve;
+      setPicker([]);
+      subscribe((devices) => setPicker(devices));
+    });
+
+  function settlePicker(device: NativeDevice | null) {
+    pickerResolve.current?.(device);
+    pickerResolve.current = null;
+    setPicker(null);
+  }
+
   async function connect() {
     setConnecting(true);
     setError(null);
     try {
-      // Always let the user choose; never filter or auto-select a peripheral.
-      const paired = await pairDiffuser();
+      // Named devices only, shown in the app's own list.
+      const paired = await pairDiffuser(chooseDevice);
       updateDiffuser(diffuser.id, { device_id: paired.deviceId });
       setConnected(await checkConnection(paired.deviceId));
     } catch (err) {
       setError((err as Error).message || "Could not connect to the diffuser.");
     } finally {
+      pickerResolve.current = null;
+      setPicker(null);
       setConnecting(false);
     }
   }
+
 
   async function disconnectDevice() {
     await disconnect(diffuser.device_id);
@@ -414,7 +436,15 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 
         </>
       )}
+      {picker && (
+        <DevicePicker
+          devices={picker}
+          onSelect={(device) => settlePicker(device)}
+          onCancel={() => settlePicker(null)}
+        />
+      )}
     </article>
+
   );
 }
 

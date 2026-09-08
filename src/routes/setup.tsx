@@ -20,10 +20,14 @@ import {
 import { WheelPicker } from "@/components/WheelPicker";
 import { Label } from "@/components/ui/label";
 import { pairDiffuser, isBluetoothSupported, isRealLink, sendFrames } from "@/lib/bluetooth";
+import { DevicePicker } from "@/components/DevicePicker";
 import {
   openAppSettings,
   openLocationSettings,
+  type DeviceChooser,
+  type NativeDevice,
 } from "@/lib/native-ble";
+
 import { trackEvent } from "@/lib/meta";
 import { pushName, pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
@@ -146,8 +150,10 @@ function Setup() {
     locationOff: locOff,
   } = useBluetoothRequirements(!editing && phase === "idle");
   const autostarted = useRef(false);
-  // "Start now" goes straight into a Bluetooth search once the phone is ready.
-  const [autoPair, setAutoPair] = useState(false);
+  // In-app Bluetooth chooser (named devices only).
+  const [picker, setPicker] = useState<NativeDevice[] | null>(null);
+  const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
+
   // The store rehydrates from local storage after the first render, so adopt the
   // diffuser's saved settings as soon as it appears.
   const loadedEdit = useRef(false);
@@ -183,6 +189,19 @@ function Setup() {
     }
   }
 
+  const chooseDevice: DeviceChooser = (subscribe) =>
+    new Promise<NativeDevice | null>((resolve) => {
+      pickerResolve.current = resolve;
+      setPicker([]);
+      subscribe((devices) => setPicker(devices));
+    });
+
+  function settlePicker(device: NativeDevice | null) {
+    pickerResolve.current?.(device);
+    pickerResolve.current = null;
+    setPicker(null);
+  }
+
   async function handlePair() {
     // The UI is gated too, but keep the native action itself unreachable until
     // Android has returned every permission and service-state check.
@@ -190,11 +209,14 @@ function Setup() {
     setError(null);
     setPhase("pairing");
     try {
-      const device = await pairDiffuser();
+      const device = await pairDiffuser(chooseDevice);
       await afterPaired(device);
     } catch (err) {
       setPhase("idle");
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
+    } finally {
+      pickerResolve.current = null;
+      setPicker(null);
     }
   }
 
@@ -209,13 +231,6 @@ function Setup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [start]);
 
-  useEffect(() => {
-    if (!autoPair || phase !== "idle") return;
-    if (checkingRequirements || btOff || btDenied || locOff) return;
-    setAutoPair(false);
-    void handlePair();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPair, phase, checkingRequirements, btOff, btDenied, locOff]);
 
   // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
@@ -326,8 +341,8 @@ function Setup() {
                 icon={false}
                 label="Start now"
                 onClick={() => {
-                  setAutoPair(true);
                   setPhase("idle");
+
                 }}
               />
             </div>
@@ -386,9 +401,10 @@ function Setup() {
                 <h1 className="font-display text-4xl leading-tight">Pairing</h1>
 
                 <video
-                  // Fills the full height between the heading and the CTA. Uses
-                  // contain so the frame is never cropped, only scaled to fit.
-                  className="mt-6 w-full flex-1 min-h-0 object-contain"
+                  // Responsive: it shrinks with the screen and never grows past
+                  // 38% of the viewport height, so the CTA always stays visible.
+                  className="mt-6 w-full flex-1 min-h-0 max-h-[38dvh] object-contain"
+
                   style={{ borderRadius: "10px" }}
                   src={pairingVideo.url}
                   autoPlay
@@ -720,6 +736,14 @@ function Setup() {
         )}
         </div>
       </div>
+      {picker && (
+        <DevicePicker
+          devices={picker}
+          onSelect={(device) => settlePicker(device)}
+          onCancel={() => settlePicker(null)}
+        />
+      )}
     </div>
+
   );
 }

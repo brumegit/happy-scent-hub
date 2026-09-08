@@ -26,7 +26,9 @@ import {
   isNativeSync,
   requestNativeDevice,
   writeNative,
+  type DeviceChooser,
 } from "@/lib/native-ble";
+
 
 export type PairedDevice = { deviceId: string; suggestedName: string };
 
@@ -345,17 +347,18 @@ export async function connectPickedDevice(device: {
   return { deviceId: device.deviceId, suggestedName: device.name || "The 24/7 Room Diffuser" };
 }
 
-export async function pairDiffuser(): Promise<PairedDevice> {
-  // Native iOS / Android build: let the operating system scan and present its
-  // own chooser. This is more reliable than maintaining a scanner in the webview.
+export async function pairDiffuser(choose?: DeviceChooser): Promise<PairedDevice> {
+  // Native iOS / Android build: scan natively but present our own list so
+  // nameless peripherals never reach the user.
   if (await isNativePlatform()) {
-    const found = await requestNativeDevice().catch((error: unknown) => {
+    const found = await requestNativeDevice(choose).catch((error: unknown) => {
       throw error instanceof Error
         ? error
         : new Error("Bluetooth scan failed. Check that Bluetooth is on and try again.");
     });
     return connectPickedDevice(found);
   }
+
 
 
   if (isBluetoothSupported()) {
