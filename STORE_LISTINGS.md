@@ -57,19 +57,50 @@ Brume
 Control your scent diffuser
 
 ### Promotional text (170 chars, optional)
-Pair your Brume diffuser over Bluetooth, set intensity and hours, and let it run.
+Pair your Brume scent diffuser over Bluetooth, set intensity and schedules, and let it run all week.
 
 ### Description
-Brume lets you control your smart scent diffuser from your phone.
+Brume is the companion app for your Brume smart scent diffuser. Connect over
+Bluetooth, set your fragrance intensity, and schedule exactly when your
+diffuser runs — no account, no password, no Wi-Fi needed.
 
-• Pair your diffuser over Bluetooth in seconds and give it a name.
-• Choose a diffusion intensity — low, medium or high.
-• Set the exact days and minutes your diffuser runs, with up to five schedules.
-• See at a glance whether your diffuser is running, paused, or due to resume.
+PAIR YOUR DIFFUSER IN SECONDS
+Turn on Bluetooth, hold your phone near your Brume diffuser, and pair it in
+seconds. Give your diffuser a name — Living Room, Bedroom, Office — and manage
+several diffusers from one screen. The app detects your diffuser automatically,
+so setup takes less than a minute.
 
-No account, no password. Enter the email you ordered with to unlock a tailored
-experience, or continue as a guest. Your diffuser settings stay on your device
-and are sent straight to your hardware over Bluetooth.
+FIVE INTENSITY LEVELS
+Choose how strong your fragrance feels. Select from five intensity levels —
+Very Low, Low, Medium, High, and Very High — and let the diffuser do the rest.
+Higher intensities spray more often for a bolder scent; lower levels keep your
+home fragrance subtle and continuous. Pick the level that matches each room.
+
+SCHEDULE UP TO FIVE FRAGRANCE WINDOWS
+Set the exact days and times your diffuser runs. Create up to five schedule
+blocks per diffuser, choose the days of the week, and set precise start and end
+times. Want fragrance only on weekday mornings and weekend evenings? Two taps
+and it is done. The home screen shows your active schedule at a glance, so you
+always know whether your diffuser is running, paused, or due to resume.
+
+EVERYTHING STAYS ON YOUR DEVICE
+Your settings live on your phone and are sent straight to your diffuser over
+Bluetooth — no cloud, no account, no password. Nothing is stored online. Shop
+scent refills inside the app and reorder your favorite fragrances in a few taps.
+
+DESIGNED FOR BRUME HARDWARE
+Brume works with the Brume smart scent diffuser. Connect it once and your
+diffuser keeps running on its own schedule, even when your phone is away. Open
+the app anytime to adjust intensity, tweak your schedule, or add another room.
+
+KEY FEATURES
+• Bluetooth pairing — connect and name your diffuser in under a minute
+• Five intensity levels, from Very Low to Very High
+• Up to five schedule blocks per diffuser, with days and start/end times
+• Home screen status — running, paused, or next scheduled run
+• Manage several diffusers from a single screen
+• Order scent refills inside the app
+• No account, no password, no Wi-Fi — fully offline over Bluetooth
 
 ### Keywords (100 chars, comma separated)
 diffuser,scent,fragrance,brume,bluetooth,home,schedule,intensity,aroma,smart
