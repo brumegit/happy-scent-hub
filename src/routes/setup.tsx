@@ -770,6 +770,12 @@ function Setup() {
                     navigate({ to: "/", replace: true });
                     return;
                   }
+                  // Settings are safely stored: only now rename the module,
+                  // since this command restarts its Bluetooth advertising.
+                  void pushName(
+                    deviceId,
+                    hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
+                  ).catch(() => undefined);
                   trackEvent("CompleteRegistration", {
                     content_name: name.trim() || DEFAULT_NAME,
                     content_category: "diffuser_setup",
