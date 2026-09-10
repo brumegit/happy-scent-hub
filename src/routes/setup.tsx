@@ -28,6 +28,7 @@ import {
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
+  ensureBluetoothPermission,
   openAppSettings,
   openLocationSettings,
   type DeviceChooser,
@@ -478,19 +479,48 @@ function Setup() {
                     locationOff: locOff,
                   });
                   return (
-                    <div className="mt-7 space-y-3 border border-border p-5">
-                      <p className="text-sm text-foreground">{prompt.message}</p>
-                      <Button
-                        variant="link"
-                        onClick={() =>
-                          void (prompt.target === "location"
-                            ? openLocationSettings()
-                            : openAppSettings())
+                    <div
+                      className={
+                        "mt-7 space-y-3 border p-5 " +
+                        (prompt.tone === "destructive" ? "border-destructive" : "border-border")
+                      }
+                    >
+                      <p
+                        className={
+                          "text-sm " +
+                          (prompt.tone === "destructive" ? "text-destructive" : "text-foreground")
                         }
-                        className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
                       >
-                        {prompt.cta}
-                      </Button>
+                        {prompt.message}
+                      </p>
+                      {prompt.cta ? (
+                        <Button
+                          variant={prompt.tone === "destructive" ? "destructive" : "link"}
+                          onClick={() => {
+                            if (prompt.target === "location") {
+                              void openLocationSettings();
+                              return;
+                            }
+                            if (prompt.target === "permission") {
+                              // Re-trigger the native permission popup. If the
+                              // system keeps refusing (permanently denied), the
+                              // only way left is the app's settings page.
+                              void (async () => {
+                                const granted = await ensureBluetoothPermission();
+                                const next = await refreshRequirements();
+                                if (!granted && next.permissionDenied) {
+                                  await openAppSettings();
+                                }
+                              })();
+                              return;
+                            }
+                            void openAppSettings();
+                          }}
+                          className="h-auto justify-start p-0 text-sm normal-case tracking-normal underline underline-offset-4"
+                        >
+                          {prompt.cta}
+                        </Button>
+                      ) : null}
                     </div>
                   );
                 })()}

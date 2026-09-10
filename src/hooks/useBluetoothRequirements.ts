@@ -92,27 +92,38 @@ export function bluetoothRequirementPrompt(req: {
   locationOff: boolean;
 }) {
   const { bluetoothOff, permissionDenied, locationOff } = req;
+  // Case 2: the app has not been granted Bluetooth/Location permission.
+  // This is distinct from the radio being off — send the user to the app's
+  // permission settings so they can allow Brume to use Bluetooth.
   if (permissionDenied) {
     return {
       message: locationOff
         ? "Brume is not allowed to use Bluetooth on this phone, and Location is off. Allow Nearby devices and Location for Brume, then turn Location on."
-        : "Brume is not allowed to use Bluetooth on this phone. Allow Nearby devices and Location for Brume in the app settings.",
-      cta: "Open app settings" as const,
-      target: "app" as const,
+        : "Brume is not allowed to use Bluetooth on this phone. Allow access so the app can find your diffuser.",
+      // Ask the OS again first — that shows the native "Allow" popup. Only if
+      // the system refuses again does the caller fall back to app settings.
+      cta: "Allow Bluetooth" as const,
+      target: "permission" as const,
+      tone: "default" as const,
     };
   }
+  // Case 1: the phone's Bluetooth radio is switched off, but Brume already
+  // has permission. The fix is on the phone itself, so just tell the user to
+  // turn Bluetooth on — no settings page to open.
   if (bluetoothOff) {
     return {
       message: locationOff
-        ? "Bluetooth and Location are off. Turn both on to pair your diffuser."
-        : "Bluetooth is off, turn it on to pair your diffuser.",
-      cta: locationOff ? ("Open location settings" as const) : ("Open app settings" as const),
+        ? "Turn Bluetooth and Location on to pair your diffuser."
+        : "Turn Bluetooth ON",
+      cta: locationOff ? ("Open location settings" as const) : ("" as const),
       target: locationOff ? ("location" as const) : ("app" as const),
+      tone: "destructive" as const,
     };
   }
   return {
     message: "Bluetooth is on, but Location is off. Android needs Location switched on to find Bluetooth devices.",
     cta: "Open location settings" as const,
     target: "location" as const,
+    tone: "default" as const,
   };
 }
