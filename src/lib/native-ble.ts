@@ -337,13 +337,18 @@ export async function connectNative(
   return writable;
 }
 
+/**
+ * Writes one 20-byte chunk using an acknowledged write first: unacknowledged
+ * writes have no flow control, so back-to-back chunks overflow the module's
+ * serial buffer — it then stays silent (no beep) and drops the link.
+ */
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
   try {
-    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-  } catch {
     await ble.write(deviceId, target.service, target.characteristic, view);
+  } catch {
+    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
   }
 }
 

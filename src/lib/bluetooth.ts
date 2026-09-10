@@ -47,7 +47,8 @@ const SERVICE_UUIDS = [
 ];
 
 const CHUNK_SIZE = 20;
-const CHUNK_DELAY_MS = 30;
+/** Serial modules need breathing room between chunks or they drop the link. */
+const CHUNK_DELAY_MS = 60;
 
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
