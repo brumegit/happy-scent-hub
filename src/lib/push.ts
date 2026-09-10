@@ -18,7 +18,7 @@ import {
 import { pushDebug } from "@/stores/pushDebugStore";
 import { readDebug } from "@/stores/readDebugStore";
 
-/** Small pause so the firmware can finish committing before we read it back. */
+/** Small pause so the firmware can finish processing one command before the next. */
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 
@@ -60,6 +60,12 @@ export async function pushSettings(opts: {
         if (match?.timerId) slot.timerId = match.timerId;
       }
     }
+
+    // The timer read response can arrive before the firmware has returned to
+    // its command-ready state. Sending 0x13 immediately after 0x08 is then
+    // silently ignored: the link stays connected, but there is no beep and no
+    // data change. Leave a short quiet window before the only write command.
+    await wait(350);
 
     // One user action, one protocol command, one hardware confirmation sound.
     // Sequential request/response: the module answers 0x93 on the notify
@@ -116,17 +122,16 @@ export async function pushSettings(opts: {
 
     if (!readback) {
       const detail = accepted ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
-      debug.set("modes", accepted ? "ok" : "unconfirmed", detail);
-      debug.set("intensity", accepted ? "ok" : "unconfirmed", detail);
-      debug.set("schedule", accepted ? "ok" : "unconfirmed", detail);
-      // The device confirmed the command itself; a missing read-back (link
-      // asleep right after the write) is not a reason to make the user retry.
-      if (accepted) return acks;
+      debug.set("modes", "unconfirmed", detail);
+      debug.set("intensity", "unconfirmed", detail);
+      debug.set("schedule", "unconfirmed", detail);
+      // An acknowledgment only proves that the Bluetooth module parsed the
+      // frame. Never show OK unless the routine can also be read back.
       throw new Error("The diffuser did not confirm the new settings. Try again.");
     }
 
     verify(readback, slots);
-    if (!matches(readback, slots) && !accepted) {
+    if (!matches(readback, slots)) {
       throw new Error("The diffuser did not save the new settings. Try again.");
     }
     return acks;
