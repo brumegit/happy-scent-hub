@@ -458,8 +458,18 @@ export async function sendWithoutConfirmation(
       const hex = toHex(frame);
       console.info("[ScentLife] TX", hex);
       onLog?.(`TX ${hex}`);
+      const fn = frame[3] ?? 0;
+      // Listen passively for the module's own acknowledgment: it costs no extra
+      // write, but it lets the app wait for the beep instead of guessing.
+      const ack = link.waitFor
+        ? link.waitFor((fn + 0x80) & 0xff).catch(() => null)
+        : Promise.resolve(null);
       await link.write(frame);
+      const reply = await ack;
+      onLog?.(reply ? `RX ${toHex(reply)}` : `RX none for 0x${fn.toString(16)}`);
     }
+    // Let the diffuser finish applying and beeping before the app reports back.
+    await wait(1200);
   } finally {
     isolatedWriteDepth = Math.max(0, isolatedWriteDepth - 1);
     // Keep the quiet window open while the diffuser applies the new routine.

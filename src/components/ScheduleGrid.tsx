@@ -2,7 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import {
   DAYS,
-  MAX_TIMERS,
+  MAX_ROUTINES,
   blocksFromSchedule,
   blocksToSchedule,
   minutesToTimeValue,
@@ -148,7 +148,7 @@ export function ScheduleGrid({
         );
       })}
 
-      {blocks.length < MAX_TIMERS ? (
+      {blocks.length < MAX_ROUTINES ? (
         <button
           type="button"
           onClick={() => commit([...blocks, { start: 8 * 60, end: 20 * 60, days: [1, 2, 3, 4, 5] }])}
@@ -159,7 +159,7 @@ export function ScheduleGrid({
         </button>
       ) : (
         <p className="text-center text-xs text-muted-foreground">
-          Your diffuser stores {MAX_TIMERS} routines — the maximum is reached.
+          You can set up to {MAX_ROUTINES} routines — the maximum is reached.
         </p>
       )}
 

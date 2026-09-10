@@ -365,7 +365,7 @@ function routineTimeWord(start: number, end: number) {
 const MAX_ROUTINE_NAME = 25;
 
 /** Compact lowercase time label, e.g. "8am", "2:30pm", or "14:30" in 24h. */
-function compactTimeLabel(minutes: number) {
+export function compactTimeLabel(minutes: number) {
   const clamped = Math.max(0, Math.min(1440, Math.round(minutes)));
   const hour = clamped === 1440 ? 0 : Math.floor(clamped / 60);
   const min = clamped === 1440 ? 0 : clamped % 60;
@@ -375,28 +375,17 @@ function compactTimeLabel(minutes: number) {
   return min === 0 ? `${displayHour}${suffix}` : `${displayHour}:${String(min).padStart(2, "0")}${suffix}`;
 }
 
-/** Working-hours suffix, e.g. "(8am → 2pm)". Null for all-day routines. */
-function routineHoursLabel(block: TimeBlock): string | null {
-  if (block.start <= 5 && block.end >= 1435) return null;
-  const end = block.end >= 1439 ? 1440 : block.end;
-  return `(${compactTimeLabel(block.start)} → ${compactTimeLabel(end)})`;
-}
-
+/** Routine label. Hours are shown by the time pickers below, never in the name. */
 export function routineName(block: TimeBlock) {
-  const hours = routineHoursLabel(block);
-  const suffix = hours ? ` ${hours}` : "";
   const day = routineDayWord(block.days);
   const time = routineTimeWord(block.start, block.end);
-  if (day === "Daily" && time === "all-day") return `Always-on${suffix}`.trim();
-  if (!day && !time) return `Custom${suffix}`.trim();
+  if (day === "Daily" && time === "all-day") return "Always-on";
+  if (!day && !time) return "Custom";
   const label = `${day} ${time}`.trim().replace(/\s+/g, " ");
   const cased = label.charAt(0).toUpperCase() + label.slice(1);
-  // Keep the descriptive part within the limit; hours are appended after.
-  const trimmed =
-    cased.length <= MAX_ROUTINE_NAME
-      ? cased
-      : cased.slice(0, MAX_ROUTINE_NAME).replace(/[\s&-]+\S*$/, "");
-  return `${trimmed}${suffix}`;
+  return cased.length <= MAX_ROUTINE_NAME
+    ? cased
+    : cased.slice(0, MAX_ROUTINE_NAME).replace(/[\s&-]+\S*$/, "");
 }
 
 
@@ -405,6 +394,9 @@ export function routineName(block: TimeBlock) {
 
 /** Single-Bluetooth devices expose 5 working modes (timers). */
 export const MAX_TIMERS = 5;
+
+/** Routines a user can create in the app (the device stores up to MAX_TIMERS). */
+export const MAX_ROUTINES = 3;
 
 
 /**
