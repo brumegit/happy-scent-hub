@@ -339,8 +339,19 @@ export async function connectPickedDevice(device: {
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
     const write = async (frame: Uint8Array) => {
+      pushDebug().addLog(
+        `Native channel ${target.service}/${target.characteristic} · ${
+          target.writeWithResponse ? "write with response" : "write without response"
+        } · ${Math.ceil(frame.length / CHUNK_SIZE)} chunk(s)`,
+      );
       for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-        await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
+        const chunk = frame.slice(offset, offset + CHUNK_SIZE);
+        pushDebug().addLog(
+          `Native chunk ${Math.floor(offset / CHUNK_SIZE) + 1}/${Math.ceil(
+            frame.length / CHUNK_SIZE,
+          )} · ${chunk.length} bytes`,
+        );
+        await writeNative(device.deviceId, target, chunk);
         await wait(CHUNK_DELAY_MS);
       }
     };
@@ -348,7 +359,10 @@ export async function connectPickedDevice(device: {
       simulated: false,
       write,
       request: async (frame, responseFn) => {
-        const response = responses.waitFor(responseFn);
+        // CoreBluetooth acknowledged writes are deliberately slower but much
+        // more reliable. Start listening first, then allow the full frame and
+        // the diffuser's flash write to complete before timing out.
+        const response = responses.waitFor(responseFn, 5000);
         await write(frame);
         return response;
       },

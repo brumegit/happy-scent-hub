@@ -5,7 +5,12 @@
  * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
-export type NativeChar = { service: string; characteristic: string };
+export type NativeChar = {
+  service: string;
+  characteristic: string;
+  writeWithResponse: boolean;
+  writeWithoutResponse: boolean;
+};
 
 export type NativeDevice = {
   deviceId: string;
@@ -349,7 +354,12 @@ export async function connectNative(
         }
       }
       if (!serviceWrite && (ch.properties.writeWithoutResponse || ch.properties.write)) {
-        serviceWrite = { service: service.uuid, characteristic: ch.uuid };
+        serviceWrite = {
+          service: service.uuid,
+          characteristic: ch.uuid,
+          writeWithResponse: ch.properties.write,
+          writeWithoutResponse: ch.properties.writeWithoutResponse,
+        };
       }
     }
     if (serviceWrite) {
@@ -368,11 +378,19 @@ export async function connectNative(
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
-  try {
-    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-  } catch {
+  // iOS can resolve a write-without-response before CoreBluetooth has actually
+  // transmitted the chunk. Multi-chunk timer frames then overrun the peripheral
+  // and appear to succeed locally without a beep or protocol acknowledgment.
+  // Prefer an acknowledged GATT write whenever the characteristic supports it.
+  if (target.writeWithResponse) {
     await ble.write(deviceId, target.service, target.characteristic, view);
+    return;
   }
+  if (target.writeWithoutResponse) {
+    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+    return;
+  }
+  throw new Error("The diffuser settings channel is not writable.");
 }
 
 export async function isNativeConnected(deviceId: string) {
