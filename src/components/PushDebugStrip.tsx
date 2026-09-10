@@ -13,7 +13,7 @@ const KEYS: PushStepKey[] = ["modes", "intensity", "schedule"];
 const dotClass: Record<PushStepStatus, string> = {
   idle: "bg-muted-foreground/40",
   pending: "bg-[--pairing] animate-pulse",
-  ok: "bg-gold",
+  ok: "bg-emerald-400",
   unconfirmed: "bg-[--gold]",
   fail: "bg-destructive",
 };
@@ -21,7 +21,7 @@ const dotClass: Record<PushStepStatus, string> = {
 const textClass: Record<PushStepStatus, string> = {
   idle: "text-muted-foreground",
   pending: "text-[--pairing]",
-  ok: "text-gold",
+  ok: "text-emerald-400",
   unconfirmed: "text-[--gold]",
   fail: "text-destructive",
 };

@@ -16,6 +16,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const PRESETS: { label: string; hours: number[] }[] = [
   { label: "Always on", hours: HOURS },
   { label: "Daytime", hours: range(8, 20) },
+  { label: "Business", hours: range(9, 18) },
   { label: "Evening", hours: range(17, 23) },
 ];
 

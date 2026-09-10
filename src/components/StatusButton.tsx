@@ -26,7 +26,7 @@ export function StatusButton({
     state === "pairing"
       ? "border-pairing text-pairing"
       : state === "success"
-        ? "border-gold text-gold"
+        ? "border-emerald-400 text-emerald-300"
         : state === "error"
           ? "border-destructive text-destructive"
           : "border-foreground text-foreground";

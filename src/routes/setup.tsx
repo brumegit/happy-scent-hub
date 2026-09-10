@@ -241,7 +241,7 @@ function Setup() {
   }, [start]);
 
 
-  // Champagne confirmation holds, then fades before naming.
+  // Green "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
     if (phase !== "paired") return;
     const fade = setTimeout(() => setFading(true), 900);
@@ -388,9 +388,9 @@ function Setup() {
                 <div className="relative mx-auto size-20">
                   <span className="success-ring" />
                   <span className="success-ring" style={{ animationDelay: "0.7s" }} />
-                  <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-gold">
+                  <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-emerald-400">
                     <svg
-                      className="success-check size-9 text-gold"
+                      className="success-check size-9 text-emerald-400"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -399,11 +399,11 @@ function Setup() {
                       strokeLinejoin="round"
                       aria-hidden
                     >
-                      <path className="text-gold" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
+                      <path className="text-emerald-400" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
                     </svg>
                   </span>
                 </div>
-                <p className="success-pop text-center text-sm text-gold">
+                <p className="success-pop text-center text-sm text-emerald-400">
                   Diffuser paired successfully
                 </p>
               </div>

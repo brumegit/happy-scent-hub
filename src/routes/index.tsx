@@ -30,10 +30,7 @@ import {
   checkConnection,
   disconnect,
   pairDiffuser,
-  sendFrames,
 } from "@/lib/bluetooth";
-import { readSettings } from "@/lib/push";
-import { buildSyncTimestamp } from "@/lib/scentlife";
 import { pushSettings } from "@/lib/push";
 import {
   INTENSITIES,
@@ -214,10 +211,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     try {
       // Named devices only, shown in the app's own list.
       const paired = await pairDiffuser(chooseDevice);
-      // Use the same initialization as first-time setup. Some firmware needs
-      // its clock and timer table opened before it accepts a later 0x13 update.
-      await sendFrames(paired.deviceId, [buildSyncTimestamp()]);
-      await readSettings(paired.deviceId).catch(() => null);
       updateDiffuser(diffuser.id, { device_id: paired.deviceId });
       setConnected(await checkConnection(paired.deviceId));
     } catch (err) {
