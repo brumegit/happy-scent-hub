@@ -1,6 +1,5 @@
 import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
-  buildModifyTimer,
   buildTimerList,
   type TimerSlot,
 } from "@/lib/scentlife";
@@ -92,30 +91,14 @@ export async function pushSettings(opts: {
       readback = (await queryTimers(opts.deviceId, log)) ?? readback;
     }
 
-    // Some firmware acknowledges the whole-list command (0x13) when it parses
-    // it but does not actually apply it. After both delayed reads prove that
-    // nothing changed, fall back to per-timer writes (0x14). The delayed reads
-    // prevent the old premature fallback that caused abnormal extra beeps.
+    // Never follow 0x13 with automatic 0x14 writes. On this hardware, a stale
+    // or delayed read-back can make those extra writes sound a second short
+    // beep and force the diffuser into an idle/shutdown state. A save action is
+    // deliberately limited to the single full-list command above; if its two
+    // delayed read-backs do not match, report the failure without touching the
+    // diffuser again.
     if (!readback || !matches(readback, slots)) {
-      const differing = slots.filter((slot) => !slotMatches(readback, slot));
-      log(
-        `Timer list did not land — sending 0x14 for mode(s) ${
-          differing.map((s) => s.index).join(", ") || "none"
-        }`,
-      );
-      try {
-        if (differing.length) {
-          await sendFrames(
-            opts.deviceId,
-            differing.map((slot) => buildModifyTimer(slot)),
-            log,
-          );
-          await wait(900);
-          readback = await queryTimers(opts.deviceId, log);
-        }
-      } catch (retryError) {
-        log(`0x14 fallback failed: ${(retryError as Error).message}`);
-      }
+      log("Timer list was not confirmed — no automatic retry sent");
     }
 
 

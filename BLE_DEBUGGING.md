@@ -47,6 +47,11 @@ write (no channel, no link) or *after* it (no response).
    code through different states; a bug can show in only one of them.
 4. **Never pick "the first writable characteristic".** DFU/OTA channels are
    writable too, and writing settings there reboots the device.
+5. **One save means one settings write.** Send the full timer list with `0x13`
+   once. Never automatically follow it with per-timer `0x14` writes when a
+   delayed read-back differs: that produces a second short beep and can put the
+   diffuser into an idle/shutdown state. Read-back commands may verify the save,
+   but a failed verification must stop and show an error without another write.
 
 ## 4. Reproducing quickly
 
