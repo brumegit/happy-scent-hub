@@ -92,11 +92,11 @@ export async function pushSettings(opts: {
       readback = (await queryTimers(opts.deviceId, log)) ?? readback;
     }
 
-    // Fallback: this firmware ignores the whole-list command (0x13) and only
-    // persists per-timer writes (0x14). Only used when the device never
-    // acknowledged the list — never on top of an accepted command, which is
-    // what caused the double confirmation and the shutdown.
-    if (!accepted && (!readback || !matches(readback, slots))) {
+    // Some firmware acknowledges the whole-list command (0x13) when it parses
+    // it but does not actually apply it. After both delayed reads prove that
+    // nothing changed, fall back to per-timer writes (0x14). The delayed reads
+    // prevent the old premature fallback that caused abnormal extra beeps.
+    if (!readback || !matches(readback, slots)) {
       const differing = slots.filter((slot) => !slotMatches(readback, slot));
       log(
         `Timer list did not land — sending 0x14 for mode(s) ${
