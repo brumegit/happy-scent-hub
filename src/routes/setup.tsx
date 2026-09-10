@@ -76,6 +76,22 @@ export const Route = createFileRoute("/setup")({
 
 const DEFAULT_NAME = "The 24/7 Room Diffuser";
 
+/** Generic home and workplace spaces offered as one-tap room names. */
+const ROOM_SUGGESTIONS = [
+  "Living room",
+  "Bedroom",
+  "Kitchen",
+  "Bathroom",
+  "Hallway",
+  "Office",
+  "Reception",
+  "Meeting room",
+  "Lobby",
+  "Store",
+  "Waiting area",
+  "Restroom",
+];
+
 type Phase = "intro" | "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
 
 const STEPS = ["Connect", "Intensity", "Routine"] as const;
