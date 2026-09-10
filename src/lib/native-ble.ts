@@ -348,6 +348,7 @@ export async function connectNative(
     await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
   }
+  connectedServices.set(deviceId, writable.service);
   return writable;
 }
 
