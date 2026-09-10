@@ -9,6 +9,7 @@ import {
   buildTimerList,
   MODULE_TYPES,
   sanitizeBroadcastName,
+  toHex,
 } from "@/lib/scentlife";
 
 
@@ -56,12 +57,25 @@ export async function pushSettings(opts: {
     // One user action, one protocol command, one hardware confirmation sound.
     // Do not issue any read command or wait for any response around this write.
     const label = opts.hardwareName ? sanitizeBroadcastName(opts.hardwareName) : null;
-    await sendWithoutConfirmation(opts.deviceId, [buildTimerList(slots)], log);
+    const frame = buildTimerList(slots);
+    const active = slots.filter((slot) => slot.enabled);
+    log(
+      `Sending 0x13 timer list · ${active.length}/${slots.length} active · intensity ${opts.intensity}`,
+    );
+    for (const slot of slots) {
+      log(
+        `Mode ${slot.index}: ${slot.enabled ? "ON" : "OFF"} · days 0b${slot.weekdayMask
+          .toString(2)
+          .padStart(7, "0")} · ${slot.startMinute}–${slot.endMinute} min · spray ${slot.onSeconds}s / pause ${slot.offSeconds}s`,
+      );
+    }
+    log(`Frame ${frame.length} bytes · ${toHex(frame)}`);
+    await sendWithoutConfirmation(opts.deviceId, [frame], log);
 
     debug.set("name", "idle", label ? `"${label}" · unchanged by settings push` : "not sent");
-    debug.set("modes", "ok", "sent");
-    debug.set("intensity", "ok", "sent");
-    debug.set("schedule", "ok", "sent");
+    debug.set("modes", "ok", `0x13 sent · ${active.length} active mode(s)`);
+    debug.set("intensity", "ok", `${opts.intensity} · ${active[0]?.onSeconds ?? 0}s/${active[0]?.offSeconds ?? 0}s`);
+    debug.set("schedule", "ok", `${frame.length} bytes sent over live link`);
 
   } catch (error) {
     const message = (error as Error).message;

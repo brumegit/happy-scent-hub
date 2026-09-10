@@ -328,8 +328,15 @@ export async function connectPickedDevice(device: {
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
     const write = async (frame: Uint8Array) => {
+      const chunkCount = Math.ceil(frame.length / CHUNK_SIZE);
+      pushDebug().addLog(
+        `BLE channel ${target.service}/${target.characteristic} · ${target.writeMode} · ${frame.length} bytes in ${chunkCount} chunk(s)`,
+      );
       for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-        await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
+        const chunk = frame.slice(offset, offset + CHUNK_SIZE);
+        const chunkNumber = Math.floor(offset / CHUNK_SIZE) + 1;
+        pushDebug().addLog(`TX chunk ${chunkNumber}/${chunkCount} · ${toHex(chunk)}`);
+        await writeNative(device.deviceId, target, chunk);
         await wait(CHUNK_DELAY_MS);
       }
     };
@@ -447,7 +454,9 @@ export async function sendWithoutConfirmation(
     console.info("[ScentLife] TX", hex);
     onLog?.(`TX ${hex}`);
     await link.write(frame);
-    await wait(200);
+    // A native disconnect callback can arrive just after the final GATT write.
+    // Wait before declaring success so a dropped link is never shown as sent.
+    await wait(800);
   }
   if (link.isLive && !(await link.isLive())) {
     links.delete(deviceId as string);
