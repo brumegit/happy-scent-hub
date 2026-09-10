@@ -512,9 +512,10 @@ export async function sendFrames(
     }
     const code = response && response.length >= 6 ? (response[4] ?? null) : null;
     acks.push({ fn, acked: !!response, code, hex });
-    if (response && response.length === 7 && response[4] !== 0) {
-      throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
-    }
+    // Not every module uses byte 4 as a status code (some return the timer id),
+    // so a non-zero byte is logged but never treated as a refusal here. The
+    // caller decides; a real refusal shows up as a transport/write failure.
+    if (code) onLog?.(`Reply status byte for 0x${fn.toString(16)}: ${code}`);
     await wait(200);
   }
 
