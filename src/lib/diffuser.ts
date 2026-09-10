@@ -572,7 +572,7 @@ export function scheduleStatus(
   intensityLabel = "",
 ) {
   const level = intensityLabel ? ` at ${intensityLabel.toLowerCase()} intensity` : "";
-  if (!scheduleActive) return "The schedule is paused. The diffuser will not spray until you turn it back on.";
+  if (!scheduleActive) return "Your schedule is paused. The diffuser won't spray until you turn it back on.";
 
   // Minute-accurate: a day is on when the minute falls inside one of its windows.
   const isOn = (dayIndex: number, minute: number) => {
@@ -593,12 +593,12 @@ export function scheduleStatus(
       const when = formatMinutes(next.getHours() * 60 + next.getMinutes());
       const dayLabel = next.getDay() === day ? "" : ` on ${DAYS[next.getDay()]?.long}`;
       return running
-        ? `The diffuser is programmed to be running${level} and scheduled to pause at ${when}${dayLabel}.`
-        : `The diffuser is programmed to be in pause and scheduled to resume${level} at ${when}${dayLabel}.`;
+        ? `Your diffuser is set to run${level}. It will pause at ${when}${dayLabel}.`
+        : `Your diffuser is paused. It will resume${level} at ${when}${dayLabel}.`;
     }
   }
 
   return running
-    ? `The diffuser is programmed to run continuously${level}.`
-    : "No hours are scheduled, so the diffuser stays in pause.";
+    ? `Your diffuser is set to run continuously${level}.`
+    : "No hours are scheduled, so your diffuser stays paused.";
 }
