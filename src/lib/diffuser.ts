@@ -395,6 +395,9 @@ export function routineName(block: TimeBlock) {
 /** Single-Bluetooth devices expose 5 working modes (timers). */
 export const MAX_TIMERS = 5;
 
+/** Routines a user can create in the app (the device stores up to MAX_TIMERS). */
+export const MAX_ROUTINES = 3;
+
 
 /**
  * A hardware working mode holds ONE time window (start → end) plus the set of
