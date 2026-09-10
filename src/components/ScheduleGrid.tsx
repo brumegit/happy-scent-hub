@@ -148,7 +148,7 @@ export function ScheduleGrid({
         );
       })}
 
-      {blocks.length < MAX_TIMERS ? (
+      {blocks.length < MAX_ROUTINES ? (
         <button
           type="button"
           onClick={() => commit([...blocks, { start: 8 * 60, end: 20 * 60, days: [1, 2, 3, 4, 5] }])}
