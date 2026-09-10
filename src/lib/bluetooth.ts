@@ -186,6 +186,39 @@ export function isRealLink(deviceId: string | null) {
   return !!deviceId && links.get(deviceId)?.simulated === false;
 }
 
+/**
+ * Web (Chrome) keeps the paired BluetoothDevice object alive; hold on to it so
+ * a link dropped by the device (e.g. after a rename restarts its radio) can be
+ * re-established without asking the user to pick the device again.
+ */
+const webDevices = new Map<string, Parameters<typeof attachLink>[0]>();
+
+/**
+ * Re-establishes the GATT link with a device we already paired with.
+ * Retries a few times because the module needs a moment after rebooting its
+ * Bluetooth radio before it accepts connections again.
+ */
+export async function reconnect(deviceId: string | null, attempts = 4) {
+  if (!deviceId || links.get(deviceId)?.simulated) return false;
+  for (let i = 0; i < attempts; i += 1) {
+    await wait(1200);
+    try {
+      if (await isNativePlatform()) {
+        await connectPickedDevice({ deviceId });
+        if (await checkConnection(deviceId)) return true;
+      } else {
+        const device = webDevices.get(deviceId);
+        if (device && (await attachLink(device))) return true;
+      }
+    } catch {
+      // Keep retrying — the device may still be restarting.
+    }
+  }
+  return false;
+}
+
+
+
 type Char = {
   properties?: { write?: boolean; writeWithoutResponse?: boolean; notify?: boolean };
   writeValue?: (v: Uint8Array) => Promise<void>;
@@ -216,6 +249,7 @@ async function attachLink(device: {
     connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }>;
   };
 }) {
+  webDevices.set(device.id, device);
   const log = (line: string) => {
     console.info("[ScentLife]", line);
     pushDebug().addLog(line);
