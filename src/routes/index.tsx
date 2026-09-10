@@ -199,6 +199,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
   async function connect() {
+    if (!(await bluetoothReady())) return;
     setConnecting(true);
     setError(null);
     try {
@@ -395,9 +396,16 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
-            label={connecting ? "Double tap your diffuser" : "Tap to edit"}
+            label={connecting ? "Double tap your diffuser" : "Change routine"}
             onClick={() => void connect()}
           />
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            Double tap the button on your diffuser to wake it for pairing.
+          </p>
+          <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
+            Your diffuser stays offline between changes to preserve its battery, so it only
+            reconnects when you want to adjust it.
+          </p>
           {error && <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>}
           <div className="mt-4">
             <LastSettings
