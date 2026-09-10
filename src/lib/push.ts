@@ -1,10 +1,7 @@
 import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
   buildModifyTimer,
-  buildSetBroadcastName,
   buildTimerList,
-  MODULE_TYPES,
-  sanitizeBroadcastName,
   type TimerSlot,
 } from "@/lib/scentlife";
 
@@ -35,7 +32,6 @@ export async function pushSettings(opts: {
   intensity: Intensity;
   /** Advanced mode: user-set spray/pause durations replacing the preset. */
   custom?: CustomTiming | null;
-  hardwareName?: string;
 }) {
   const debug = pushDebug();
   debug.begin();
@@ -62,15 +58,11 @@ export async function pushSettings(opts: {
     }
 
     // One user action, one protocol command, one hardware confirmation sound.
-    // Name changes are sent separately at the moment the user saves the name.
-    const label = opts.hardwareName ? sanitizeBroadcastName(opts.hardwareName) : null;
     // Sequential request/response: the module answers 0x93 on the notify
     // channel. Batched streaming proved unreliable — some firmware drops the
     // frame when it arrives without a preceding read gap.
     const acks = await sendFrames(opts.deviceId, [buildTimerList(slots)], log);
     const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
-
-    debug.set("name", "idle", label ? `"${label}" · unchanged by settings push` : "not sent");
 
     const timerAck = ackFor(0x13);
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
@@ -124,7 +116,7 @@ export async function pushSettings(opts: {
   } catch (error) {
     const message = (error as Error).message;
     debug.setLinkError(message);
-    for (const key of ["name", "modes", "intensity", "schedule"] as const) {
+    for (const key of ["modes", "intensity", "schedule"] as const) {
       debug.set(key, "fail", message);
     }
     throw error;
@@ -211,45 +203,6 @@ function verify(readback: TimerSlot[], wantedSlots: TimerSlot[]) {
       })
       .join(" | ") || "no window scheduled",
   );
-}
-
-/**
- * Sends 0x52 (set module info) and waits for the 0xD2 reply, retrying with the
- * other module-type byte when the module stays silent. Reports to the debug
- * strip and returns true when the hardware confirmed the new name.
- */
-export async function renameModule(
-  deviceId: string | null,
-  hardwareName: string,
-  log?: (line: string) => void,
-) {
-  const debug = pushDebug();
-  const label = sanitizeBroadcastName(hardwareName);
-  const moduleType = MODULE_TYPES[0] ?? 0;
-  const acks = await sendFrames(deviceId, [buildSetBroadcastName(label, moduleType)], log);
-  const ack = acks[0];
-  if (ack?.acked && ack.code === 0) {
-    debug.set("name", "ok", `"${label}" · ack 0xD2 (module type ${moduleType})`);
-    return true;
-  }
-  const last = ack?.acked
-    ? `ack 0xD2 error ${ack.code} (module type ${moduleType})`
-    : `no 0xD2 reply (module type ${moduleType})`;
-  debug.set("name", "unconfirmed", `"${label}" · ${last}`);
-  return false;
-}
-
-/** Pushes only the module (BLE advertising) name, used when renaming. */
-export async function pushName(deviceId: string | null, hardwareName: string) {
-  const debug = pushDebug();
-  const log = (line: string) => pushDebug().addLog(line);
-  debug.set("name", "pending");
-  try {
-    await renameModule(deviceId, hardwareName, log);
-  } catch (error) {
-    debug.set("name", "fail", (error as Error).message);
-    throw error;
-  }
 }
 
 /**

@@ -22,18 +22,16 @@ import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MAX_BROADCAST_NAME_BYTES, validateBroadcastName } from "@/lib/scentlife";
 import {
   checkConnection,
   disconnect,
   pairDiffuser,
 } from "@/lib/bluetooth";
-import { pushName, pushSettings } from "@/lib/push";
+import { pushSettings } from "@/lib/push";
 import {
   INTENSITIES,
   blocksFromSchedule,
   routineName,
-  hardwareName,
   formatMinuteRanges,
   dayRanges,
   formatSeconds,
@@ -138,11 +136,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
 
 
-  // Only the room name is broadcast over Bluetooth, so only it is validated.
-  const roomDraftError = roomDraft.trim() ? validateBroadcastName(roomDraft) : "Enter a room name.";
-  const combinedDraftError = roomDraftError
-    ? null
-    : validateBroadcastName(hardwareName(nameDraft, roomDraft));
+  // Names are stored in the app only — nothing is written to the hardware.
+  const roomDraftError = roomDraft.trim() ? null : "Enter a room name.";
 
 
   useEffect(() => {
@@ -210,21 +205,13 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
 
-  /**
-   * Renames the diffuser and pushes the new "Device name - Room name" label to
-   * the module's BLE advertising name (0x52) when it is connected.
-   */
-  async function saveNames() {
+  /** Saves the names in the app. Nothing is sent to the diffuser. */
+  function saveNames() {
     const name = nameDraft.trim();
     const room = roomDraft.trim();
     if (!name || !room) return;
     updateDiffuser(diffuser.id, { name, room });
     setEditingName(false);
-    try {
-      await pushName(diffuser.device_id, hardwareName(name, room));
-    } catch {
-      // Not connected — the name is stored in the app and pushed on next sync.
-    }
   }
 
 
@@ -262,19 +249,11 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               onChange={(e) => setNameDraft(e.target.value)}
               className="mt-2"
             />
-            <p className="mt-3 text-xs text-muted-foreground">
-              The diffuser broadcasts as "{hardwareName(nameDraft, roomDraft)}" — the room name must
-              stay within {MAX_BROADCAST_NAME_BYTES} characters, letters, numbers, spaces, hyphens
-              and underscores only.
-              {combinedDraftError && (
-                <span className="block text-destructive">{combinedDraftError}</span>
-              )}
-            </p>
             <div className="mt-6 flex gap-3">
               <Button variant="secondary" className="flex-1" onClick={() => setEditingName(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={() => void saveNames()} disabled={!!roomDraftError || !!combinedDraftError}>
+              <Button className="flex-1" onClick={saveNames} disabled={!!roomDraftError}>
                 Save
 
               </Button>

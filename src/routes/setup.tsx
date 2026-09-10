@@ -36,15 +36,14 @@ import {
 } from "@/lib/native-ble";
 
 import { trackEvent } from "@/lib/meta";
-import { pushName, pushSettings, readSettings } from "@/lib/push";
-import { buildSyncTimestamp, validateBroadcastName } from "@/lib/scentlife";
+import { pushSettings, readSettings } from "@/lib/push";
+import { buildSyncTimestamp } from "@/lib/scentlife";
 import {
   INTENSITIES,
   PAUSE_SECONDS,
   RUN_SECONDS,
   clampCustomTiming,
   type CustomTiming,
-  hardwareName,
   defaultSchedule,
   formatSeconds,
   intensityPreset,
@@ -288,7 +287,6 @@ function Setup() {
         schedule,
         intensity,
         custom,
-        hardwareName: hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
       });
       setResult("success");
       setTimeout(() => {
@@ -306,11 +304,8 @@ function Setup() {
     }
   }
 
-  const combinedName = hardwareName(name, room.trim());
-  // The device name stays in the app only — never broadcast — so it is free
-  // form. Only the room name ends up in the Bluetooth label and is validated.
-  const roomError = room.trim().length === 0 ? "Enter a room name." : validateBroadcastName(room);
-  const combinedError = roomError ? null : validateBroadcastName(combinedName);
+  // Names live in the app only — nothing is ever written to the hardware.
+  const roomError = room.trim().length === 0 ? "Enter a room name." : null;
 
 
 
@@ -554,20 +549,14 @@ function Setup() {
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
             </div>
-            {roomTouched && combinedError && (
-              <p className="text-xs text-destructive">{combinedError}</p>
-            )}
             <Button
               size="lg"
               className="w-full"
               onClick={() => {
-                if (roomError || combinedError) {
+                if (roomError) {
                   setRoomTouched(true);
                   return;
                 }
-                // The rename command makes the module restart its Bluetooth
-                // advertising, which drops the live link. It is therefore sent
-                // at the very end, once the settings have been saved.
                 setPhase("intensity");
               }}
             >
@@ -770,12 +759,6 @@ function Setup() {
                     navigate({ to: "/", replace: true });
                     return;
                   }
-                  // Settings are safely stored: only now rename the module,
-                  // since this command restarts its Bluetooth advertising.
-                  void pushName(
-                    deviceId,
-                    hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
-                  ).catch(() => undefined);
                   trackEvent("CompleteRegistration", {
                     content_name: name.trim() || DEFAULT_NAME,
                     content_category: "diffuser_setup",

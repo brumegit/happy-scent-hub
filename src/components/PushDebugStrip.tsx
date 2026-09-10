@@ -8,7 +8,7 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { useDebugMode } from "@/hooks/useDebugMode";
 
-const KEYS: PushStepKey[] = ["name", "modes", "intensity", "schedule"];
+const KEYS: PushStepKey[] = ["modes", "intensity", "schedule"];
 
 const dotClass: Record<PushStepStatus, string> = {
   idle: "bg-muted-foreground/40",
