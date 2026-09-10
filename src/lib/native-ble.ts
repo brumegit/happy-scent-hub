@@ -24,6 +24,9 @@ let bleClient: BleClientType | null = null;
  */
 const connectedIds = new Set<string>();
 
+/** Service UUID of the serial channel per device, used to verify liveness. */
+const connectedServices = new Map<string, string>();
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function isTransientGattError(error: unknown) {
