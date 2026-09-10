@@ -11,7 +11,6 @@ import {
   routineName,
   scheduleFromTimers,
   scheduleToBlocks,
-  MAX_TIMERS,
   type CustomTiming,
   type DaySchedule,
   type Intensity,
@@ -90,29 +89,10 @@ export async function pushSettings(opts: {
       await wait(700);
     }
 
-    // Every persistent 0x14 write is already confirmed individually by the
-    // diffuser (and produces its own beep). A final 0x08 read is useful for
-    // diagnostics, but CoreBluetooth can miss or return a stale timer list, so
-    // it must not turn confirmed routine writes into a false failure.
-    await wait(900);
-    const readback = await queryTimers(opts.deviceId, log);
-    if (!readback) {
-      log("Final read-back unavailable; accepted routine writes remain authoritative");
-      return acks;
-    }
-
-    const saved = matches(readback, slots);
-    log(
-      `Final read-back ${saved ? "matches" : "differs from"} the requested routine · device modes: ${
-        readback
-          .map((s) => `#${s.index}${s.enabled ? "" : "(off)"} ${s.startMinute}-${s.endMinute} ${s.onSeconds}/${s.offSeconds}`)
-          .join(" | ") || "none"
-      }`,
-    );
-    verify(readback, slots);
-    if (!saved) {
-      log("Final read-back is stale; accepted routine writes remain authoritative");
-    }
+    // Each 0x14 acknowledgment and beep confirms that routine. Do not send a
+    // final 0x08 query: on this firmware, traffic immediately after the last
+    // persistent write can make the Bluetooth module drop its connection.
+    log(`Save complete · ${acks.length} routine${acks.length === 1 ? "" : "s"} confirmed`);
     return acks;
   } catch (error) {
     const message = (error as Error).message;
@@ -140,71 +120,6 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
     sameMinute(d.endMinute, wanted.endMinute) &&
     d.onSeconds === wanted.onSeconds &&
     d.offSeconds === wanted.offSeconds
-  );
-}
-
-/** True when the device's persisted modes already match what we want to push. */
-function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
-  return wanted.every((w) => slotMatches(readback, w));
-}
-
-
-
-function verify(readback: TimerSlot[], wantedSlots: TimerSlot[]) {
-  const debug = pushDebug();
-  const wantedOn = wantedSlots.filter((s) => s.enabled);
-  const deviceOn = readback.filter((s) => s.enabled && s.index <= MAX_TIMERS);
-
-  const modesOk =
-    deviceOn.length === wantedOn.length &&
-    wantedOn.every((w) => deviceOn.some((d) => d.index === w.index));
-  debug.set(
-    "modes",
-    modesOk ? "ok" : "fail",
-    `device modes on: ${deviceOn.map((s) => s.index).join(", ") || "none"} · sent ${
-      wantedOn.map((s) => s.index).join(", ") || "none"
-    }`,
-  );
-
-  const reference = wantedOn[0] ?? wantedSlots[0]!;
-  const intensityOk = deviceOn.length
-    ? deviceOn.every(
-        (s) => s.onSeconds === reference.onSeconds && s.offSeconds === reference.offSeconds,
-      )
-    : false;
-  debug.set(
-    "intensity",
-    intensityOk ? "ok" : "fail",
-    `device spray ${deviceOn[0]?.onSeconds ?? "–"}s / pause ${
-      deviceOn[0]?.offSeconds ?? "–"
-    }s · sent ${reference.onSeconds}s / ${reference.offSeconds}s`,
-  );
-
-  // The firmware normalises end-of-day: 1439 (23:59) comes back as 1440.
-  const sameMinute = (a: number, b: number) =>
-    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
-  const scheduleOk =
-    wantedOn.length > 0 &&
-    wantedOn.every((w) => {
-      const d = readback.find((s) => s.index === w.index);
-      return (
-        !!d &&
-        d.weekdayMask === w.weekdayMask &&
-        sameMinute(d.startMinute, w.startMinute) &&
-        sameMinute(d.endMinute, w.endMinute)
-      );
-    });
-  debug.set(
-    "schedule",
-    scheduleOk ? "ok" : "fail",
-    wantedOn
-      .map((w) => {
-        const d = readback.find((s) => s.index === w.index);
-        return `#${w.index} device 0b${(d?.weekdayMask ?? 0).toString(2)} ${d?.startMinute ?? "–"}–${
-          d?.endMinute ?? "–"
-        } · sent 0b${w.weekdayMask.toString(2)} ${w.startMinute}–${w.endMinute}`;
-      })
-      .join(" | ") || "no window scheduled",
   );
 }
 
