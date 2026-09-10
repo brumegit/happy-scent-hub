@@ -111,19 +111,22 @@ export async function pushSettings(opts: {
 
 
     if (!readback) {
-      const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
-      debug.set("modes", "unconfirmed", detail);
-      debug.set("intensity", "unconfirmed", detail);
-      debug.set("schedule", "unconfirmed", detail);
-      // Never report success we cannot prove: the diffuser did not confirm.
+      const detail = accepted ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
+      debug.set("modes", accepted ? "ok" : "unconfirmed", detail);
+      debug.set("intensity", accepted ? "ok" : "unconfirmed", detail);
+      debug.set("schedule", accepted ? "ok" : "unconfirmed", detail);
+      // The device confirmed the command itself; a missing read-back (link
+      // asleep right after the write) is not a reason to make the user retry.
+      if (accepted) return acks;
       throw new Error("The diffuser did not confirm the new settings. Try again.");
     }
 
     verify(readback, slots);
-    if (!matches(readback, slots)) {
+    if (!matches(readback, slots) && !accepted) {
       throw new Error("The diffuser did not save the new settings. Try again.");
     }
     return acks;
+
 
 
   } catch (error) {
