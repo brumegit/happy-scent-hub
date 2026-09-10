@@ -2,7 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import {
   DAYS,
-  MAX_TIMERS,
+  MAX_ROUTINES,
   blocksFromSchedule,
   blocksToSchedule,
   minutesToTimeValue,
