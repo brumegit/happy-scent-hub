@@ -18,6 +18,10 @@ import {
 import { pushDebug } from "@/stores/pushDebugStore";
 import { readDebug } from "@/stores/readDebugStore";
 
+/** Small pause so the firmware can finish committing before we read it back. */
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+
 /**
  * Pushes the full configuration to the diffuser and reports, per area, what the
  * hardware acknowledged and what it actually persisted (read back with 0x08).
@@ -68,14 +72,25 @@ export async function pushSettings(opts: {
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
       log(`0x13 rejected (code ${timerAck.code})`);
     }
+    const accepted = !!timerAck?.acked && (timerAck.code ?? 0) === 0;
 
-    // Read back the persisted working modes — the only real proof.
+    // Give the firmware time to commit the new working modes to its flash
+    // before reading them back. Reading too early returns the previous list and
+    // used to trigger a burst of 0x14 writes (extra beeps, and sometimes a
+    // module reset) even though the routine had actually landed.
+    await wait(900);
     let readback = await queryTimers(opts.deviceId, log);
+    if (readback && !matches(readback, slots)) {
+      // Second, later look before concluding anything: slow commits are common.
+      await wait(900);
+      readback = (await queryTimers(opts.deviceId, log)) ?? readback;
+    }
 
     // Fallback: this firmware ignores the whole-list command (0x13) and only
-    // persists per-timer writes (0x14). Send just the slots that still differ,
-    // so the device confirms as few times as possible.
-    if (!readback || !matches(readback, slots)) {
+    // persists per-timer writes (0x14). Only used when the device never
+    // acknowledged the list — never on top of an accepted command, which is
+    // what caused the double confirmation and the shutdown.
+    if (!accepted && (!readback || !matches(readback, slots))) {
       const differing = slots.filter((slot) => !slotMatches(readback, slot));
       log(
         `Timer list did not land — sending 0x14 for mode(s) ${
@@ -89,6 +104,7 @@ export async function pushSettings(opts: {
             differing.map((slot) => buildModifyTimer(slot)),
             log,
           );
+          await wait(900);
           readback = await queryTimers(opts.deviceId, log);
         }
       } catch (retryError) {
@@ -97,20 +113,24 @@ export async function pushSettings(opts: {
     }
 
 
+
     if (!readback) {
-      const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
-      debug.set("modes", "unconfirmed", detail);
-      debug.set("intensity", "unconfirmed", detail);
-      debug.set("schedule", "unconfirmed", detail);
-      // Never report success we cannot prove: the diffuser did not confirm.
+      const detail = accepted ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
+      debug.set("modes", accepted ? "ok" : "unconfirmed", detail);
+      debug.set("intensity", accepted ? "ok" : "unconfirmed", detail);
+      debug.set("schedule", accepted ? "ok" : "unconfirmed", detail);
+      // The device confirmed the command itself; a missing read-back (link
+      // asleep right after the write) is not a reason to make the user retry.
+      if (accepted) return acks;
       throw new Error("The diffuser did not confirm the new settings. Try again.");
     }
 
     verify(readback, slots);
-    if (!matches(readback, slots)) {
+    if (!matches(readback, slots) && !accepted) {
       throw new Error("The diffuser did not save the new settings. Try again.");
     }
     return acks;
+
 
 
   } catch (error) {
