@@ -113,24 +113,16 @@ export function ScheduleGrid({
               </label>
             </div>
 
-            <div className="mt-4 grid grid-cols-7 gap-1">
-              {DAYS.map((day) => {
-                const on = block.days.includes(day.value);
-                return (
-                  <button
-                    key={day.value}
-                    type="button"
-                    aria-pressed={on}
-                    aria-label={day.long}
-                    onClick={() => toggleDay(index, day.value)}
-                    className={`h-14 border bg-background text-[11px] transition-colors ${
-                      on ? "border-gold text-gold" : "border-border text-muted-foreground"
-                    }`}
-                  >
-                    {day.short}
-                  </button>
-                );
-              })}
+            {/*
+              Day selection: full day names. The five weekdays sit on the first
+              row, Saturday and Sunday on the second, so the chip layout mirrors
+              how people read a work week versus the weekend.
+            */}
+            <div className="mt-4 grid grid-cols-5 gap-1">
+              {[1, 2, 3, 4, 5].map((value) => renderDay(block, index, value))}
+            </div>
+            <div className="mt-1 grid grid-cols-2 gap-1">
+              {[6, 0].map((value) => renderDay(block, index, value))}
             </div>
           </div>
         );
