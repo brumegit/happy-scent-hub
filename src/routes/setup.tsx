@@ -372,7 +372,7 @@ function Setup() {
         />
         <div
           key={phase === "pairing" ? "idle" : phase}
-          className={`flex min-h-0 flex-1 flex-col justify-center overflow-x-hidden overscroll-none ${
+          className={`flex min-h-0 flex-1 flex-col justify-center overscroll-none ${
             phase === "schedule" ? "overflow-y-auto" : "overflow-y-hidden"
           }`}
         >
