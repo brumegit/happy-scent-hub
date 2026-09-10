@@ -47,7 +47,8 @@ const SERVICE_UUIDS = [
 ];
 
 const CHUNK_SIZE = 20;
-const CHUNK_DELAY_MS = 30;
+/** Serial modules need breathing room between chunks or they drop the link. */
+const CHUNK_DELAY_MS = 60;
 
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
@@ -286,10 +287,12 @@ async function attachLink(device: {
   const write = async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-      if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
-        await writable.writeValueWithoutResponse(chunk);
-      } else if (writable.writeValueWithResponse) {
+      // Acknowledged write first: it is flow-controlled, so the module never
+      // loses chunks (silent, no beep) the way unacknowledged bursts cause.
+      if (writable.properties?.write && writable.writeValueWithResponse) {
         await writable.writeValueWithResponse(chunk);
+      } else if (writable.writeValueWithoutResponse) {
+        await writable.writeValueWithoutResponse(chunk);
       } else {
         await writable.writeValue?.(chunk);
       }
