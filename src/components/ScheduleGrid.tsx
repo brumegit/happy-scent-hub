@@ -81,9 +81,11 @@ export function ScheduleGrid({
               </>
             )}
 
-            {/* Times first — minute granularity through the device's native picker. */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            {/* Times first — minute granularity through the device's native picker.
+                The two selectors share the full row width equally so the line is
+                balanced and stretches edge to edge. */}
+            <div className="mt-4 flex items-center gap-4">
+              <label className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
                 <span>Starts</span>
                 <input
                   type="time"
@@ -93,10 +95,10 @@ export function ScheduleGrid({
                     const start = timeValueToMinutes(e.target.value);
                     patch(index, { start, end: Math.max(block.end, Math.min(1439, start + 1)) });
                   }}
-                  className="h-11 min-w-0 border border-border bg-background px-2 text-sm text-foreground"
+                  className="h-11 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground"
                 />
               </label>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <label className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
                 <span>Stops</span>
                 <input
                   type="time"
@@ -106,7 +108,7 @@ export function ScheduleGrid({
                     const end = timeValueToMinutes(e.target.value);
                     patch(index, { end, start: Math.min(block.start, Math.max(0, end - 1)) });
                   }}
-                  className="h-11 min-w-0 border border-border bg-background px-2 text-sm text-foreground"
+                  className="h-11 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground"
                 />
               </label>
             </div>
