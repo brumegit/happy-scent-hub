@@ -151,6 +151,7 @@ function Setup() {
   const [explainAdvanced, setExplainAdvanced] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [connectionLost, setConnectionLost] = useState(false);
   const {
     checking: checkingRequirements,
     bluetoothOff: btOff,
@@ -256,6 +257,30 @@ function Setup() {
       clearTimeout(next);
     };
   }, [phase]);
+
+  // Keep checking the physical link while the user chooses an intensity or
+  // edits routines. If the diffuser sleeps or moves out of range, stop the flow
+  // immediately rather than letting the user reach a save that cannot work.
+  useEffect(() => {
+    if ((phase !== "intensity" && phase !== "schedule") || !deviceId) return;
+    let cancelled = false;
+    let checking = false;
+    const verifyLink = async () => {
+      if (checking) return;
+      checking = true;
+      const live = await checkConnection(deviceId).catch(() => false);
+      checking = false;
+      if (cancelled || live) return;
+      setConnectionLost(true);
+      setDeviceId(null);
+      setPhase("idle");
+    };
+    const interval = window.setInterval(() => void verifyLink(), 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [deviceId, phase]);
 
   async function push(next: Phase, onDone?: () => void) {
     const previous = phase;
@@ -793,6 +818,21 @@ function Setup() {
           onCancel={() => settlePicker(null)}
         />
       )}
+      <Dialog open={connectionLost} onOpenChange={setConnectionLost}>
+        <DialogContent className="border-destructive bg-background">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">Bluetooth connection lost</DialogTitle>
+            <DialogDescription className="text-sm text-foreground">
+              Make sure Bluetooth is on and double-tap the diffuser button to pair it again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button className="w-full" onClick={() => setConnectionLost(false)}>
+              Back to connect
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
 
   );
