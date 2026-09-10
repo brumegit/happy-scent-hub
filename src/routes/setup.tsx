@@ -588,8 +588,12 @@ function Setup() {
               {roomTouched && roomError && (
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
-              {/* Quick picks: very generic home and professional spaces. */}
-              <RoomSuggestions onPick={setRoom} />
+              {/* Quick picks: very generic home and professional spaces.
+                  Distanced 50–100px from the room-name input above and the
+                  Continue CTA below. */}
+              <div className="mt-10 mb-10">
+                <RoomSuggestions onPick={setRoom} />
+              </div>
             </div>
             <Button
               size="lg"
