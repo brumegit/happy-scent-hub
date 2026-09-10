@@ -25,6 +25,7 @@ import {
   isNativePlatform,
   isNativeSync,
   requestNativeDevice,
+  subscribeNativeDisconnect,
   writeNative,
   type DeviceChooser,
 } from "@/lib/native-ble";
@@ -73,6 +74,22 @@ function serializeWrites(writeNow: (frame: Uint8Array) => Promise<void>) {
 }
 
 const links = new Map<string, Link>();
+const connectionListeners = new Set<(deviceId: string, connected: boolean) => void>();
+
+function publishConnection(deviceId: string, connected: boolean) {
+  if (!connected) links.delete(deviceId);
+  connectionListeners.forEach((listener) => listener(deviceId, connected));
+}
+
+/** React screens use this in addition to polling so disconnects appear immediately. */
+export function subscribeConnection(listener: (deviceId: string, connected: boolean) => void) {
+  connectionListeners.add(listener);
+  const unsubscribeNative = subscribeNativeDisconnect((deviceId) => publishConnection(deviceId, false));
+  return () => {
+    connectionListeners.delete(listener);
+    unsubscribeNative();
+  };
+}
 
 /** Last battery reading pushed by each device (the protocol has no read command). */
 const batteries = new Map<string, BatteryStatus>();
@@ -216,11 +233,13 @@ type BluetoothLike = {
         getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]>;
       }>;
     };
+    addEventListener?: (type: string, cb: () => void) => void;
   }>;
 };
 
 async function attachLink(device: {
   id: string;
+  addEventListener?: (type: string, cb: () => void) => void;
   gatt?: {
     connected?: boolean;
     disconnect?: () => void;
@@ -236,6 +255,7 @@ async function attachLink(device: {
     log("GATT connect returned no server");
     return false;
   }
+  device.addEventListener?.("gattserverdisconnected", () => publishConnection(device.id, false));
   const services = await server.getPrimaryServices().catch((error: Error) => {
     log(`getPrimaryServices failed: ${error.message}`);
     return [] as { getCharacteristics: () => Promise<Char[]> }[];
@@ -316,13 +336,25 @@ async function attachLink(device: {
       return response;
     },
     waitFor: (fn) => responses.waitFor(fn, 2500),
-    isLive: async () => device.gatt?.connected !== false,
+    isLive: async () => {
+      if (device.gatt?.connected === false) return false;
+      try {
+        // `gatt.connected` is cached by Chrome and can remain true after the
+        // diffuser disappears. A service request forces a real GATT operation,
+        // making the five-second screen check detect a dead link.
+        await server.getPrimaryServices();
+        return true;
+      } catch {
+        return false;
+      }
+    },
     close: async () => {
       // Physically drop the GATT link so the device LED stops showing connected.
       device.gatt?.disconnect?.();
       await wait(150);
     },
   });
+  publishConnection(device.id, true);
   return true;
 }
 
@@ -356,6 +388,7 @@ export async function connectPickedDevice(device: {
       waitFor: (fn) => responses.waitFor(fn, 4000),
       isLive: () => isNativeConnected(device.deviceId),
     });
+    publishConnection(device.deviceId, true);
   }
   return { deviceId: device.deviceId, suggestedName: device.name || "The 24/7 Room Diffuser" };
 }
@@ -628,7 +661,9 @@ export async function queryTimers(
 export async function checkConnection(deviceId: string | null) {
   if (!deviceId) return false;
   if (await isNativePlatform()) {
-    return await isNativeConnected(deviceId).catch(() => false);
+    const live = await isNativeConnected(deviceId).catch(() => false);
+    if (!live) publishConnection(deviceId, false);
+    return live;
   }
   const link = links.get(deviceId);
   if (!link || link.simulated) return false;
@@ -636,7 +671,7 @@ export async function checkConnection(deviceId: string | null) {
   // went out of range or was taken over by another phone must not read as
   // connected just because we once paired with it.
   if (link.isLive && !(await link.isLive().catch(() => false))) {
-    links.delete(deviceId);
+    publishConnection(deviceId, false);
     return false;
   }
   return true;
@@ -654,4 +689,5 @@ export async function disconnect(deviceId: string | null) {
     await disconnectNative(deviceId).catch(() => {});
   }
   links.delete(deviceId);
+  publishConnection(deviceId, false);
 }

@@ -25,7 +25,7 @@ import {
   isRealLink,
   sendFrames,
   checkConnection,
-  reconnectDevice,
+  subscribeConnection,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
@@ -245,7 +245,7 @@ function Setup() {
   }, [start]);
 
 
-  // Green "OK" holds, then fades over 3 seconds before naming.
+  // Champagne "OK" holds, then fades over 3 seconds before naming.
   useEffect(() => {
     if (phase !== "paired") return;
     const fade = setTimeout(() => setFading(true), 900);
@@ -276,9 +276,17 @@ function Setup() {
       setDeviceId(null);
       setPhase("idle");
     };
+    const unsubscribe = subscribeConnection((changedId, live) => {
+      if (changedId !== deviceId || live || cancelled) return;
+      setConnectionLost(true);
+      setDeviceId(null);
+      setPhase("idle");
+    });
+    void verifyLink();
     const interval = window.setInterval(() => void verifyLink(), 5000);
     return () => {
       cancelled = true;
+      unsubscribe();
       window.clearInterval(interval);
     };
   }, [deviceId, phase]);
@@ -316,11 +324,8 @@ function Setup() {
         intensity,
         custom,
       });
-      // Some firmware drops the Bluetooth link right after storing a routine.
-      // Re-open it quietly so the next step still has a live connection.
-      if (!(await checkConnection(deviceId).catch(() => false))) {
-        await reconnectDevice(deviceId).catch(() => false);
-      }
+      // Stop all Bluetooth traffic after the last routine. Automatic reconnects
+      // can interrupt this firmware while it commits the saved settings.
       setResult("success");
       setTimeout(() => {
         setResult("idle");
@@ -421,9 +426,9 @@ function Setup() {
                 <div className="relative mx-auto size-20">
                   <span className="success-ring" />
                   <span className="success-ring" style={{ animationDelay: "0.7s" }} />
-                  <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-emerald-400">
+                  <span className="success-pop absolute inset-0 flex items-center justify-center rounded-full border border-gold">
                     <svg
-                      className="success-check size-9 text-emerald-400"
+                      className="success-check size-9 text-gold"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -432,11 +437,11 @@ function Setup() {
                       strokeLinejoin="round"
                       aria-hidden
                     >
-                      <path className="text-emerald-400" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
+                      <path className="text-gold" stroke="currentColor" d="M5 12.5 10 17.5 19 7" />
                     </svg>
                   </span>
                 </div>
-                <p className="success-pop text-center text-sm text-emerald-400">
+                <p className="success-pop text-center text-sm text-gold">
                   Diffuser paired successfully
                 </p>
               </div>

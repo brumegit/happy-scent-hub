@@ -13,7 +13,7 @@ const KEYS: ReadStepKey[] = ["link", "modes", "intensity", "schedule"];
 const dotClass: Record<ReadStepStatus, string> = {
   idle: "bg-muted-foreground/40",
   pending: "bg-[--pairing] animate-pulse",
-  ok: "bg-emerald-400",
+  ok: "bg-gold",
   unconfirmed: "bg-[--gold]",
   fail: "bg-destructive",
 };
@@ -21,7 +21,7 @@ const dotClass: Record<ReadStepStatus, string> = {
 const textClass: Record<ReadStepStatus, string> = {
   idle: "text-muted-foreground",
   pending: "text-[--pairing]",
-  ok: "text-emerald-400",
+  ok: "text-gold",
   unconfirmed: "text-[--gold]",
   fail: "text-destructive",
 };
