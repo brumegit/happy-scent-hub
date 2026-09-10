@@ -487,7 +487,7 @@ export async function sendFrames(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
@@ -517,7 +517,7 @@ export async function sendFrames(
   }
 
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
   return acks;
@@ -538,7 +538,7 @@ export async function sendBatch(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
@@ -575,7 +575,7 @@ export async function sendBatch(
   });
 
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
   return acks;
