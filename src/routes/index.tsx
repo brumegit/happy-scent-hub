@@ -20,6 +20,10 @@ import { AppHeader } from "@/components/AppHeader";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
+import {
+  bluetoothRequirementPrompt,
+  useBluetoothRequirements,
+} from "@/hooks/useBluetoothRequirements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -134,6 +138,21 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
   const [picker, setPicker] = useState<NativeDevice[] | null>(null);
   const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
+  const { refresh: refreshBluetooth } = useBluetoothRequirements(false);
+
+  /**
+   * Bluetooth radio + app permission must both be in place before we let the
+   * user reach the intensity/schedule steps. Returns true when clear.
+   */
+  async function bluetoothReady() {
+    const req = await refreshBluetooth();
+    if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
+      setError(bluetoothRequirementPrompt(req).message);
+      return false;
+    }
+    setError(null);
+    return true;
+  }
 
 
   // Names are stored in the app only — nothing is written to the hardware.
@@ -151,7 +170,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setNow(new Date());
     // Re-check the physical link often: a diffuser that went out of range or was
     // taken over by another phone must stop showing as connected.
-    const link = setInterval(refresh, 4000);
+    const link = setInterval(refresh, 5000);
     const clock = setInterval(() => setNow(new Date()), 60_000);
     const onVisible = () => document.visibilityState === "visible" && refresh();
     document.addEventListener("visibilitychange", onVisible);
