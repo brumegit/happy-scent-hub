@@ -63,6 +63,16 @@ type Link = {
   close?: () => Promise<void>;
 };
 
+/** Prevents status replies and user actions from interleaving BLE packets. */
+function serializeWrites(writeNow: (frame: Uint8Array) => Promise<void>) {
+  let tail = Promise.resolve();
+  return (frame: Uint8Array) => {
+    const operation = tail.then(() => writeNow(frame));
+    tail = operation.catch(() => undefined);
+    return operation;
+  };
+}
+
 const links = new Map<string, Link>();
 
 /** Last battery reading pushed by each device (the protocol has no read command). */
@@ -295,7 +305,7 @@ async function attachLink(device: {
   log("Serial channel ready");
 
 
-  const write = async (frame: Uint8Array) => {
+  const write = serializeWrites(async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
       if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
@@ -307,7 +317,7 @@ async function attachLink(device: {
       }
       await wait(CHUNK_DELAY_MS);
     }
-  };
+  });
   links.set(device.id, {
     simulated: false,
     write,
@@ -338,12 +348,12 @@ export async function connectPickedDevice(device: {
   const responses = createResponseChannel((frame) => captureBattery(device.deviceId, frame));
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
-    const write = async (frame: Uint8Array) => {
+    const write = serializeWrites(async (frame: Uint8Array) => {
       for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
         await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
         await wait(CHUNK_DELAY_MS);
       }
-    };
+    });
     links.set(device.deviceId, {
       simulated: false,
       write,
@@ -460,18 +470,15 @@ export async function sendWithoutConfirmation(
       const hex = toHex(frame);
       console.info("[ScentLife] TX", hex);
       onLog?.(`TX ${hex}`);
-      const fn = frame[3] ?? 0;
-      // Listen passively for the module's own acknowledgment: it costs no extra
-      // write, but it lets the app wait for the beep instead of guessing.
-      const ack = link.waitFor
-        ? link.waitFor((fn + 0x80) & 0xff).catch(() => null)
-        : Promise.resolve(null);
       await link.write(frame);
-      const reply = await ack;
-      onLog?.(reply ? `RX ${toHex(reply)}` : `RX none for 0x${fn.toString(16)}`);
+      onLog?.(`Write complete`);
     }
     // Let the diffuser finish applying and beeping before the app reports back.
     await wait(1200);
+    if (link.isLive && !(await link.isLive())) {
+      if (deviceId) links.delete(deviceId);
+      throw new Error("Bluetooth disconnected while sending the routine. Pair the diffuser and try again.");
+    }
   } finally {
     isolatedWriteDepth = Math.max(0, isolatedWriteDepth - 1);
     // Keep the quiet window open while the diffuser applies the new routine.

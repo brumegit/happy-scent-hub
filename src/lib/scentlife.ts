@@ -117,67 +117,6 @@ export function toHex(frame: Uint8Array) {
   return [...frame].map((b) => b.toString(16).padStart(2, "0").toUpperCase()).join(" ");
 }
 
-export const FN_SET_MODULE_INFO = 0x52;
-
-/** Default identity bytes used by ScentLife single-Bluetooth diffusers. */
-const MANUFACTURER_ID = 0x5a53;
-const DEVICE_TYPE = "001";
-
-/** Module type byte: 'A' Bluetooth only, 'B' Bluetooth+WiFi. */
-export const MODULE_TYPES = ["A", "B"] as const;
-
-/**
- * 0x52 carries an explicit length field, so the name is not limited to the
- * 12 characters of the protocol example. The real ceiling is the BLE
- * advertising payload: a complete local name fits in 29 bytes, and modules
- * silently drop non-ASCII, so we sanitise to ASCII and cap at 24 bytes.
- */
-export const MAX_BROADCAST_NAME_BYTES = 24;
-
-export function sanitizeBroadcastName(name: string) {
-  const ascii = name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^A-Za-z0-9 '._-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  return (ascii || "Brume").slice(0, MAX_BROADCAST_NAME_BYTES);
-}
-
-/** Characters the module accepts in a broadcast name. */
-export const BROADCAST_NAME_PATTERN = /^[A-Za-z0-9 '._-]+$/;
-
-/**
- * Validates a name against the module's specs: plain ASCII letters, digits,
- * space, apostrophe, dot, hyphen or underscore, 1–24 characters. Returns an
- * error message or null when the name is compliant.
- */
-export function validateBroadcastName(name: string): string | null {
-  const trimmed = name.trim();
-  if (!trimmed) return "Enter a name.";
-  if (!BROADCAST_NAME_PATTERN.test(trimmed))
-    return "Use letters, numbers, spaces, apostrophes, dots, hyphens or underscores only — no accents.";
-  if (trimmed.length > MAX_BROADCAST_NAME_BYTES)
-    return `The diffuser only stores ${MAX_BROADCAST_NAME_BYTES} characters (currently ${trimmed.length}).`;
-  return null;
-}
-
-
-/**
- * 0x52 — set module info, including the BLE advertising (device) name.
- * This is the only command in the protocol that renames the hardware.
- */
-export function buildSetBroadcastName(name: string, moduleType: string = "A") {
-  const bytes = [...new TextEncoder().encode(sanitizeBroadcastName(name))];
-  return buildFrame(FN_SET_MODULE_INFO, [
-    ...u16(MANUFACTURER_ID),
-    moduleType.charCodeAt(0),
-    ...[...DEVICE_TYPE].map((c) => c.charCodeAt(0)),
-    ...u16(bytes.length),
-    ...bytes,
-  ]);
-}
-
 /** Uplink status reports that carry a battery reading. */
 export const FN_STATUS_REPORT = 0x21;
 export const FN_BATTERY_STATUS = 0x22;
