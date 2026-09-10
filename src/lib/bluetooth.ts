@@ -47,7 +47,9 @@ const SERVICE_UUIDS = [
 ];
 
 const CHUNK_SIZE = 20;
-const CHUNK_DELAY_MS = 30;
+// The UART bridge needs time to drain each BLE packet before receiving the
+// next one. Routine frames span several packets, especially with 2–3 blocks.
+const CHUNK_DELAY_MS = 120;
 
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;

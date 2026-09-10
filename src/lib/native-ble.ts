@@ -340,13 +340,12 @@ export async function connectNative(
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
-  // Acknowledged writes first: a routine frame spans several packets, and an
-  // unacknowledged packet that gets dropped leaves the module with a partial
-  // command, so it never applies it and never beeps.
+  // This diffuser's transparent UART expects write-without-response. CoreBluetooth
+  // may accept an acknowledged write without the UART firmware consuming it.
   try {
-    await ble.write(deviceId, target.service, target.characteristic, view);
-  } catch {
     await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+  } catch {
+    await ble.write(deviceId, target.service, target.characteristic, view);
   }
 }
 
