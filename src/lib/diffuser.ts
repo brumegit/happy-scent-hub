@@ -365,7 +365,7 @@ function routineTimeWord(start: number, end: number) {
 const MAX_ROUTINE_NAME = 25;
 
 /** Compact lowercase time label, e.g. "8am", "2:30pm", or "14:30" in 24h. */
-function compactTimeLabel(minutes: number) {
+export function compactTimeLabel(minutes: number) {
   const clamped = Math.max(0, Math.min(1440, Math.round(minutes)));
   const hour = clamped === 1440 ? 0 : Math.floor(clamped / 60);
   const min = clamped === 1440 ? 0 : clamped % 60;
