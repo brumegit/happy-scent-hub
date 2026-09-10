@@ -476,6 +476,29 @@ export async function sendFrames(
 }
 
 /**
+ * Writes one complete protocol command without starting an acknowledgment
+ * waiter or probing the link afterwards. Some diffuser firmware disconnects
+ * when a read/confirmation exchange surrounds the 0x13 timer-list write.
+ */
+export async function sendCommand(
+  deviceId: string | null,
+  frame: Uint8Array,
+  onLog?: (line: string) => void,
+): Promise<void> {
+  const link = deviceId ? links.get(deviceId) : undefined;
+  if (!link || link.simulated) {
+    throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
+  }
+
+  const hex = toHex(frame);
+  console.info("[ScentLife] TX", hex);
+  onLog?.(`TX 0x${(frame[3] ?? 0).toString(16).padStart(2, "0")} · ${frame.length} bytes`);
+  onLog?.(`TX ${hex}`);
+  await link.write(frame);
+  onLog?.("Write completed");
+}
+
+/**
  * Writes protocol frames as one continuous stream and collects acknowledgments.
  * The diffuser signals each protocol command, regardless of BLE write count;
  * callers that require one confirmation sound must pass exactly one frame.
