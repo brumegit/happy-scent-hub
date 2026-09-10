@@ -5,11 +5,7 @@
  * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
-export type NativeChar = {
-  service: string;
-  characteristic: string;
-  writeMode: "without-response-first";
-};
+export type NativeChar = { service: string; characteristic: string };
 
 export type NativeDevice = {
   deviceId: string;
@@ -330,11 +326,7 @@ export async function connectNative(
         }
       }
       if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
-        writable = {
-          service: service.uuid,
-          characteristic: ch.uuid,
-          writeMode: "without-response-first",
-        };
+        writable = { service: service.uuid, characteristic: ch.uuid };
       }
     }
   }
@@ -353,7 +345,6 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
   } catch {
     await ble.write(deviceId, target.service, target.characteristic, view);
   }
-  return target.writeMode;
 }
 
 export async function isNativeConnected(deviceId: string) {

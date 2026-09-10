@@ -327,15 +327,8 @@ export async function connectPickedDevice(device: {
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
     const write = async (frame: Uint8Array) => {
-      const chunkCount = Math.ceil(frame.length / CHUNK_SIZE);
-      pushDebug().addLog(
-        `BLE channel ${target.service}/${target.characteristic} · ${target.writeMode} · ${frame.length} bytes in ${chunkCount} chunk(s)`,
-      );
       for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-        const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-        const chunkNumber = Math.floor(offset / CHUNK_SIZE) + 1;
-        pushDebug().addLog(`TX chunk ${chunkNumber}/${chunkCount} · ${toHex(chunk)}`);
-        await writeNative(device.deviceId, target, chunk);
+        await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
         await wait(CHUNK_DELAY_MS);
       }
     };
@@ -429,39 +422,6 @@ export type FrameAck = {
   code: number | null;
   hex: string;
 };
-
-/**
- * Writes commands without subscribing to, waiting for, or interpreting any
- * reply. A resolved transport write is the only success condition.
- */
-export async function sendWithoutConfirmation(
-  deviceId: string | null,
-  frames: Uint8Array[],
-  onLog?: (line: string) => void,
-): Promise<void> {
-  const link = deviceId ? links.get(deviceId) : undefined;
-  if (!link || link.simulated) {
-    throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
-  }
-  if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId as string);
-    throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
-  }
-
-  for (const frame of frames) {
-    const hex = toHex(frame);
-    console.info("[ScentLife] TX", hex);
-    onLog?.(`TX ${hex}`);
-    await link.write(frame);
-    // A native disconnect callback can arrive just after the final GATT write.
-    // Wait before declaring success so a dropped link is never shown as sent.
-    await wait(800);
-  }
-  if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId as string);
-    throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
-  }
-}
 
 /**
  * Sends protocol frames to the diffuser, one at a time with a gap so the module
