@@ -48,20 +48,6 @@ export async function pushSettings(opts: {
   );
 
   const slots = buildTimerSlots(opts.schedule, opts.intensity, opts.custom ?? null);
-  log(
-    `Wanted ${slots.filter((s) => s.enabled).length} active mode(s): ${slots
-      .map(
-        (s) =>
-          `#${s.index}${s.enabled ? "" : "(off)"} d0b${s.weekdayMask.toString(2)} ${
-            s.startMinute
-          }-${s.endMinute} ${s.onSeconds}s/${s.offSeconds}s`,
-      )
-      .join(" | ")}`,
-  );
-  log(
-    `Intensity ${opts.intensity}${opts.custom ? " (advanced timing)" : " (preset)"}`,
-  );
-
 
   try {
     // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes
@@ -91,24 +77,12 @@ export async function pushSettings(opts: {
       log(`0x13 rejected (code ${timerAck.code})`);
     }
 
-    // Read back the persisted working modes — the only real proof. The module
-    // needs a moment to write them to flash before it answers correctly.
-    const readBackWithRetry = async (attempts: number) => {
-      for (let i = 0; i < attempts; i++) {
-        await new Promise((r) => setTimeout(r, 500 + i * 400));
-        const result = await queryTimers(opts.deviceId, log);
-        if (result) return result;
-        log(`Read-back attempt ${i + 1} returned nothing`);
-      }
-      return null;
-    };
-
-    let readback = await readBackWithRetry(3);
+    // Read back the persisted working modes — the only real proof.
+    let readback = await queryTimers(opts.deviceId, log);
 
     // Fallback: this firmware ignores the whole-list command (0x13) and only
     // persists per-timer writes (0x14). Send just the slots that still differ,
     // so the device confirms as few times as possible.
-    let retryAcks: Awaited<ReturnType<typeof sendFrames>> = [];
     if (!readback || !matches(readback, slots)) {
       const differing = slots.filter((slot) => !slotMatches(readback, slot));
       log(
@@ -118,33 +92,21 @@ export async function pushSettings(opts: {
       );
       try {
         if (differing.length) {
-          retryAcks = await sendFrames(
+          await sendFrames(
             opts.deviceId,
             differing.map((slot) => buildModifyTimer(slot)),
             log,
           );
-          readback = (await readBackWithRetry(3)) ?? readback;
+          readback = await queryTimers(opts.deviceId, log);
         }
       } catch (retryError) {
         log(`0x14 fallback failed: ${(retryError as Error).message}`);
       }
     }
 
-    // The diffuser accepted the command but stays silent on read-back: some
-    // firmware answers 0x88 only when idle. A clean ack is proof enough.
-    const acceptedAck =
-      (timerAck?.acked && timerAck.code === 0) ||
-      (retryAcks.length > 0 && retryAcks.every((a) => a.acked && a.code === 0));
 
     if (!readback) {
-      if (acceptedAck) {
-        const detail = "accepted by the diffuser (no read-back available)";
-        debug.set("modes", "ok", detail);
-        debug.set("intensity", "ok", detail);
-        debug.set("schedule", "ok", detail);
-        return acks;
-      }
-      const detail = "no ack, no read-back";
+      const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
       debug.set("modes", "unconfirmed", detail);
       debug.set("intensity", "unconfirmed", detail);
       debug.set("schedule", "unconfirmed", detail);
@@ -154,14 +116,9 @@ export async function pushSettings(opts: {
 
     verify(readback, slots);
     if (!matches(readback, slots)) {
-      if (acceptedAck) {
-        log("Read-back differs but the diffuser acknowledged every command — accepting.");
-        return acks;
-      }
       throw new Error("The diffuser did not save the new settings. Try again.");
     }
     return acks;
-
 
 
   } catch (error) {
@@ -179,9 +136,7 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
   const sameMinute = (a: number, b: number) =>
     a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
   const d = readback?.find((s) => s.index === wanted.index);
-  // Firmware only reports the working modes it holds: a slot we want switched
-  // off and that the device does not list at all is already in the right state.
-  if (!d) return !wanted.enabled;
+  if (!d) return false;
   if (!wanted.enabled) return !d.enabled;
   return (
     d.enabled &&
@@ -192,7 +147,6 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
     d.offSeconds === wanted.offSeconds
   );
 }
-
 
 /** True when the device's persisted modes already match what we want to push. */
 function matches(readback: TimerSlot[], wanted: TimerSlot[]) {
