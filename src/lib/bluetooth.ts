@@ -67,16 +67,26 @@ const links = new Map<string, Link>();
 const batteries = new Map<string, BatteryStatus>();
 const batteryListeners = new Set<() => void>();
 
+// A routine update must be the only protocol exchange on the wire. Some
+// firmware sends a status report as it applies 0x13; acknowledging that report
+// creates a hidden second write and can make the diffuser drop an iPhone link.
+let isolatedWriteDepth = 0;
+let suppressStatusAcksUntil = 0;
+
 function captureBattery(deviceId: string, frame: Uint8Array) {
   // Status reports must be acknowledged, otherwise the module stops sending
   // them and the battery level never refreshes.
   const fn = frame[3] ?? 0;
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
-    void links
-      .get(deviceId)
-      ?.write(buildReportAck(fn))
-      .catch(() => {});
+    if (isolatedWriteDepth > 0 || Date.now() < suppressStatusAcksUntil) {
+      pushDebug().addLog(`Status acknowledgment paused after routine transfer`);
+    } else {
+      void links
+        .get(deviceId)
+        ?.write(buildReportAck(fn))
+        .catch(() => {});
+    }
   }
   const status = parseBatteryReport(frame);
   if (!status) return;
@@ -442,12 +452,18 @@ export async function sendWithoutConfirmation(
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
-  for (const frame of frames) {
-    const hex = toHex(frame);
-    console.info("[ScentLife] TX", hex);
-    onLog?.(`TX ${hex}`);
-    await link.write(frame);
-    await wait(200);
+  isolatedWriteDepth += 1;
+  try {
+    for (const frame of frames) {
+      const hex = toHex(frame);
+      console.info("[ScentLife] TX", hex);
+      onLog?.(`TX ${hex}`);
+      await link.write(frame);
+    }
+  } finally {
+    isolatedWriteDepth = Math.max(0, isolatedWriteDepth - 1);
+    // Keep the quiet window open while the diffuser applies the new routine.
+    suppressStatusAcksUntil = Date.now() + 1500;
   }
 }
 
