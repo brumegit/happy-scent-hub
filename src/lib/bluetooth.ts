@@ -139,16 +139,18 @@ export function subscribeBattery(listener: () => void) {
 export async function requestBattery(deviceId: string | null) {
   const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) return;
-  for (const subType of [0x01, 0x02, 0x03]) {
-    try {
-      pushDebug().addLog(`TX query 0x09 type=0x0${subType}`);
-      await link.write(buildQuery(subType));
-      await wait(250);
-    } catch {
-      // Link dropped — the connection poll will surface it.
-      return;
+  await withIsolatedProtocol(async () => {
+    for (const subType of [0x01, 0x02, 0x03]) {
+      try {
+        pushDebug().addLog(`TX query 0x09 type=0x0${subType}`);
+        await link.write(buildQuery(subType));
+        await wait(250);
+      } catch {
+        // Link dropped — the connection poll will surface it.
+        return;
+      }
     }
-  }
+  });
 }
 
 
@@ -507,7 +509,7 @@ export async function sendFrames(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
@@ -560,7 +562,7 @@ export async function sendBatch(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
