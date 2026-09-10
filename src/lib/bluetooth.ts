@@ -424,6 +424,29 @@ export type FrameAck = {
 };
 
 /**
+ * Writes commands without subscribing to, waiting for, or interpreting any
+ * reply. A resolved transport write is the only success condition.
+ */
+export async function sendWithoutConfirmation(
+  deviceId: string | null,
+  frames: Uint8Array[],
+  onLog?: (line: string) => void,
+): Promise<void> {
+  const link = deviceId ? links.get(deviceId) : undefined;
+  if (!link || link.simulated) {
+    throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
+  }
+
+  for (const frame of frames) {
+    const hex = toHex(frame);
+    console.info("[ScentLife] TX", hex);
+    onLog?.(`TX ${hex}`);
+    await link.write(frame);
+    await wait(200);
+  }
+}
+
+/**
  * Sends protocol frames to the diffuser, one at a time with a gap so the module
  * has time to parse and acknowledge each frame (the device beeps per accepted
  * command). Returns the per-command acknowledgments so callers can report what
