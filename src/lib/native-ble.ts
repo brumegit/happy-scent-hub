@@ -325,7 +325,11 @@ export async function connectNative(
           // optional
         }
       }
-      if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
+      // This serial module needs GATT flow control for multi-chunk commands.
+      // Prefer an acknowledged-write characteristic whenever one is exposed.
+      if (ch.properties.write) {
+        writable = writable ?? { service: service.uuid, characteristic: ch.uuid };
+      } else if (!writable && ch.properties.writeWithoutResponse) {
         writable = { service: service.uuid, characteristic: ch.uuid };
       }
     }
@@ -341,9 +345,12 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
   try {
-    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-  } catch {
+    // Acknowledged writes provide the flow control required by the diffuser's
+    // small serial buffer. Unacknowledged bursts can resolve locally and then
+    // make the peripheral drop the Bluetooth link without accepting the frame.
     await ble.write(deviceId, target.service, target.characteristic, view);
+  } catch {
+    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
   }
 }
 
