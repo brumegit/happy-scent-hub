@@ -2,7 +2,6 @@ import {
   isRealLink,
   queryTimers,
   sendFrames,
-  sendWithoutConfirmation,
 } from "@/lib/bluetooth";
 import {
   buildSetBroadcastName,
@@ -25,9 +24,9 @@ import { pushDebug } from "@/stores/pushDebugStore";
 import { readDebug } from "@/stores/readDebugStore";
 
 /**
- * Pushes the full configuration to the diffuser without requesting or waiting
- * for a reply. Some firmware applies the command but does not return a reliable
- * notification, so transport completion is the only success condition here.
+ * Pushes the full configuration using the diffuser's proven serial sequence.
+ * The initial timer read gives the module the gap it requires before accepting
+ * the timer-list write and preserves its existing timer identifiers.
  *
  * A settings confirmation emits one timer-list command (0x13). The module
  * signals each parsed protocol command, so concatenating clock/name/power
@@ -54,8 +53,16 @@ export async function pushSettings(opts: {
   const slots = buildTimerSlots(opts.schedule, opts.intensity, opts.custom ?? null);
 
   try {
-    // One user action, one protocol command, one hardware confirmation sound.
-    // Do not issue any read command or wait for any response around this write.
+    const existing = await queryTimers(opts.deviceId, log).catch(() => null);
+    if (existing?.length) {
+      for (const slot of slots) {
+        const match = existing.find((saved) => saved.index === slot.index);
+        if (match?.timerId) slot.timerId = match.timerId;
+      }
+    }
+
+    // One user action, one 0x13 command, and one hardware confirmation sound.
+    // Missing notifications are deliberately not treated as a failed send.
     const label = opts.hardwareName ? sanitizeBroadcastName(opts.hardwareName) : null;
     const frame = buildTimerList(slots);
     const active = slots.filter((slot) => slot.enabled);
@@ -70,7 +77,7 @@ export async function pushSettings(opts: {
       );
     }
     log(`Frame ${frame.length} bytes · ${toHex(frame)}`);
-    await sendWithoutConfirmation(opts.deviceId, [frame], log);
+    await sendFrames(opts.deviceId, [frame], log);
 
     debug.set("name", "idle", label ? `"${label}" · unchanged by settings push` : "not sent");
     debug.set("modes", "ok", `0x13 sent · ${active.length} active mode(s)`);
