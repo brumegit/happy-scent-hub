@@ -63,7 +63,8 @@ function Row({
       last = now;
       if (!paused.current) {
         const half = el.scrollWidth / 2;
-        let next = el.scrollLeft + direction * (dt * 0.02);
+        // 0.004 px/ms — 5x slower than the previous 0.02 drift.
+        let next = el.scrollLeft + direction * (dt * 0.004);
         if (next >= half) next -= half;
         if (next <= 0) next += half;
         el.scrollLeft = next;
@@ -90,14 +91,17 @@ function Row({
       onPointerLeave={release}
       onTouchStart={hold}
       onTouchEnd={release}
-      className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      // -mx-11 breaks out of the page's px-11 padding so badges bleed past the
+      // screen edges; 0 horizontal padding on the row makes them appear to exit
+      // the viewport. h-11 matches the room-name input height.
+      className="-mx-11 flex h-11 gap-2 overflow-x-auto px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {[...items, ...items].map((suggestion, index) => (
         <button
           key={`${suggestion}-${index}`}
           type="button"
           onClick={() => onPick(suggestion)}
-          className="shrink-0 rounded-[10px] border border-border px-3 py-1.5 text-xs whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+          className="flex h-11 shrink-0 items-center rounded-[10px] border border-border px-3 text-base whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground md:text-sm"
         >
           {suggestion}
         </button>
