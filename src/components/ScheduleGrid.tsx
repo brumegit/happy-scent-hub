@@ -159,7 +159,7 @@ export function ScheduleGrid({
         </button>
       ) : (
         <p className="text-center text-xs text-muted-foreground">
-          Your diffuser stores {MAX_TIMERS} routines — the maximum is reached.
+          You can set up to {MAX_ROUTINES} routines — the maximum is reached.
         </p>
       )}
 
