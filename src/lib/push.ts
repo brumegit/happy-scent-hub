@@ -1,6 +1,6 @@
 import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
-  buildTimerList,
+  buildModifyTimer,
   type TimerSlot,
 } from "@/lib/scentlife";
 
@@ -24,10 +24,6 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 /**
  * Pushes the full configuration to the diffuser and reports, per area, what the
  * hardware acknowledged and what it actually persisted (read back with 0x08).
- *
- * A settings confirmation emits one timer-list command (0x13). The module
- * signals each parsed protocol command, so concatenating clock/name/power
- * commands into the same BLE stream still causes repeated beeps.
  */
 export async function pushSettings(opts: {
   deviceId: string | null;
@@ -60,90 +56,52 @@ export async function pushSettings(opts: {
       }
     }
 
-    // The timer read response can arrive before the firmware has returned to
-    // its command-ready state. Sending 0x13 immediately after 0x08 is then
-    // silently ignored: the link stays connected, but there is no beep and no
-    // data change. Leave a short quiet window before the only write command.
-    await wait(350);
-
-    // One user action, one protocol command, one hardware confirmation sound.
-    // Sequential request/response: the module answers 0x93 on the notify
-    // channel. Batched streaming proved unreliable — some firmware drops the
-    // frame when it arrives without a preceding read gap.
-    const acks = await sendFrames(opts.deviceId, [buildTimerList(slots)], log);
-    const ackFor = (fn: number) => acks.find((a) => a.fn === fn);
-
-    const timerAck = ackFor(0x13);
-    if (timerAck && timerAck.acked && timerAck.code !== 0) {
-      log(`0x13 rejected (code ${timerAck.code})`);
+    if (!existing) {
+      throw new Error("The diffuser settings could not be read. Reconnect and try again.");
     }
-    const accepted = !!timerAck?.acked && (timerAck.code ?? 0) === 0;
+
+    const changed = slots.filter((slot) => !slotMatches(existing, slot));
     log(
-      `0x13 ${accepted ? "acknowledged (0x93 code 0)" : "NOT acknowledged"} — a beep is only expected when the module parses the command`,
+      changed.length
+        ? `Changed timer slots: ${changed.map((slot) => `#${slot.index}`).join(", ")}`
+        : "Routine already matches the diffuser; no write needed",
     );
 
-    // Give the firmware time to commit the new working modes to its flash
-    // before reading them back. Reading too early returns the previous list and
-    // used to trigger a burst of 0x14 writes (extra beeps, and sometimes a
-    // module reset) even though the routine had actually landed.
+    // 0x13 only confirms receipt on this firmware and can leave the persisted
+    // list unchanged. Write each changed slot with the persistent 0x14 command.
+    // The transport serializes the packets; this pause lets flash settle before
+    // the next slot without creating an automatic retry burst.
+    await wait(500);
+    const acks = [];
+    for (const slot of changed) {
+      log(`Writing slot #${slot.index} with persistent command 0x14`);
+      const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(slot)], log);
+      if (ack) acks.push(ack);
+      if (!ack?.acked || (ack.code ?? 0) !== 0) {
+        throw new Error(`The diffuser did not accept time block ${slot.index}. Reconnect and try again.`);
+      }
+      await wait(700);
+    }
+
     await wait(900);
-    let readback = await queryTimers(opts.deviceId, log);
-    if (readback && !matches(readback, slots)) {
-      // Second, later look before concluding anything: slow commits are common.
-      await wait(900);
-      readback = (await queryTimers(opts.deviceId, log)) ?? readback;
-    }
-
-    // Never follow 0x13 with automatic 0x14 writes. On this hardware, a stale
-    // or delayed read-back can make those extra writes sound a second short
-    // beep and force the diffuser into an idle/shutdown state. A save action is
-    // deliberately limited to the single full-list command above; if its two
-    // delayed read-backs do not match, report the failure without touching the
-    // diffuser again.
+    const readback = await queryTimers(opts.deviceId, log);
     if (!readback) {
-      log("Read-back unavailable (device answered no timer list)");
-    } else {
-      log(
-        `Read-back ${matches(readback, slots) ? "matches" : "differs from"} what we sent · device modes: ${
-          readback
-            .map((s) => `#${s.index}${s.enabled ? "" : "(off)"} ${s.startMinute}-${s.endMinute} ${s.onSeconds}/${s.offSeconds}`)
-            .join(" | ") || "none"
-        }`,
-      );
-    }
-    if (!readback || !matches(readback, slots)) {
-      log("Timer list was not confirmed — no automatic retry sent");
+      throw new Error("The diffuser did not confirm the saved routine. Reconnect and try again.");
     }
 
-
-
-    if (!readback && !accepted) {
-      const detail = accepted ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
-      debug.set("modes", "unconfirmed", detail);
-      debug.set("intensity", "unconfirmed", detail);
-      debug.set("schedule", "unconfirmed", detail);
-      throw new Error("The diffuser did not confirm the new settings. Try again.");
-    }
-
-    if (readback) verify(readback, slots);
-    if (readback && !matches(readback, slots) && !accepted) {
-      throw new Error("The diffuser did not save the new settings. Try again.");
-    }
-    if (accepted && (!readback || !matches(readback, slots))) {
-      // 0x93/code 0 is the diffuser's confirmation for the full timer-list
-      // command. Some firmware answers the following 0x08 from an old cache,
-      // even after its confirmation beep. Do not turn that stale read into a
-      // false failure or send a second command that can shut the diffuser down.
-      const detail = "0x93 accepted; read-back was unavailable or still stale";
-      debug.set("modes", "ok", detail);
-      debug.set("intensity", "ok", detail);
-      debug.set("schedule", "ok", detail);
-      log("Accepted 0x13 acknowledgment; ignoring stale read-back");
+    const saved = matches(readback, slots);
+    log(
+      `Final read-back ${saved ? "matches" : "differs from"} the requested routine · device modes: ${
+        readback
+          .map((s) => `#${s.index}${s.enabled ? "" : "(off)"} ${s.startMinute}-${s.endMinute} ${s.onSeconds}/${s.offSeconds}`)
+          .join(" | ") || "none"
+      }`,
+    );
+    verify(readback, slots);
+    if (!saved) {
+      throw new Error("The diffuser did not save the new routine. Reconnect and try again.");
     }
     return acks;
-
-
-
   } catch (error) {
     const message = (error as Error).message;
     debug.setLinkError(message);
