@@ -145,7 +145,9 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
   const sameMinute = (a: number, b: number) =>
     a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
   const d = readback?.find((s) => s.index === wanted.index);
-  if (!d) return false;
+  // Some firmware omits unused slots from 0x08 instead of returning them as
+  // disabled. That is equivalent to the disabled state we requested.
+  if (!d) return !wanted.enabled;
   if (!wanted.enabled) return !d.enabled;
   return (
     d.enabled &&
