@@ -347,11 +347,13 @@ export async function connectPickedDevice(device: {
       simulated: false,
       write,
       request: async (frame, responseFn) => {
-        const response = responses.waitFor(responseFn);
+        // CoreBluetooth can deliver the first notification slowly immediately
+        // after subscribing, especially during a fresh onboarding connection.
+        const response = responses.waitFor(responseFn, 4000);
         await write(frame);
         return response;
       },
-      waitFor: (fn) => responses.waitFor(fn, 2500),
+      waitFor: (fn) => responses.waitFor(fn, 4000),
       isLive: () => isNativeConnected(device.deviceId),
     });
   }
