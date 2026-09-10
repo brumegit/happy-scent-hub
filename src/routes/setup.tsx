@@ -25,6 +25,7 @@ import {
   isRealLink,
   sendFrames,
   checkConnection,
+  reconnectDevice,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
@@ -315,6 +316,11 @@ function Setup() {
         intensity,
         custom,
       });
+      // Some firmware drops the Bluetooth link right after storing a routine.
+      // Re-open it quietly so the next step still has a live connection.
+      if (!(await checkConnection(deviceId).catch(() => false))) {
+        await reconnectDevice(deviceId).catch(() => false);
+      }
       setResult("success");
       setTimeout(() => {
         setResult("idle");

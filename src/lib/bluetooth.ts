@@ -518,11 +518,24 @@ export async function sendFrames(
     await wait(200);
   }
 
-  if (link.isLive && !(await link.isLive())) {
-    if (deviceId) links.delete(deviceId);
-    throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
-  }
+  // No liveness probe after the last frame: every frame was acknowledged, and
+  // some firmware drops the link right after saving. That is not a failure.
   return acks;
+}
+
+/**
+ * Silently re-opens the link to a diffuser we already know, used after a save
+ * when the module drops its connection on its own.
+ */
+export async function reconnectDevice(deviceId: string | null) {
+  if (!deviceId) return false;
+  if (!(await isNativePlatform())) return false;
+  try {
+    await connectPickedDevice({ deviceId });
+    return await isNativeConnected(deviceId).catch(() => false);
+  } catch {
+    return false;
+  }
 }
 
 /**

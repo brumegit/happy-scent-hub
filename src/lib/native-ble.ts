@@ -24,6 +24,9 @@ let bleClient: BleClientType | null = null;
  */
 const connectedIds = new Set<string>();
 
+/** Service UUID of the serial channel per device, used to verify liveness. */
+const connectedServices = new Map<string, string>();
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function isTransientGattError(error: unknown) {
@@ -345,6 +348,7 @@ export async function connectNative(
     await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
   }
+  connectedServices.set(deviceId, writable.service);
   return writable;
 }
 
@@ -358,14 +362,35 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
   }
 }
 
+/**
+ * True only while the OS still holds the GATT link. The plugin's disconnect
+ * callback can be missed (app backgrounded, device slept), so we also ask the
+ * platform for its currently connected peripherals on the serial service.
+ */
 export async function isNativeConnected(deviceId: string) {
-  return connectedIds.has(deviceId);
+  if (!connectedIds.has(deviceId)) return false;
+  const service = connectedServices.get(deviceId);
+  if (!service) return true;
+  try {
+    const ble = await client();
+    const devices = await ble.getConnectedDevices([service]);
+    const live = devices.some((device) => device.deviceId === deviceId);
+    if (!live) {
+      connectedIds.delete(deviceId);
+      connectedServices.delete(deviceId);
+    }
+    return live;
+  } catch {
+    // Platform could not answer — trust the disconnect callback instead.
+    return connectedIds.has(deviceId);
+  }
 }
 
 /** Disconnects the GATT link on a native build. */
 export async function disconnectNative(deviceId: string) {
   const ble = await client();
   connectedIds.delete(deviceId);
+  connectedServices.delete(deviceId);
   await ble.disconnect(deviceId);
 }
 
