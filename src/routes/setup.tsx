@@ -25,6 +25,7 @@ import {
   isRealLink,
   sendFrames,
   checkConnection,
+  reconnect,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
