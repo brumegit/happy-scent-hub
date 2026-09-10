@@ -325,10 +325,7 @@ export async function connectNative(
           // optional
         }
       }
-      // Prefer a characteristic that supports acknowledged writes.
-      if (ch.properties.write) {
-        writable = writable ?? { service: service.uuid, characteristic: ch.uuid };
-      } else if (!writable && ch.properties.writeWithoutResponse) {
+      if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
         writable = { service: service.uuid, characteristic: ch.uuid };
       }
     }
@@ -340,18 +337,13 @@ export async function connectNative(
   return writable;
 }
 
-/**
- * Writes one 20-byte chunk using an acknowledged write first: unacknowledged
- * writes have no flow control, so back-to-back chunks overflow the module's
- * serial buffer — it then stays silent (no beep) and drops the link.
- */
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
   try {
-    await ble.write(deviceId, target.service, target.characteristic, view);
-  } catch {
     await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+  } catch {
+    await ble.write(deviceId, target.service, target.characteristic, view);
   }
 }
 
