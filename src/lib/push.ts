@@ -105,26 +105,20 @@ export async function pushSettings(opts: {
     }
 
 
-    // The diffuser confirms with a beep as soon as it parses 0x13 and answers
-    // 0x93. Some firmware never serves the read-back (0x08) reliably, so an ack
-    // alone counts as success — only a total silence is a real failure.
     if (!readback) {
       const detail = timerAck?.acked ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
-      debug.set("modes", timerAck?.acked ? "ok" : "unconfirmed", detail);
-      debug.set("intensity", timerAck?.acked ? "ok" : "unconfirmed", detail);
-      debug.set("schedule", timerAck?.acked ? "ok" : "unconfirmed", detail);
-      if (!timerAck?.acked) {
-        throw new Error("The diffuser did not confirm the new settings. Try again.");
-      }
-      return acks;
+      debug.set("modes", "unconfirmed", detail);
+      debug.set("intensity", "unconfirmed", detail);
+      debug.set("schedule", "unconfirmed", detail);
+      // Never report success we cannot prove: the diffuser did not confirm.
+      throw new Error("The diffuser did not confirm the new settings. Try again.");
     }
 
     verify(readback, slots);
-    if (!matches(readback, slots) && !timerAck?.acked) {
+    if (!matches(readback, slots)) {
       throw new Error("The diffuser did not save the new settings. Try again.");
     }
     return acks;
-
 
 
   } catch (error) {
