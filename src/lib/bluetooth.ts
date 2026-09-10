@@ -47,7 +47,9 @@ const SERVICE_UUIDS = [
 ];
 
 const CHUNK_SIZE = 20;
-const CHUNK_DELAY_MS = 30;
+// The UART bridge needs time to drain each BLE packet before receiving the
+// next one. Routine frames span several packets, especially with 2–3 blocks.
+const CHUNK_DELAY_MS = 120;
 
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
@@ -296,10 +298,10 @@ async function attachLink(device: {
   const write = async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-      if (writable.writeValueWithResponse) {
-        await writable.writeValueWithResponse(chunk);
-      } else if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
+      if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
         await writable.writeValueWithoutResponse(chunk);
+      } else if (writable.writeValueWithResponse) {
+        await writable.writeValueWithResponse(chunk);
       } else {
         await writable.writeValue?.(chunk);
       }
