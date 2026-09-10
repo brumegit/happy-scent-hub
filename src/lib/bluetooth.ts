@@ -249,6 +249,7 @@ async function attachLink(device: {
     connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }>;
   };
 }) {
+  webDevices.set(device.id, device);
   const log = (line: string) => {
     console.info("[ScentLife]", line);
     pushDebug().addLog(line);
