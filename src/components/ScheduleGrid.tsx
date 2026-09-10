@@ -54,6 +54,26 @@ export function ScheduleGrid({
     patch(index, { days });
   }
 
+  function renderDay(block: TimeBlock, index: number, value: number) {
+    const day = DAYS[value];
+    if (!day) return null;
+    const on = block.days.includes(value);
+    return (
+      <button
+        key={value}
+        type="button"
+        aria-pressed={on}
+        aria-label={day.long}
+        onClick={() => toggleDay(index, value)}
+        className={`h-12 border bg-background text-center text-[11px] leading-tight transition-colors ${
+          on ? "border-gold text-gold" : "border-border text-muted-foreground"
+        }`}
+      >
+        {day.long}
+      </button>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {blocks.map((block, index) => {
@@ -81,9 +101,11 @@ export function ScheduleGrid({
               </>
             )}
 
-            {/* Times first — minute granularity through the device's native picker. */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            {/* Times first — minute granularity through the device's native picker.
+                The two selectors share the full row width equally so the line is
+                balanced and stretches edge to edge. */}
+            <div className="mt-4 flex items-center gap-4">
+              <label className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
                 <span>Starts</span>
                 <input
                   type="time"
@@ -93,10 +115,10 @@ export function ScheduleGrid({
                     const start = timeValueToMinutes(e.target.value);
                     patch(index, { start, end: Math.max(block.end, Math.min(1439, start + 1)) });
                   }}
-                  className="h-11 min-w-0 border border-border bg-background px-2 text-sm text-foreground"
+                  className="h-11 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground"
                 />
               </label>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <label className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
                 <span>Stops</span>
                 <input
                   type="time"
@@ -106,29 +128,21 @@ export function ScheduleGrid({
                     const end = timeValueToMinutes(e.target.value);
                     patch(index, { end, start: Math.min(block.start, Math.max(0, end - 1)) });
                   }}
-                  className="h-11 min-w-0 border border-border bg-background px-2 text-sm text-foreground"
+                  className="h-11 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground"
                 />
               </label>
             </div>
 
-            <div className="mt-4 grid grid-cols-7 gap-1">
-              {DAYS.map((day) => {
-                const on = block.days.includes(day.value);
-                return (
-                  <button
-                    key={day.value}
-                    type="button"
-                    aria-pressed={on}
-                    aria-label={day.long}
-                    onClick={() => toggleDay(index, day.value)}
-                    className={`h-14 border bg-background text-[11px] transition-colors ${
-                      on ? "border-gold text-gold" : "border-border text-muted-foreground"
-                    }`}
-                  >
-                    {day.short}
-                  </button>
-                );
-              })}
+            {/*
+              Day selection: full day names. The five weekdays sit on the first
+              row, Saturday and Sunday on the second, so the chip layout mirrors
+              how people read a work week versus the weekend.
+            */}
+            <div className="mt-4 grid grid-cols-5 gap-1">
+              {[1, 2, 3, 4, 5].map((value) => renderDay(block, index, value))}
+            </div>
+            <div className="mt-1 grid grid-cols-2 gap-1">
+              {[6, 0].map((value) => renderDay(block, index, value))}
             </div>
           </div>
         );
