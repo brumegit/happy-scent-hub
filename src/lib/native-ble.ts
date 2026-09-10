@@ -5,12 +5,7 @@
  * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
-export type NativeChar = {
-  service: string;
-  characteristic: string;
-  writeWithResponse: boolean;
-  writeWithoutResponse: boolean;
-};
+export type NativeChar = { service: string; characteristic: string };
 
 export type NativeDevice = {
   deviceId: string;
@@ -318,56 +313,23 @@ export async function connectNative(
   }
   const services = await ble.getServices(deviceId);
 
-  // Firmware-update (DFU/OTA) services also expose writable characteristics.
-  // Writing protocol frames there makes the diffuser reboot and drop the link —
-  // exactly what happens on iPhone, where CoreBluetooth lists them first. Skip
-  // them and always prefer a write characteristic that sits in the same service
-  // as the notify one (that pair is the transparent serial channel).
-  const isUpdateService = (uuid: string) => {
-    const u = uuid.toLowerCase();
-    return (
-      u.includes("fe59") ||
-      u.includes("1530") ||
-      u.includes("ffc0") ||
-      u.includes("f000ffc0") ||
-      u.includes("00001530")
-    );
-  };
-
   let writable: NativeChar | null = null;
-  let writableWithNotify: NativeChar | null = null;
   for (const service of services) {
-    if (isUpdateService(service.uuid)) continue;
-    let serviceNotifies = false;
-    let serviceWrite: NativeChar | null = null;
     for (const ch of service.characteristics) {
-      if (ch.properties.notify) {
-        serviceNotifies = true;
-        if (onNotify) {
-          try {
-            await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) =>
-              onNotify(new Uint8Array(v.buffer)),
-            );
-          } catch {
-            // optional
-          }
+      if (ch.properties.notify && onNotify) {
+        try {
+          await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) =>
+            onNotify(new Uint8Array(v.buffer)),
+          );
+        } catch {
+          // optional
         }
       }
-      if (!serviceWrite && (ch.properties.writeWithoutResponse || ch.properties.write)) {
-        serviceWrite = {
-          service: service.uuid,
-          characteristic: ch.uuid,
-          writeWithResponse: ch.properties.write,
-          writeWithoutResponse: ch.properties.writeWithoutResponse,
-        };
+      if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
+        writable = { service: service.uuid, characteristic: ch.uuid };
       }
     }
-    if (serviceWrite) {
-      if (serviceNotifies && !writableWithNotify) writableWithNotify = serviceWrite;
-      if (!writable) writable = serviceWrite;
-    }
   }
-  writable = writableWithNotify ?? writable;
   if (!writable) {
     await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
@@ -378,19 +340,11 @@ export async function connectNative(
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
-  // iOS can resolve a write-without-response before CoreBluetooth has actually
-  // transmitted the chunk. Multi-chunk timer frames then overrun the peripheral
-  // and appear to succeed locally without a beep or protocol acknowledgment.
-  // Prefer an acknowledged GATT write whenever the characteristic supports it.
-  if (target.writeWithResponse) {
-    await ble.write(deviceId, target.service, target.characteristic, view);
-    return;
-  }
-  if (target.writeWithoutResponse) {
+  try {
     await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-    return;
+  } catch {
+    await ble.write(deviceId, target.service, target.characteristic, view);
   }
-  throw new Error("The diffuser settings channel is not writable.");
 }
 
 export async function isNativeConnected(deviceId: string) {

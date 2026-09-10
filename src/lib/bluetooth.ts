@@ -67,27 +67,16 @@ const links = new Map<string, Link>();
 const batteries = new Map<string, BatteryStatus>();
 const batteryListeners = new Set<() => void>();
 
-/**
- * True while a command/response exchange is in flight. The module drops frames
- * that arrive while it is answering, so the spontaneous status-report ack must
- * never be written in the middle of a settings push.
- */
-let exchangeBusy = false;
-
 function captureBattery(deviceId: string, frame: Uint8Array) {
   // Status reports must be acknowledged, otherwise the module stops sending
   // them and the battery level never refreshes.
   const fn = frame[3] ?? 0;
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
-    if (exchangeBusy) {
-      pushDebug().addLog(`Status report 0x${fn.toString(16)} not acked (command in flight)`);
-    } else {
-      void links
-        .get(deviceId)
-        ?.write(buildReportAck(fn))
-        .catch(() => {});
-    }
+    void links
+      .get(deviceId)
+      ?.write(buildReportAck(fn))
+      .catch(() => {});
   }
   const status = parseBatteryReport(frame);
   if (!status) return;
@@ -95,7 +84,6 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   batteries.set(deviceId, status);
   batteryListeners.forEach((listener) => listener());
 }
-
 
 /** Last known battery status for a device, or null when it has not reported yet. */
 export function getBatteryStatus(deviceId: string | null): BatteryStatus | null {
@@ -339,19 +327,8 @@ export async function connectPickedDevice(device: {
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
     const write = async (frame: Uint8Array) => {
-      pushDebug().addLog(
-        `Native channel ${target.service}/${target.characteristic} · ${
-          target.writeWithResponse ? "write with response" : "write without response"
-        } · ${Math.ceil(frame.length / CHUNK_SIZE)} chunk(s)`,
-      );
       for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-        const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-        pushDebug().addLog(
-          `Native chunk ${Math.floor(offset / CHUNK_SIZE) + 1}/${Math.ceil(
-            frame.length / CHUNK_SIZE,
-          )} · ${chunk.length} bytes`,
-        );
-        await writeNative(device.deviceId, target, chunk);
+        await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
         await wait(CHUNK_DELAY_MS);
       }
     };
@@ -359,10 +336,7 @@ export async function connectPickedDevice(device: {
       simulated: false,
       write,
       request: async (frame, responseFn) => {
-        // CoreBluetooth acknowledged writes are deliberately slower but much
-        // more reliable. Start listening first, then allow the full frame and
-        // the diffuser's flash write to complete before timing out.
-        const response = responses.waitFor(responseFn, 5000);
+        const response = responses.waitFor(responseFn);
         await write(frame);
         return response;
       },
@@ -472,39 +446,26 @@ export async function sendFrames(
   // One frame per command — the module beeps once per accepted command, so the
   // schedule is pushed as a single timer-list frame (0x13), never expanded.
   const acks: FrameAck[] = [];
-  exchangeBusy = true;
-  try {
-    for (const frame of frames) {
-      const hex = toHex(frame);
-      console.info("[ScentLife] TX", hex);
-      const fn = frame[3] ?? 0;
-      onLog?.(`TX fn=0x${fn.toString(16).padStart(2, "0")} (${frame.length} bytes) ${hex}`);
-      let response: Uint8Array | null = null;
-      const startedAt = Date.now();
-      try {
-        response = await link.request(frame, (fn + 0x80) & 0xff);
-        onLog?.(`RX ${toHex(response)} after ${Date.now() - startedAt}ms`);
-      } catch (error) {
-        // Some modules acknowledge silently (no notify characteristic).
-        response = null;
-        onLog?.(
-          `RX none for 0x${fn.toString(16)} after ${Date.now() - startedAt}ms — ${
-            (error as Error).message
-          }`,
-        );
-      }
-      const code = response && response.length >= 6 ? (response[4] ?? null) : null;
-      onLog?.(
-        `ACK 0x${fn.toString(16)} → ${response ? `code ${code}` : "no reply"}`,
-      );
-      acks.push({ fn, acked: !!response, code, hex });
-      if (response && response.length === 7 && response[4] !== 0) {
-        throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
-      }
-      await wait(200);
+  for (const frame of frames) {
+    const hex = toHex(frame);
+    console.info("[ScentLife] TX", hex);
+    onLog?.(`TX ${hex}`);
+    const fn = frame[3] ?? 0;
+    let response: Uint8Array | null = null;
+    try {
+      response = await link.request(frame, (fn + 0x80) & 0xff);
+      onLog?.(`RX ${toHex(response)}`);
+    } catch {
+      // Some modules acknowledge silently (no notify characteristic).
+      response = null;
+      onLog?.(`RX none for 0x${fn.toString(16)}`);
     }
-  } finally {
-    exchangeBusy = false;
+    const code = response && response.length >= 6 ? (response[4] ?? null) : null;
+    acks.push({ fn, acked: !!response, code, hex });
+    if (response && response.length === 7 && response[4] !== 0) {
+      throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
+    }
+    await wait(200);
   }
 
   if (link.isLive && !(await link.isLive())) {
@@ -513,7 +474,6 @@ export async function sendFrames(
   }
   return acks;
 }
-
 
 /**
  * Writes protocol frames as one continuous stream and collects acknowledgments.
@@ -582,38 +542,18 @@ export async function queryTimers(
   onLog?: (line: string) => void,
 ): Promise<TimerSlot[] | null> {
   const link = deviceId ? links.get(deviceId) : undefined;
-  if (!link || link.simulated) {
-    onLog?.("Read-back skipped: no live link");
-    return null;
-  }
-  exchangeBusy = true;
+  if (!link || link.simulated) return null;
   try {
     const frame = buildGetTimers();
-    onLog?.(`TX read 0x08 ${toHex(frame)}`);
+    onLog?.(`TX ${toHex(frame)}`);
     const response = await link.request(frame, 0x88);
-    onLog?.(`RX read 0x88 ${toHex(response)}`);
-    const slots = parseTimerListResponse(response);
-    onLog?.(
-      `Device holds ${slots.length} mode(s): ${
-        slots
-          .map(
-            (s) =>
-              `#${s.index}${s.enabled ? "" : "(off)"} d0b${s.weekdayMask.toString(2)} ${
-                s.startMinute
-              }-${s.endMinute} ${s.onSeconds}s/${s.offSeconds}s`,
-          )
-          .join(" | ") || "none"
-      }`,
-    );
-    return slots;
+    onLog?.(`RX ${toHex(response)}`);
+    return parseTimerListResponse(response);
   } catch (error) {
     onLog?.(`Read-back failed: ${(error as Error).message}`);
     return null;
-  } finally {
-    exchangeBusy = false;
   }
 }
-
 
 
 
