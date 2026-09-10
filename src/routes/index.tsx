@@ -20,6 +20,10 @@ import { AppHeader } from "@/components/AppHeader";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
 import { useHydrated } from "@/hooks/useHydrated";
+import {
+  bluetoothRequirementPrompt,
+  useBluetoothRequirements,
+} from "@/hooks/useBluetoothRequirements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -134,6 +138,21 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   const [roomDraft, setRoomDraft] = useState(diffuser.room);
   const [picker, setPicker] = useState<NativeDevice[] | null>(null);
   const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
+  const { refresh: refreshBluetooth } = useBluetoothRequirements(false);
+
+  /**
+   * Bluetooth radio + app permission must both be in place before we let the
+   * user reach the intensity/schedule steps. Returns true when clear.
+   */
+  async function bluetoothReady() {
+    const req = await refreshBluetooth();
+    if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
+      setError(bluetoothRequirementPrompt(req).message);
+      return false;
+    }
+    setError(null);
+    return true;
+  }
 
 
   // Names are stored in the app only — nothing is written to the hardware.
@@ -151,7 +170,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setNow(new Date());
     // Re-check the physical link often: a diffuser that went out of range or was
     // taken over by another phone must stop showing as connected.
-    const link = setInterval(refresh, 4000);
+    const link = setInterval(refresh, 5000);
     const clock = setInterval(() => setNow(new Date()), 60_000);
     const onVisible = () => document.visibilityState === "visible" && refresh();
     document.addEventListener("visibilitychange", onVisible);
@@ -180,6 +199,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
   async function connect() {
+    if (!(await bluetoothReady())) return;
     setConnecting(true);
     setError(null);
     try {
@@ -376,9 +396,16 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
-            label={connecting ? "Double tap your diffuser" : "Tap to edit"}
+            label={connecting ? "Double tap your diffuser" : "Change routine"}
             onClick={() => void connect()}
           />
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            Double tap the button on your diffuser to wake it for pairing.
+          </p>
+          <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
+            Your diffuser stays offline between changes to preserve its battery, so it only
+            reconnects when you want to adjust it.
+          </p>
           {error && <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>}
           <div className="mt-4">
             <LastSettings
@@ -408,19 +435,26 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               icon={false}
               label="Edit settings"
               onClick={() => {
-                // Re-check the link at the moment of the tap: settings can only
-                // be changed while the diffuser is really connected.
-                void checkConnection(diffuser.device_id).then((live) => {
+                void (async () => {
+                  // Bluetooth off or permission missing must never reach the
+                  // intensity step — tell the user what to fix first.
+                  if (!(await bluetoothReady())) return;
+                  // Re-check the link at the moment of the tap: settings can only
+                  // be changed while the diffuser is really connected.
+                  const live = await checkConnection(diffuser.device_id);
                   setConnected(live);
                   if (live) {
                     void navigate({ to: "/setup", search: { edit: diffuser.id } });
                   } else {
                     setError("Your diffuser is not connected. Pair it again to change its settings.");
                   }
-                });
+                })();
               }}
             />
           </div>
+          {error && (
+            <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>
+          )}
 
         </>
       )}
