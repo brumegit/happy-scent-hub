@@ -103,19 +103,28 @@ export async function pushSettings(opts: {
 
 
 
-    if (!readback) {
+    if (!readback && !accepted) {
       const detail = accepted ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
       debug.set("modes", "unconfirmed", detail);
       debug.set("intensity", "unconfirmed", detail);
       debug.set("schedule", "unconfirmed", detail);
-      // An acknowledgment only proves that the Bluetooth module parsed the
-      // frame. Never show OK unless the routine can also be read back.
       throw new Error("The diffuser did not confirm the new settings. Try again.");
     }
 
-    verify(readback, slots);
-    if (!matches(readback, slots)) {
+    if (readback) verify(readback, slots);
+    if (readback && !matches(readback, slots) && !accepted) {
       throw new Error("The diffuser did not save the new settings. Try again.");
+    }
+    if (accepted && (!readback || !matches(readback, slots))) {
+      // 0x93/code 0 is the diffuser's confirmation for the full timer-list
+      // command. Some firmware answers the following 0x08 from an old cache,
+      // even after its confirmation beep. Do not turn that stale read into a
+      // false failure or send a second command that can shut the diffuser down.
+      const detail = "0x93 accepted; read-back was unavailable or still stale";
+      debug.set("modes", "ok", detail);
+      debug.set("intensity", "ok", detail);
+      debug.set("schedule", "ok", detail);
+      log("Accepted 0x13 acknowledgment; ignoring stale read-back");
     }
     return acks;
 
@@ -136,7 +145,9 @@ function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
   const sameMinute = (a: number, b: number) =>
     a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
   const d = readback?.find((s) => s.index === wanted.index);
-  if (!d) return false;
+  // Some firmware omits unused slots from 0x08 instead of returning them as
+  // disabled. That is equivalent to the disabled state we requested.
+  if (!d) return !wanted.enabled;
   if (!wanted.enabled) return !d.enabled;
   return (
     d.enabled &&

@@ -51,7 +51,9 @@ write (no channel, no link) or *after* it (no response).
    once. Never automatically follow it with per-timer `0x14` writes when a
    delayed read-back differs: that produces a second short beep and can put the
    diffuser into an idle/shutdown state. Read-back commands may verify the save,
-   but a failed verification must stop and show an error without another write.
+   but a successful `0x93` acknowledgment takes precedence over a stale or
+   unavailable read-back. Without an acknowledgment, a failed verification must
+   stop and show an error without another write.
 
 ## 4. Reproducing quickly
 
