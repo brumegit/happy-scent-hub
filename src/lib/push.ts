@@ -2,7 +2,6 @@ import {
   isRealLink,
   queryTimers,
   sendFrames,
-  sendWithoutConfirmation,
 } from "@/lib/bluetooth";
 import {
   buildSetBroadcastName,
