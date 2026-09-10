@@ -298,10 +298,10 @@ async function attachLink(device: {
   const write = async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-      if (writable.writeValueWithResponse) {
-        await writable.writeValueWithResponse(chunk);
-      } else if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
+      if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
         await writable.writeValueWithoutResponse(chunk);
+      } else if (writable.writeValueWithResponse) {
+        await writable.writeValueWithResponse(chunk);
       } else {
         await writable.writeValue?.(chunk);
       }
