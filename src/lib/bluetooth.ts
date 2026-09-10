@@ -47,9 +47,10 @@ const SERVICE_UUIDS = [
 ];
 
 const CHUNK_SIZE = 20;
-// The UART bridge needs time to drain each BLE packet before receiving the
-// next one. Routine frames span several packets, especially with 2–3 blocks.
-const CHUNK_DELAY_MS = 120;
+// Keep multi-packet protocol frames inside the UART bridge's assembly window.
+// A 120 ms gap made the module discard the incomplete 0x13 frame, then close
+// the idle connection about one second later. This is the proven device timing.
+const CHUNK_DELAY_MS = 30;
 
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
@@ -79,11 +80,8 @@ const links = new Map<string, Link>();
 const batteries = new Map<string, BatteryStatus>();
 const batteryListeners = new Set<() => void>();
 
-// A routine update must be the only protocol exchange on the wire. Some
-// firmware sends a status report as it applies 0x13; acknowledging that report
-// creates a hidden second write and can make the diffuser drop an iPhone link.
+// Foreground exchanges are tracked so all protocol traffic stays serialized.
 let isolatedWriteDepth = 0;
-let suppressStatusAcksUntil = 0;
 
 async function withIsolatedProtocol<T>(operation: () => Promise<T>): Promise<T> {
   isolatedWriteDepth += 1;
@@ -91,7 +89,6 @@ async function withIsolatedProtocol<T>(operation: () => Promise<T>): Promise<T> 
     return await operation();
   } finally {
     isolatedWriteDepth = Math.max(0, isolatedWriteDepth - 1);
-    suppressStatusAcksUntil = Math.max(suppressStatusAcksUntil, Date.now() + 1500);
   }
 }
 
@@ -101,14 +98,12 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   const fn = frame[3] ?? 0;
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
-    if (isolatedWriteDepth > 0 || Date.now() < suppressStatusAcksUntil) {
-      pushDebug().addLog(`Status acknowledgment paused after routine transfer`);
-    } else {
-      void links
-        .get(deviceId)
-        ?.write(buildReportAck(fn))
-        .catch(() => {});
-    }
+    // The module expects this reply promptly and may close the connection when
+    // it is omitted. Link.write is serialized, so this cannot split a command.
+    void links
+      .get(deviceId)
+      ?.write(buildReportAck(fn))
+      .catch(() => {});
   }
   const status = parseBatteryReport(frame);
   if (!status) return;
@@ -458,9 +453,8 @@ export type FrameAck = {
 };
 
 /**
- * Sends commands without requesting or waiting for a reply. Some diffuser
- * firmware applies routine updates but drops the iPhone connection when the
- * app immediately follows the write with confirmation traffic.
+ * Sends commands without any follow-up read. Waiting for the command response
+ * is passive and confirms that the complete frame reached the diffuser.
  */
 export async function sendWithoutConfirmation(
   deviceId: string | null,
@@ -481,11 +475,24 @@ export async function sendWithoutConfirmation(
       const hex = toHex(frame);
       console.info("[ScentLife] TX", hex);
       onLog?.(`TX ${hex}`);
+      const fn = frame[3] ?? 0;
+      const confirmation = link.waitFor
+        ? link.waitFor((fn + 0x80) & 0xff).catch(() => null)
+        : Promise.resolve<Uint8Array | null>(null);
       await link.write(frame);
       onLog?.(`Write complete`);
+      const response = await confirmation;
+      if (!response) {
+        throw new Error("The diffuser did not accept the routine. Pair it again and try once more.");
+      }
+      onLog?.(`RX ${toHex(response)}`);
+      const code = response.length >= 6 ? (response[4] ?? 0) : 0;
+      if (response.length === 7 && code !== 0) {
+        throw new Error(`The diffuser rejected the routine (error ${code}).`);
+      }
     }
-    // Let the diffuser finish applying and beeping before the app reports back.
-    await wait(1200);
+    // Give iOS enough time to receive a delayed disconnect callback before OK.
+    await wait(1400);
     if (link.isLive && !(await link.isLive())) {
       if (deviceId) links.delete(deviceId);
       throw new Error("Bluetooth disconnected while sending the routine. Pair the diffuser and try again.");
