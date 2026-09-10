@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   checkConnection,
+  subscribeConnection,
   disconnect,
   pairDiffuser,
 } from "@/lib/bluetooth";
@@ -175,6 +176,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       });
     };
     refresh();
+    const unsubscribe = subscribeConnection((changedId, live) => {
+      if (!cancelled && changedId === diffuser.device_id) setConnected(live);
+    });
     setNow(new Date());
     // Re-check the physical link often: a diffuser that went out of range or was
     // taken over by another phone must stop showing as connected.
@@ -184,6 +188,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
+      unsubscribe();
       clearInterval(link);
       clearInterval(clock);
       document.removeEventListener("visibilitychange", onVisible);

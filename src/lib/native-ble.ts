@@ -27,6 +27,20 @@ const connectedIds = new Set<string>();
 /** Service UUID of the serial channel per device, used to verify liveness. */
 const connectedServices = new Map<string, string>();
 
+const disconnectListeners = new Set<(deviceId: string) => void>();
+
+function markDisconnected(deviceId: string) {
+  connectedIds.delete(deviceId);
+  connectedServices.delete(deviceId);
+  disconnectListeners.forEach((listener) => listener(deviceId));
+}
+
+/** Delivers the operating system's disconnect event without waiting for polling. */
+export function subscribeNativeDisconnect(listener: (deviceId: string) => void) {
+  disconnectListeners.add(listener);
+  return () => disconnectListeners.delete(listener);
+}
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function isTransientGattError(error: unknown) {
@@ -293,7 +307,7 @@ export async function connectNative(
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await ble.connect(deviceId, (id) => connectedIds.delete(id), {
+      await ble.connect(deviceId, markDisconnected, {
         timeout: 15_000,
         skipDescriptorDiscovery: true,
       });
@@ -317,33 +331,26 @@ export async function connectNative(
   const services = await ble.getServices(deviceId);
 
   let writable: NativeChar | null = null;
-  let writableWithNotify: NativeChar | null = null;
   for (const service of services) {
-    const write = service.characteristics.find(
-      (ch) => ch.properties.writeWithoutResponse || ch.properties.write,
-    );
-    if (!write) continue;
-
-    let notifyStarted = false;
     for (const ch of service.characteristics) {
       if ((ch.properties.notify || ch.properties.indicate) && onNotify) {
         try {
           await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) => {
             onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
           });
-          notifyStarted = true;
         } catch {
           // optional
         }
       }
+      // Keep the proven iPhone transport behavior: use the first writable
+      // characteristic reported by CoreBluetooth. Preferring a later service
+      // merely because notifications started there selected the wrong channel
+      // on some Brume hardware revisions.
+      if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
+        writable = { service: service.uuid, characteristic: ch.uuid };
+      }
     }
-    const candidate = { service: service.uuid, characteristic: write.uuid };
-    // The diffuser's transparent serial channel exposes both notify and write.
-    // Only prefer the pair when iOS successfully enabled its notifications.
-    if (notifyStarted) writableWithNotify = writableWithNotify ?? candidate;
-    writable = writable ?? candidate;
   }
-  writable = writableWithNotify ?? writable;
   if (!writable) {
     await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
@@ -376,8 +383,7 @@ export async function isNativeConnected(deviceId: string) {
     const devices = await ble.getConnectedDevices([service]);
     const live = devices.some((device) => device.deviceId === deviceId);
     if (!live) {
-      connectedIds.delete(deviceId);
-      connectedServices.delete(deviceId);
+      markDisconnected(deviceId);
     }
     return live;
   } catch {
@@ -389,8 +395,7 @@ export async function isNativeConnected(deviceId: string) {
 /** Disconnects the GATT link on a native build. */
 export async function disconnectNative(deviceId: string) {
   const ble = await client();
-  connectedIds.delete(deviceId);
-  connectedServices.delete(deviceId);
+  markDisconnected(deviceId);
   await ble.disconnect(deviceId);
 }
 

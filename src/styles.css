@@ -110,8 +110,8 @@
   --gold: oklch(0.925 0.0755 92.5);
   --gold-foreground: oklch(0.16 0.02 90);
 
-  /* Matched state, vivid green sibling of the guest red. */
-  --success: oklch(0.7 0.17 150);
+  /* Success uses the Brume champagne accent. */
+  --success: var(--gold);
 
   /* Pairing state — deeper blue with strong contrast against pure black. */
   --pairing: oklch(0.7 0.17 245);
@@ -299,7 +299,7 @@
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  border: 1px solid var(--color-emerald-400, #34d399);
+  border: 1px solid var(--gold);
   animation: success-ring 2.2s ease-out infinite;
 }
 
