@@ -63,7 +63,8 @@ function Row({
       last = now;
       if (!paused.current) {
         const half = el.scrollWidth / 2;
-        let next = el.scrollLeft + direction * (dt * 0.02);
+        // 0.004 px/ms — 5x slower than the previous 0.02 drift.
+        let next = el.scrollLeft + direction * (dt * 0.004);
         if (next >= half) next -= half;
         if (next <= 0) next += half;
         el.scrollLeft = next;
