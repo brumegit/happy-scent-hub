@@ -92,7 +92,7 @@ function Home() {
                 </h1>
               </div>
               <Button asChild variant="secondary" size="sm">
-                <Link to="/setup" search={{ start: false }}>
+                <Link to="/setup" search={{ start: true }}>
                   <Plus className="size-4" aria-hidden />
                   Add
                 </Link>
@@ -106,12 +106,18 @@ function Home() {
                   <DiffuserCard key={diffuser.id} diffuser={diffuser} />
                 ))}
                 {hydrated && diffusers.length > 0 && (
-                  <Button asChild variant="secondary" className="w-full">
-                    <Link to="/setup" search={{ start: false }}>
-                      <Plus className="size-4" aria-hidden />
-                      Add a diffuser
-                    </Link>
-                  </Button>
+                  <>
+                    <Button asChild variant="secondary" className="w-full">
+                      <Link to="/setup" search={{ start: true }}>
+                        <Plus className="size-4" aria-hidden />
+                        Add a diffuser
+                      </Link>
+                    </Button>
+                    <p className="text-center text-xs leading-relaxed text-muted-foreground">
+                      Your diffusers stay offline between changes to preserve their battery, so they
+                      only reconnect when you want to adjust them.
+                    </p>
+                  </>
                 )}
               </div>
             </div>
@@ -396,16 +402,9 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
         <div className="mt-5">
           <StatusButton
             state={connecting ? "pairing" : "idle"}
-            label={connecting ? "Double tap your diffuser" : "Change routine"}
+            label={connecting ? "Double tap diffuser" : "Change routine"}
             onClick={() => void connect()}
           />
-          <p className="mt-3 text-center text-sm text-muted-foreground">
-            Double tap the button on your diffuser to wake it for pairing.
-          </p>
-          <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
-            Your diffuser stays offline between changes to preserve its battery, so it only
-            reconnects when you want to adjust it.
-          </p>
           {error && <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>}
           <div className="mt-4">
             <LastSettings
@@ -433,7 +432,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
             <StatusButton
               state="idle"
               icon={false}
-              label="Edit settings"
+              label="Change routine"
               onClick={() => {
                 void (async () => {
                   // Bluetooth off or permission missing must never reach the
