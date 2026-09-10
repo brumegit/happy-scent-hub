@@ -77,19 +77,20 @@ export async function pushSettings(opts: {
     await wait(500);
     const acks = [];
     for (const slot of changed) {
-      log(`Writing slot #${slot.index} with persistent command 0x14`);
-      const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(slot)], log);
-      if (ack) acks.push(ack);
-      // A silent reply is normal on this firmware (some modules answer nothing
-      // and simply beep). Only an explicit error code means the routine was
-      // refused — treat everything else as written.
-      if (ack && ack.acked && (ack.code ?? 0) !== 0) {
-        const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
+      const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
+      log(`Writing slot #${slot.index} (${label}) with persistent command 0x14`);
+      try {
+        const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(slot)], log);
+        if (ack) acks.push(ack);
+        // A silent reply is normal on this firmware (some modules answer
+        // nothing and simply beep). Only a failed write means the routine did
+        // not reach the diffuser.
+        if (!ack?.acked) log(`Slot #${slot.index} answered silently — treated as written`);
+      } catch (error) {
         throw new Error(
-          `The diffuser did not accept the “${label}” routine. Make sure the diffuser is still paired in Bluetooth, then try again.`,
+          `Could not send the “${label}” routine to the diffuser. ${(error as Error).message}`,
         );
       }
-      if (!ack?.acked) log(`Slot #${slot.index} answered silently — treated as written`);
       await wait(700);
     }
 
