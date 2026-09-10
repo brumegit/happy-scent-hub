@@ -776,7 +776,7 @@ function Setup() {
               />
             </div>
             {result === "error" && error && (
-              <p className="mt-4 text-sm text-destructive">{error}</p>
+              <p className="mt-4 whitespace-pre-line text-sm text-destructive">{error}</p>
             )}
           </section>
         )}
