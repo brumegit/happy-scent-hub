@@ -25,7 +25,6 @@ import {
   isRealLink,
   sendFrames,
   checkConnection,
-  reconnect,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
@@ -771,15 +770,12 @@ function Setup() {
                     navigate({ to: "/", replace: true });
                     return;
                   }
-                  // Settings are safely stored: only now rename the module.
-                  // The rename restarts its Bluetooth radio, so re-establish
-                  // the link right after so the diffuser reads as connected.
+                  // Settings are safely stored: only now rename the module,
+                  // since this command restarts its Bluetooth advertising.
                   void pushName(
                     deviceId,
                     hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
-                  )
-                    .catch(() => undefined)
-                    .finally(() => void reconnect(deviceId));
+                  ).catch(() => undefined);
                   trackEvent("CompleteRegistration", {
                     content_name: name.trim() || DEFAULT_NAME,
                     content_category: "diffuser_setup",
