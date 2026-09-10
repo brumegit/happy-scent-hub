@@ -299,7 +299,7 @@
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  border: 1px solid var(--color-emerald-400, #34d399);
+  border: 1px solid var(--gold);
   animation: success-ring 2.2s ease-out infinite;
 }
 
