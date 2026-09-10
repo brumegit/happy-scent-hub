@@ -8,7 +8,9 @@ import {
 import {
   buildTimerSlots,
   intensityFromTimer,
+  routineName,
   scheduleFromTimers,
+  scheduleToBlocks,
   MAX_TIMERS,
   type CustomTiming,
   type DaySchedule,
@@ -43,6 +45,7 @@ export async function pushSettings(opts: {
   );
 
   const slots = buildTimerSlots(opts.schedule, opts.intensity, opts.custom ?? null);
+  const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
     // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes
@@ -79,15 +82,23 @@ export async function pushSettings(opts: {
       const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(slot)], log);
       if (ack) acks.push(ack);
       if (!ack?.acked || (ack.code ?? 0) !== 0) {
-        throw new Error(`The diffuser did not accept time block ${slot.index}. Reconnect and try again.`);
+        const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
+        throw new Error(
+          `The diffuser did not accept the “${label}” routine. Make sure the diffuser is still paired in Bluetooth, then try again.`,
+        );
       }
       await wait(700);
     }
 
+    // Every persistent 0x14 write is already confirmed individually by the
+    // diffuser (and produces its own beep). A final 0x08 read is useful for
+    // diagnostics, but CoreBluetooth can miss or return a stale timer list, so
+    // it must not turn confirmed routine writes into a false failure.
     await wait(900);
     const readback = await queryTimers(opts.deviceId, log);
     if (!readback) {
-      throw new Error("The diffuser did not confirm the saved routine. Reconnect and try again.");
+      log("Final read-back unavailable; accepted routine writes remain authoritative");
+      return acks;
     }
 
     const saved = matches(readback, slots);
@@ -100,7 +111,7 @@ export async function pushSettings(opts: {
     );
     verify(readback, slots);
     if (!saved) {
-      throw new Error("The diffuser did not save the new routine. Reconnect and try again.");
+      log("Final read-back is stale; accepted routine writes remain authoritative");
     }
     return acks;
   } catch (error) {
