@@ -1,9 +1,5 @@
 import {
-  buildPower,
-  buildSetBroadcastName,
-  buildSyncTimestamp,
   buildTimerList,
-  sanitizeBroadcastName,
   weekdayBit,
   type TimerSlot,
 } from "@/lib/scentlife";
@@ -468,15 +464,6 @@ export function buildScheduleFrame(schedule: DaySchedule[], intensity: Intensity
   return buildTimerList(buildTimerSlots(schedule, intensity));
 }
 
-/**
- * The BLE advertising name written to the module: always "Brume <Room>", so the
- * hardware is recognisable in any Bluetooth list whatever the in-app device
- * name is. Kept inside the module's plain-ASCII byte limit.
- */
-export function hardwareName(_name: string, room?: string) {
-  return sanitizeBroadcastName(["Brume", room].filter(Boolean).join(" "));
-}
-
 /** Reverse of buildTimerSlots: the intensity whose spray duration matches. */
 export function intensityFromTimer(slot: TimerSlot): Intensity {
   const closest = [...INTENSITIES].sort(
@@ -532,30 +519,6 @@ export function scheduleFromTimers(slots: TimerSlot[]): DaySchedule[] {
     return day;
   });
 }
-
-
-/**
- * Push sequence per the ScentLife protocol:
- * clock sync (0x06) → full timer list with mode 1 active and 2–5 off (0x13)
- * → mode 1 confirmed individually (0x14) → power on (0x07 / 0x12)
- * → optional module rename (0x52).
- */
-export function buildPushFrames(
-  schedule: DaySchedule[],
-  intensity: Intensity,
-  deviceName?: string,
-) {
-  const slots = buildTimerSlots(schedule, intensity);
-  const frames = [
-    buildSyncTimestamp(),
-    buildTimerList(slots),
-    buildPower(true),
-  ];
-  if (deviceName) frames.push(buildSetBroadcastName(deviceName));
-  return frames;
-}
-
-
 /** Human summary of what the device should be doing at `now`, per its schedule. */
 export function scheduleStatus(
   schedule: DaySchedule[],
