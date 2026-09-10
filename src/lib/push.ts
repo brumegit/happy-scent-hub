@@ -115,14 +115,32 @@ export async function pushSettings(opts: {
     log(`Save complete · ${acks.length} routine${acks.length === 1 ? "" : "s"} confirmed`);
     return acks;
   } catch (error) {
-    const message = (error as Error).message;
-    debug.setLinkError(message);
+    // Always report the failing step plus what happened just before it, so a
+    // failure on a phone can be diagnosed without the debug strip.
+    const message = (error as Error).message || describeError(error);
+    const context = trail.slice(-3).join("\n· ");
+    const full = context ? `${message}\n\nWhat happened:\n· ${context}` : message;
+    debug.setLinkError(full);
     for (const key of ["modes", "intensity", "schedule"] as const) {
-      debug.set(key, "fail", message);
+      debug.set(key, "fail", full);
     }
-    throw error;
+    throw new Error(full, { cause: error });
   }
 }
+
+/** Human-readable reason for any thrown value, including its underlying cause. */
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const cause = (error as { cause?: unknown }).cause;
+  const causeText =
+    cause instanceof Error
+      ? ` (cause: ${cause.name}: ${cause.message})`
+      : cause
+        ? ` (cause: ${String(cause)})`
+        : "";
+  return `${error.name}: ${error.message}${causeText}`;
+}
+
 
 /** True when one persisted working mode already equals the one we want. */
 function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
