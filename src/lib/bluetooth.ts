@@ -85,6 +85,16 @@ const batteryListeners = new Set<() => void>();
 let isolatedWriteDepth = 0;
 let suppressStatusAcksUntil = 0;
 
+async function withIsolatedProtocol<T>(operation: () => Promise<T>): Promise<T> {
+  isolatedWriteDepth += 1;
+  try {
+    return await operation();
+  } finally {
+    isolatedWriteDepth = Math.max(0, isolatedWriteDepth - 1);
+    suppressStatusAcksUntil = Math.max(suppressStatusAcksUntil, Date.now() + 1500);
+  }
+}
+
 function captureBattery(deviceId: string, frame: Uint8Array) {
   // Status reports must be acknowledged, otherwise the module stops sending
   // them and the battery level never refreshes.
@@ -464,8 +474,7 @@ export async function sendWithoutConfirmation(
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
-  isolatedWriteDepth += 1;
-  try {
+  await withIsolatedProtocol(async () => {
     for (const frame of frames) {
       const hex = toHex(frame);
       console.info("[ScentLife] TX", hex);
@@ -479,11 +488,7 @@ export async function sendWithoutConfirmation(
       if (deviceId) links.delete(deviceId);
       throw new Error("Bluetooth disconnected while sending the routine. Pair the diffuser and try again.");
     }
-  } finally {
-    isolatedWriteDepth = Math.max(0, isolatedWriteDepth - 1);
-    // Keep the quiet window open while the diffuser applies the new routine.
-    suppressStatusAcksUntil = Date.now() + 1500;
-  }
+  });
 }
 
 /**
@@ -508,34 +513,36 @@ export async function sendFrames(
 
   // One frame per command — the module beeps once per accepted command, so the
   // schedule is pushed as a single timer-list frame (0x13), never expanded.
-  const acks: FrameAck[] = [];
-  for (const frame of frames) {
-    const hex = toHex(frame);
-    console.info("[ScentLife] TX", hex);
-    onLog?.(`TX ${hex}`);
-    const fn = frame[3] ?? 0;
-    let response: Uint8Array | null = null;
-    try {
-      response = await link.request(frame, (fn + 0x80) & 0xff);
-      onLog?.(`RX ${toHex(response)}`);
-    } catch {
-      // Some modules acknowledge silently (no notify characteristic).
-      response = null;
-      onLog?.(`RX none for 0x${fn.toString(16)}`);
+  return withIsolatedProtocol(async () => {
+    const acks: FrameAck[] = [];
+    for (const frame of frames) {
+      const hex = toHex(frame);
+      console.info("[ScentLife] TX", hex);
+      onLog?.(`TX ${hex}`);
+      const fn = frame[3] ?? 0;
+      let response: Uint8Array | null = null;
+      try {
+        response = await link.request(frame, (fn + 0x80) & 0xff);
+        onLog?.(`RX ${toHex(response)}`);
+      } catch {
+        // Some modules acknowledge silently (no notify characteristic).
+        response = null;
+        onLog?.(`RX none for 0x${fn.toString(16)}`);
+      }
+      const code = response && response.length >= 6 ? (response[4] ?? null) : null;
+      acks.push({ fn, acked: !!response, code, hex });
+      if (response && response.length === 7 && response[4] !== 0) {
+        throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
+      }
+      await wait(200);
     }
-    const code = response && response.length >= 6 ? (response[4] ?? null) : null;
-    acks.push({ fn, acked: !!response, code, hex });
-    if (response && response.length === 7 && response[4] !== 0) {
-      throw new Error(`The diffuser rejected command 0x${fn.toString(16)} (error ${response[4]}).`);
-    }
-    await wait(200);
-  }
 
-  if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
-    throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
-  }
-  return acks;
+    if (link.isLive && !(await link.isLive())) {
+      if (deviceId) links.delete(deviceId);
+      throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
+    }
+    return acks;
+  });
 }
 
 /**
@@ -557,43 +564,45 @@ export async function sendBatch(
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
-  const fns = frames.map((frame) => frame[3] ?? 0);
-  const waiters = fns.map((fn) =>
-    link.waitFor ? link.waitFor((fn + 0x80) & 0xff).catch(() => null) : Promise.resolve(null),
-  );
+  return withIsolatedProtocol(async () => {
+    const fns = frames.map((frame) => frame[3] ?? 0);
+    const waiters = fns.map((fn) =>
+      link.waitFor ? link.waitFor((fn + 0x80) & 0xff).catch(() => null) : Promise.resolve(null),
+    );
 
   // Concatenate before transport chunking so frame bytes remain contiguous.
-  const total = frames.reduce((sum, frame) => sum + frame.length, 0);
-  const stream = new Uint8Array(total);
-  let offset = 0;
-  for (const frame of frames) {
-    const hex = toHex(frame);
-    console.info("[ScentLife] TX", hex);
-    onLog?.(`TX ${hex}`);
-    stream.set(frame, offset);
-    offset += frame.length;
-  }
-  await link.write(stream);
+    const total = frames.reduce((sum, frame) => sum + frame.length, 0);
+    const stream = new Uint8Array(total);
+    let offset = 0;
+    for (const frame of frames) {
+      const hex = toHex(frame);
+      console.info("[ScentLife] TX", hex);
+      onLog?.(`TX ${hex}`);
+      stream.set(frame, offset);
+      offset += frame.length;
+    }
+    await link.write(stream);
 
 
-  const responses = await Promise.all(waiters);
-  const acks: FrameAck[] = frames.map((frame, index) => {
-    const response = responses[index] ?? null;
-    if (response) onLog?.(`RX ${toHex(response)}`);
-    else onLog?.(`RX none for 0x${(fns[index] ?? 0).toString(16)}`);
-    return {
-      fn: fns[index] ?? 0,
-      acked: !!response,
-      code: response && response.length >= 6 ? (response[4] ?? null) : null,
-      hex: toHex(frame),
-    };
+    const responses = await Promise.all(waiters);
+    const acks: FrameAck[] = frames.map((frame, index) => {
+      const response = responses[index] ?? null;
+      if (response) onLog?.(`RX ${toHex(response)}`);
+      else onLog?.(`RX none for 0x${(fns[index] ?? 0).toString(16)}`);
+      return {
+        fn: fns[index] ?? 0,
+        acked: !!response,
+        code: response && response.length >= 6 ? (response[4] ?? null) : null,
+        hex: toHex(frame),
+      };
+    });
+
+    if (link.isLive && !(await link.isLive())) {
+      if (deviceId) links.delete(deviceId);
+      throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
+    }
+    return acks;
   });
-
-  if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
-    throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
-  }
-  return acks;
 }
 
 /**
@@ -607,11 +616,13 @@ export async function queryTimers(
   const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) return null;
   try {
-    const frame = buildGetTimers();
-    onLog?.(`TX ${toHex(frame)}`);
-    const response = await link.request(frame, 0x88);
-    onLog?.(`RX ${toHex(response)}`);
-    return parseTimerListResponse(response);
+    return await withIsolatedProtocol(async () => {
+      const frame = buildGetTimers();
+      onLog?.(`TX ${toHex(frame)}`);
+      const response = await link.request(frame, 0x88);
+      onLog?.(`RX ${toHex(response)}`);
+      return parseTimerListResponse(response);
+    });
   } catch (error) {
     onLog?.(`Read-back failed: ${(error as Error).message}`);
     return null;
