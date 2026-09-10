@@ -44,7 +44,6 @@ import {
   RUN_SECONDS,
   clampCustomTiming,
   type CustomTiming,
-  hardwareName,
   defaultSchedule,
   formatSeconds,
   intensityPreset,
