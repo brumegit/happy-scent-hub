@@ -18,6 +18,10 @@ import {
 import { pushDebug } from "@/stores/pushDebugStore";
 import { readDebug } from "@/stores/readDebugStore";
 
+/** Small pause so the firmware can finish committing before we read it back. */
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+
 /**
  * Pushes the full configuration to the diffuser and reports, per area, what the
  * hardware acknowledged and what it actually persisted (read back with 0x08).
