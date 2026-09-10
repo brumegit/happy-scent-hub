@@ -354,7 +354,7 @@ function Setup() {
       setTimeout(() => {
         setResult("idle");
         setPhase(previous);
-      }, 2400);
+      }, 6000);
     }
   }
 
