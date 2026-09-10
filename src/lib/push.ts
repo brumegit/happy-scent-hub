@@ -61,13 +61,18 @@ export async function pushSettings(opts: {
     // A first read can be missed while iOS finishes enabling notifications.
     // It is only an optimisation for preserving IDs: if unavailable, write all
     // requested slots and rely on the mandatory final read-back for proof.
-    const changed = existing
-      ? slots.filter((slot) => !slotMatches(existing, slot))
-      : slots;
+    // Always write every routine the user asked for: comparing with the read
+    // list once made the app skip all writes and report success with no beep.
+    // Unused slots are only written when the device still holds them enabled.
+    const changed = slots.filter((slot) =>
+      slot.enabled ? true : !slotMatches(existing, slot),
+    );
     log(
       changed.length
-        ? `Changed timer slots: ${changed.map((slot) => `#${slot.index}`).join(", ")}`
-        : "Routine already matches the diffuser; no write needed",
+        ? `Writing timer slots: ${changed.map((slot) => `#${slot.index}`).join(", ")} (${
+            slots.filter((s) => s.enabled).length
+          } active routine(s))`
+        : "No active routine to write and nothing to clear on the diffuser",
     );
 
     // 0x13 only confirms receipt on this firmware and can leave the persisted
