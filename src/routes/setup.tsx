@@ -141,7 +141,7 @@ function Setup() {
   // Editing an existing diffuser: skip pairing and naming, start on intensity.
   const editing = useDiffuserStore((s) => s.diffusers.find((d) => d.id === edit) ?? null);
 
-  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "intro");
+  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "name");
   const [fading, setFading] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(editing?.device_id ?? null);
   // The app-side device name is fixed; only the room is user provided.
