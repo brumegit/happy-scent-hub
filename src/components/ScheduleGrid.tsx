@@ -54,6 +54,26 @@ export function ScheduleGrid({
     patch(index, { days });
   }
 
+  function renderDay(block: TimeBlock, index: number, value: number) {
+    const day = DAYS[value];
+    if (!day) return null;
+    const on = block.days.includes(value);
+    return (
+      <button
+        key={value}
+        type="button"
+        aria-pressed={on}
+        aria-label={day.long}
+        onClick={() => toggleDay(index, value)}
+        className={`h-12 border bg-background text-center text-[11px] leading-tight transition-colors ${
+          on ? "border-gold text-gold" : "border-border text-muted-foreground"
+        }`}
+      >
+        {day.long}
+      </button>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {blocks.map((block, index) => {
