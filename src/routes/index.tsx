@@ -91,7 +91,7 @@ function Home() {
                   Your diffusers
                 </h1>
               </div>
-              <Button asChild variant="secondary" size="sm" className="h-auto py-4">
+              <Button asChild variant="secondary" size="sm" className="h-auto px-6 py-4">
                 <Link to="/setup" search={{ start: true }}>
                   <Plus className="size-4" aria-hidden />
                   Add
@@ -114,7 +114,7 @@ function Home() {
                       </Link>
                     </Button>
                     <p className="text-center text-sm text-muted-foreground">
-                      Your diffusers stay offline between changes to preserve their battery. They
+                      Your diffusers stay offline between changes to preserve battery life. They
                       only reconnect when you want to adjust them.
                     </p>
                   </>
@@ -470,7 +470,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
 }
 
 function formatPushedAt(iso: string | null) {
-  if (!iso) return "Never pushed yet";
+  if (!iso) return "No settings sent yet";
   const d = new Date(iso);
   return d.toLocaleString(undefined, {
     year: "numeric",

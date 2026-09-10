@@ -440,7 +440,7 @@ function Setup() {
                 />
 
                 <p className="mt-3 text-sm text-foreground">
-                  Double tap on the diffuser button to enter pairing mode. The LED should be
+                  Double-tap the button on your diffuser to enter pairing mode. The LED should be
                   blinking.
                 </p>
 
@@ -541,7 +541,7 @@ function Setup() {
               <Input
                 id="room"
                 value={room}
-                placeholder="Lounge"
+                placeholder="Living room"
                 onChange={(e) => setRoom(e.target.value)}
               />
               {/* Only surfaced once the user tries to continue — never up front. */}
