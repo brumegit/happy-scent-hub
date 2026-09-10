@@ -78,6 +78,9 @@ export async function pushSettings(opts: {
       log(`0x13 rejected (code ${timerAck.code})`);
     }
     const accepted = !!timerAck?.acked && (timerAck.code ?? 0) === 0;
+    log(
+      `0x13 ${accepted ? "acknowledged (0x93 code 0)" : "NOT acknowledged"} — a beep is only expected when the module parses the command`,
+    );
 
     // Give the firmware time to commit the new working modes to its flash
     // before reading them back. Reading too early returns the previous list and
