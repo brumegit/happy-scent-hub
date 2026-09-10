@@ -100,6 +100,17 @@ export async function pushSettings(opts: {
     // deliberately limited to the single full-list command above; if its two
     // delayed read-backs do not match, report the failure without touching the
     // diffuser again.
+    if (!readback) {
+      log("Read-back unavailable (device answered no timer list)");
+    } else {
+      log(
+        `Read-back ${matches(readback, slots) ? "matches" : "differs from"} what we sent · device modes: ${
+          readback
+            .map((s) => `#${s.index}${s.enabled ? "" : "(off)"} ${s.startMinute}-${s.endMinute} ${s.onSeconds}/${s.offSeconds}`)
+            .join(" | ") || "none"
+        }`,
+      );
+    }
     if (!readback || !matches(readback, slots)) {
       log("Timer list was not confirmed — no automatic retry sent");
     }
