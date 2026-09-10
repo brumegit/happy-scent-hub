@@ -316,20 +316,19 @@ export async function connectNative(
   let writable: NativeChar | null = null;
   let writableWithNotify: NativeChar | null = null;
   for (const service of services) {
-    const notify = service.characteristics.find(
-      (ch) => ch.properties.notify || ch.properties.indicate,
-    );
     const write = service.characteristics.find(
       (ch) => ch.properties.writeWithoutResponse || ch.properties.write,
     );
     if (!write) continue;
 
+    let notifyStarted = false;
     for (const ch of service.characteristics) {
       if ((ch.properties.notify || ch.properties.indicate) && onNotify) {
         try {
-          await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) =>
-            onNotify(new Uint8Array(v.buffer)),
-          );
+          await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) => {
+            onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+          });
+          notifyStarted = true;
         } catch {
           // optional
         }
@@ -337,8 +336,8 @@ export async function connectNative(
     }
     const candidate = { service: service.uuid, characteristic: write.uuid };
     // The diffuser's transparent serial channel exposes both notify and write.
-    // Prefer that pair, with the first writable characteristic only as fallback.
-    if (notify) writableWithNotify = writableWithNotify ?? candidate;
+    // Only prefer the pair when iOS successfully enabled its notifications.
+    if (notifyStarted) writableWithNotify = writableWithNotify ?? candidate;
     writable = writable ?? candidate;
   }
   writable = writableWithNotify ?? writable;

@@ -56,11 +56,12 @@ export async function pushSettings(opts: {
       }
     }
 
-    if (!existing) {
-      throw new Error("The diffuser settings could not be read. Reconnect and try again.");
-    }
-
-    const changed = slots.filter((slot) => !slotMatches(existing, slot));
+    // A first read can be missed while iOS finishes enabling notifications.
+    // It is only an optimisation for preserving IDs: if unavailable, write all
+    // requested slots and rely on the mandatory final read-back for proof.
+    const changed = existing
+      ? slots.filter((slot) => !slotMatches(existing, slot))
+      : slots;
     log(
       changed.length
         ? `Changed timer slots: ${changed.map((slot) => `#${slot.index}`).join(", ")}`
