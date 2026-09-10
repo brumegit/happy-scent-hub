@@ -38,7 +38,9 @@ function markDisconnected(deviceId: string) {
 /** Delivers the operating system's disconnect event without waiting for polling. */
 export function subscribeNativeDisconnect(listener: (deviceId: string) => void) {
   disconnectListeners.add(listener);
-  return () => disconnectListeners.delete(listener);
+  return () => {
+    disconnectListeners.delete(listener);
+  };
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

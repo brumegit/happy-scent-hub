@@ -336,7 +336,18 @@ async function attachLink(device: {
       return response;
     },
     waitFor: (fn) => responses.waitFor(fn, 2500),
-    isLive: async () => device.gatt?.connected !== false,
+    isLive: async () => {
+      if (device.gatt?.connected === false) return false;
+      try {
+        // `gatt.connected` is cached by Chrome and can remain true after the
+        // diffuser disappears. A service request forces a real GATT operation,
+        // making the five-second screen check detect a dead link.
+        await server.getPrimaryServices();
+        return true;
+      } catch {
+        return false;
+      }
+    },
     close: async () => {
       // Physically drop the GATT link so the device LED stops showing connected.
       device.gatt?.disconnect?.();
