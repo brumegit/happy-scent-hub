@@ -66,6 +66,8 @@ export const Route = createFileRoute("/setup")({
       { name: "description", content: "Pair your Brume diffuser, choose an intensity and paint its weekly schedule." },
       { property: "og:title", content: "Set up your diffuser | Brume" },
       { property: "og:description", content: "Pair, choose an intensity, paint your hours." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Setup,

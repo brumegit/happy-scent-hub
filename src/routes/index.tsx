@@ -59,6 +59,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "See your Brume diffuser, its intensity and its weekly schedule." },
       { property: "og:title", content: "My diffusers | Brume" },
       { property: "og:description", content: "Your diffuser, intensity and weekly schedule at a glance." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Home,
