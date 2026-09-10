@@ -586,6 +586,19 @@ function Setup() {
               {roomTouched && roomError && (
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
+              {/* Quick picks: very generic home and professional spaces. */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                {ROOM_SUGGESTIONS.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => setRoom(suggestion)}
+                    className="rounded-[5px] bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
             <Button
               size="lg"
@@ -830,7 +843,7 @@ function Setup() {
         />
       )}
       <Dialog open={connectionLost} onOpenChange={setConnectionLost}>
-        <DialogContent className="border-border bg-background">
+        <DialogContent className="w-[80vw] max-w-[80vw] border-border bg-background">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Bluetooth connection lost</DialogTitle>
             <DialogDescription className="text-sm text-foreground">
@@ -838,7 +851,11 @@ function Setup() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button className="w-full" onClick={() => setConnectionLost(false)}>
+            <Button
+              variant="ghost"
+              className="h-auto w-full border border-foreground px-6 py-4 text-sm uppercase tracking-[0.22em]"
+              onClick={() => setConnectionLost(false)}
+            >
               Back to connect
             </Button>
           </DialogFooter>
