@@ -18,7 +18,7 @@ import {
 import { pushDebug } from "@/stores/pushDebugStore";
 import { readDebug } from "@/stores/readDebugStore";
 
-/** Small pause so the firmware can finish committing before we read it back. */
+/** Small pause so the firmware can finish processing one command before the next. */
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 
@@ -61,6 +61,12 @@ export async function pushSettings(opts: {
       }
     }
 
+    // The timer read response can arrive before the firmware has returned to
+    // its command-ready state. Sending 0x13 immediately after 0x08 is then
+    // silently ignored: the link stays connected, but there is no beep and no
+    // data change. Leave a short quiet window before the only write command.
+    await wait(350);
+
     // One user action, one protocol command, one hardware confirmation sound.
     // Sequential request/response: the module answers 0x93 on the notify
     // channel. Batched streaming proved unreliable — some firmware drops the
@@ -86,11 +92,11 @@ export async function pushSettings(opts: {
       readback = (await queryTimers(opts.deviceId, log)) ?? readback;
     }
 
-    // Fallback: this firmware ignores the whole-list command (0x13) and only
-    // persists per-timer writes (0x14). Only used when the device never
-    // acknowledged the list — never on top of an accepted command, which is
-    // what caused the double confirmation and the shutdown.
-    if (!accepted && (!readback || !matches(readback, slots))) {
+    // Some firmware acknowledges the whole-list command (0x13) when it parses
+    // it but does not actually apply it. After both delayed reads prove that
+    // nothing changed, fall back to per-timer writes (0x14). The delayed reads
+    // prevent the old premature fallback that caused abnormal extra beeps.
+    if (!readback || !matches(readback, slots)) {
       const differing = slots.filter((slot) => !slotMatches(readback, slot));
       log(
         `Timer list did not land — sending 0x14 for mode(s) ${
@@ -116,17 +122,16 @@ export async function pushSettings(opts: {
 
     if (!readback) {
       const detail = accepted ? "ack 0x93 ok, no read-back" : "no ack, no read-back";
-      debug.set("modes", accepted ? "ok" : "unconfirmed", detail);
-      debug.set("intensity", accepted ? "ok" : "unconfirmed", detail);
-      debug.set("schedule", accepted ? "ok" : "unconfirmed", detail);
-      // The device confirmed the command itself; a missing read-back (link
-      // asleep right after the write) is not a reason to make the user retry.
-      if (accepted) return acks;
+      debug.set("modes", "unconfirmed", detail);
+      debug.set("intensity", "unconfirmed", detail);
+      debug.set("schedule", "unconfirmed", detail);
+      // An acknowledgment only proves that the Bluetooth module parsed the
+      // frame. Never show OK unless the routine can also be read back.
       throw new Error("The diffuser did not confirm the new settings. Try again.");
     }
 
     verify(readback, slots);
-    if (!matches(readback, slots) && !accepted) {
+    if (!matches(readback, slots)) {
       throw new Error("The diffuser did not save the new settings. Try again.");
     }
     return acks;
