@@ -68,14 +68,25 @@ export async function pushSettings(opts: {
     if (timerAck && timerAck.acked && timerAck.code !== 0) {
       log(`0x13 rejected (code ${timerAck.code})`);
     }
+    const accepted = !!timerAck?.acked && (timerAck.code ?? 0) === 0;
 
-    // Read back the persisted working modes — the only real proof.
+    // Give the firmware time to commit the new working modes to its flash
+    // before reading them back. Reading too early returns the previous list and
+    // used to trigger a burst of 0x14 writes (extra beeps, and sometimes a
+    // module reset) even though the routine had actually landed.
+    await wait(900);
     let readback = await queryTimers(opts.deviceId, log);
+    if (readback && !matches(readback, slots)) {
+      // Second, later look before concluding anything: slow commits are common.
+      await wait(900);
+      readback = (await queryTimers(opts.deviceId, log)) ?? readback;
+    }
 
     // Fallback: this firmware ignores the whole-list command (0x13) and only
-    // persists per-timer writes (0x14). Send just the slots that still differ,
-    // so the device confirms as few times as possible.
-    if (!readback || !matches(readback, slots)) {
+    // persists per-timer writes (0x14). Only used when the device never
+    // acknowledged the list — never on top of an accepted command, which is
+    // what caused the double confirmation and the shutdown.
+    if (!accepted && (!readback || !matches(readback, slots))) {
       const differing = slots.filter((slot) => !slotMatches(readback, slot));
       log(
         `Timer list did not land — sending 0x14 for mode(s) ${
@@ -89,12 +100,14 @@ export async function pushSettings(opts: {
             differing.map((slot) => buildModifyTimer(slot)),
             log,
           );
+          await wait(900);
           readback = await queryTimers(opts.deviceId, log);
         }
       } catch (retryError) {
         log(`0x14 fallback failed: ${(retryError as Error).message}`);
       }
     }
+
 
 
     if (!readback) {
