@@ -91,7 +91,7 @@ function Home() {
                   Your diffusers
                 </h1>
               </div>
-              <Button asChild variant="secondary" size="sm">
+              <Button asChild variant="secondary" size="sm" className="h-auto py-4">
                 <Link to="/setup" search={{ start: true }}>
                   <Plus className="size-4" aria-hidden />
                   Add
@@ -107,14 +107,14 @@ function Home() {
                 ))}
                 {hydrated && diffusers.length > 0 && (
                   <>
-                    <Button asChild variant="secondary" className="w-full">
+                    <Button asChild variant="secondary" className="h-auto w-full py-4">
                       <Link to="/setup" search={{ start: true }}>
                         <Plus className="size-4" aria-hidden />
                         Add a diffuser
                       </Link>
                     </Button>
-                    <p className="text-center text-xs leading-relaxed text-muted-foreground">
-                      Your diffusers stay offline between changes to preserve their battery, so they
+                    <p className="text-center text-sm text-muted-foreground">
+                      Your diffusers stay offline between changes to preserve their battery. They
                       only reconnect when you want to adjust them.
                     </p>
                   </>
@@ -328,14 +328,14 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               >
                 {confirmRemove ? (
                   <div className="p-5">
-                    <p className="mb-5 text-xs leading-relaxed text-muted-foreground">
+                    <p className="mb-5 text-sm text-muted-foreground">
                       Remove this diffuser?
                     </p>
                     <div className="flex gap-3">
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex-1 border border-destructive bg-background px-3 py-2.5 text-xs text-destructive hover:opacity-80"
+                        className="flex-1 border border-destructive bg-background px-3 py-4 text-xs text-destructive hover:opacity-80"
                         onClick={() => {
                           removeDiffuser(diffuser.id);
                           setMenuOpen(false);
@@ -347,7 +347,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                       <button
                         type="button"
                         role="menuitem"
-                        className="flex-1 border border-border bg-background px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground"
+                        className="flex-1 border border-border bg-background px-3 py-4 text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => setConfirmRemove(false)}
                       >
                         Cancel
