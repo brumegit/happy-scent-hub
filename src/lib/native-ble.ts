@@ -8,7 +8,7 @@
 export type NativeChar = {
   service: string;
   characteristic: string;
-  writeMode: "with-response" | "without-response";
+  writeMode: "without-response-first";
 };
 
 export type NativeDevice = {
@@ -317,9 +317,8 @@ export async function connectNative(
   }
   const services = await ble.getServices(deviceId);
 
-  const candidates: Array<NativeChar & { hasNotify: boolean }> = [];
+  let writable: NativeChar | null = null;
   for (const service of services) {
-    const hasNotify = service.characteristics.some((ch) => ch.properties.notify);
     for (const ch of service.characteristics) {
       if (ch.properties.notify && onNotify) {
         try {
@@ -330,31 +329,15 @@ export async function connectNative(
           // optional
         }
       }
-      if (ch.properties.write) {
-        candidates.push({
+      if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
+        writable = {
           service: service.uuid,
           characteristic: ch.uuid,
-          writeMode: "with-response",
-          hasNotify,
-        });
-      } else if (ch.properties.writeWithoutResponse) {
-        candidates.push({
-          service: service.uuid,
-          characteristic: ch.uuid,
-          writeMode: "without-response",
-          hasNotify,
-        });
+          writeMode: "without-response-first",
+        };
       }
     }
   }
-  // The transparent serial channel is the write characteristic in the same
-  // service as notifications. Within that service, use flow-controlled writes.
-  const writable =
-    candidates.find((candidate) => candidate.hasNotify && candidate.writeMode === "with-response") ??
-    candidates.find((candidate) => candidate.hasNotify) ??
-    candidates.find((candidate) => candidate.writeMode === "with-response") ??
-    candidates[0] ??
-    null;
   if (!writable) {
     await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
@@ -365,11 +348,11 @@ export async function connectNative(
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
-  if (target.writeMode === "with-response") {
+  try {
+    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+  } catch {
     await ble.write(deviceId, target.service, target.characteristic, view);
-    return target.writeMode;
   }
-  await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
   return target.writeMode;
 }
 
