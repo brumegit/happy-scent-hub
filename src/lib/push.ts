@@ -35,7 +35,12 @@ export async function pushSettings(opts: {
 }) {
   const debug = pushDebug();
   debug.begin();
-  const log = (line: string) => pushDebug().addLog(line);
+  // Keep a local trail so any failure can name the exact step that broke.
+  const trail: string[] = [];
+  const log = (line: string) => {
+    trail.push(line);
+    pushDebug().addLog(line);
+  };
 
   log(
     `Push start · device ${opts.deviceId ?? "none"} · link ${
@@ -50,7 +55,10 @@ export async function pushSettings(opts: {
     // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes
     // the firmware keep its old working modes (with their old hours) alongside
     // ours. This is a read (0x08) — it does not make the device beep.
-    const existing = await queryTimers(opts.deviceId, log).catch(() => null);
+    const existing = await queryTimers(opts.deviceId, log).catch((error: unknown) => {
+      log(`Step “read current routines (0x08)” failed — ${describeError(error)}`);
+      return null;
+    });
     if (existing?.length) {
       for (const slot of slots) {
         const match = existing.find((s) => s.index === slot.index);
@@ -93,7 +101,9 @@ export async function pushSettings(opts: {
         if (!ack?.acked) log(`Slot #${slot.index} answered silently — treated as written`);
       } catch (error) {
         throw new Error(
-          `Could not send the “${label}” routine to the diffuser. ${(error as Error).message}`,
+          `Step “send routine ${slot.index} (${label}) with command 0x14” failed — ${describeError(
+            error,
+          )} Make sure the diffuser is still paired, then try again.`,
         );
       }
       await wait(700);
@@ -105,14 +115,32 @@ export async function pushSettings(opts: {
     log(`Save complete · ${acks.length} routine${acks.length === 1 ? "" : "s"} confirmed`);
     return acks;
   } catch (error) {
-    const message = (error as Error).message;
-    debug.setLinkError(message);
+    // Always report the failing step plus what happened just before it, so a
+    // failure on a phone can be diagnosed without the debug strip.
+    const message = (error as Error).message || describeError(error);
+    const context = trail.slice(-3).join("\n· ");
+    const full = context ? `${message}\n\nWhat happened:\n· ${context}` : message;
+    debug.setLinkError(full);
     for (const key of ["modes", "intensity", "schedule"] as const) {
-      debug.set(key, "fail", message);
+      debug.set(key, "fail", full);
     }
-    throw error;
+    throw new Error(full, { cause: error });
   }
 }
+
+/** Human-readable reason for any thrown value, including its underlying cause. */
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const cause = (error as { cause?: unknown }).cause;
+  const causeText =
+    cause instanceof Error
+      ? ` (cause: ${cause.name}: ${cause.message})`
+      : cause
+        ? ` (cause: ${String(cause)})`
+        : "";
+  return `${error.name}: ${error.message}${causeText}`;
+}
+
 
 /** True when one persisted working mode already equals the one we want. */
 function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
