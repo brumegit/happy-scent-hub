@@ -47,6 +47,7 @@ const SERVICE_UUIDS = [
 ];
 
 const CHUNK_SIZE = 20;
+// Keep multi-packet protocol frames inside the UART bridge's assembly window.
 const CHUNK_DELAY_MS = 30;
 
 type Link = {
@@ -60,6 +61,16 @@ type Link = {
   /** Drops the physical GATT link (web only; native goes through Capacitor). */
   close?: () => Promise<void>;
 };
+
+/** Prevents status replies and user actions from interleaving BLE packets. */
+function serializeWrites(writeNow: (frame: Uint8Array) => Promise<void>) {
+  let tail = Promise.resolve();
+  return (frame: Uint8Array) => {
+    const operation = tail.then(() => writeNow(frame));
+    tail = operation.catch(() => undefined);
+    return operation;
+  };
+}
 
 const links = new Map<string, Link>();
 
@@ -283,7 +294,7 @@ async function attachLink(device: {
   log("Serial channel ready");
 
 
-  const write = async (frame: Uint8Array) => {
+  const write = serializeWrites(async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
       if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
@@ -295,7 +306,7 @@ async function attachLink(device: {
       }
       await wait(CHUNK_DELAY_MS);
     }
-  };
+  });
   links.set(device.id, {
     simulated: false,
     write,
@@ -326,12 +337,12 @@ export async function connectPickedDevice(device: {
   const responses = createResponseChannel((frame) => captureBattery(device.deviceId, frame));
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
-    const write = async (frame: Uint8Array) => {
+    const write = serializeWrites(async (frame: Uint8Array) => {
       for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
         await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
         await wait(CHUNK_DELAY_MS);
       }
-    };
+    });
     links.set(device.deviceId, {
       simulated: false,
       write,
@@ -424,6 +435,43 @@ export type FrameAck = {
 };
 
 /**
+ * Sends complete protocol commands without issuing a follow-up read. A passive
+ * acknowledgment is enough to confirm that the routine reached the diffuser.
+ */
+export async function sendWithoutReadback(
+  deviceId: string | null,
+  frames: Uint8Array[],
+  onLog?: (line: string) => void,
+): Promise<void> {
+  const link = deviceId ? links.get(deviceId) : undefined;
+  if (!link || link.simulated) {
+    throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
+  }
+  if (link.isLive && !(await link.isLive())) {
+    if (deviceId) links.delete(deviceId);
+    throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
+  }
+
+  for (const frame of frames) {
+    const hex = toHex(frame);
+    const fn = frame[3] ?? 0;
+    console.info("[ScentLife] TX", hex);
+    onLog?.(`TX ${hex}`);
+    const confirmation = link.waitFor
+      ? link.waitFor((fn + 0x80) & 0xff).catch(() => null)
+      : Promise.resolve<Uint8Array | null>(null);
+    await link.write(frame);
+    onLog?.("Write complete");
+    const response = await confirmation;
+    if (response) onLog?.(`RX ${toHex(response)}`);
+    const code = response && response.length >= 6 ? (response[4] ?? 0) : 0;
+    if (response && response.length === 7 && code !== 0) {
+      throw new Error(`The diffuser rejected the routine (error ${code}).`);
+    }
+  }
+}
+
+/**
  * Sends protocol frames to the diffuser, one at a time with a gap so the module
  * has time to parse and acknowledge each frame (the device beeps per accepted
  * command). Returns the per-command acknowledgments so callers can report what
@@ -439,7 +487,7 @@ export async function sendFrames(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
@@ -469,7 +517,7 @@ export async function sendFrames(
   }
 
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
   return acks;
@@ -490,7 +538,7 @@ export async function sendBatch(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
@@ -527,7 +575,7 @@ export async function sendBatch(
   });
 
   if (link.isLive && !(await link.isLive())) {
-    links.delete(deviceId!);
+    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
   return acks;
