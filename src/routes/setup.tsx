@@ -565,11 +565,10 @@ function Setup() {
                   setRoomTouched(true);
                   return;
                 }
-                // Renaming is its own single hardware command. Keeping it out
-                // of the settings push prevents several beeps on Confirm.
-                void pushName(deviceId, hardwareName(name.trim() || DEFAULT_NAME, room.trim()))
-                  .catch(() => undefined)
-                  .finally(() => setPhase("intensity"));
+                // The rename command makes the module restart its Bluetooth
+                // advertising, which drops the live link. It is therefore sent
+                // at the very end, once the settings have been saved.
+                setPhase("intensity");
               }}
             >
               Continue
@@ -771,6 +770,12 @@ function Setup() {
                     navigate({ to: "/", replace: true });
                     return;
                   }
+                  // Settings are safely stored: only now rename the module,
+                  // since this command restarts its Bluetooth advertising.
+                  void pushName(
+                    deviceId,
+                    hardwareName(name.trim() || DEFAULT_NAME, room.trim()),
+                  ).catch(() => undefined);
                   trackEvent("CompleteRegistration", {
                     content_name: name.trim() || DEFAULT_NAME,
                     content_category: "diffuser_setup",
