@@ -35,7 +35,12 @@ export async function pushSettings(opts: {
 }) {
   const debug = pushDebug();
   debug.begin();
-  const log = (line: string) => pushDebug().addLog(line);
+  // Keep a local trail so any failure can name the exact step that broke.
+  const trail: string[] = [];
+  const log = (line: string) => {
+    trail.push(line);
+    pushDebug().addLog(line);
+  };
 
   log(
     `Push start · device ${opts.deviceId ?? "none"} · link ${
