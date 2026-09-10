@@ -825,7 +825,7 @@ function Setup() {
         />
       )}
       <Dialog open={connectionLost} onOpenChange={setConnectionLost}>
-        <DialogContent className="border-destructive bg-background">
+        <DialogContent className="border-border bg-background">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Bluetooth connection lost</DialogTitle>
             <DialogDescription className="text-sm text-foreground">
