@@ -12,6 +12,24 @@ export type NativeDevice = {
   name?: string;
 };
 
+/** Services used by the diffuser's transparent serial bridge. */
+const SERIAL_SERVICE_UUIDS = new Set([
+  "0000ffe0-0000-1000-8000-00805f9b34fb",
+  "0000ffe5-0000-1000-8000-00805f9b34fb",
+  "0000fff0-0000-1000-8000-00805f9b34fb",
+  "0000fee7-0000-1000-8000-00805f9b34fb",
+  "0000fd00-0000-1000-8000-00805f9b34fb",
+  "0000ae00-0000-1000-8000-00805f9b34fb",
+  "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
+  "49535343-fe7d-4ae5-8fa9-9fafd205e455",
+]);
+
+function normalizedUuid(uuid: string) {
+  const value = uuid.toLowerCase();
+  if (/^[0-9a-f]{4}$/.test(value)) return `0000${value}-0000-1000-8000-00805f9b34fb`;
+  return value;
+}
+
 type BleClientType = typeof import("@capacitor-community/bluetooth-le")["BleClient"];
 
 let bleClient: BleClientType | null = null;
@@ -315,8 +333,17 @@ export async function connectNative(
 
   let writable: NativeChar | null = null;
   for (const service of services) {
+    if (!SERIAL_SERVICE_UUIDS.has(normalizedUuid(service.uuid))) continue;
+    const notify = service.characteristics.find(
+      (ch) => ch.properties.notify || ch.properties.indicate,
+    );
+    const write = service.characteristics.find(
+      (ch) => ch.properties.writeWithoutResponse || ch.properties.write,
+    );
+    if (!write) continue;
+
     for (const ch of service.characteristics) {
-      if (ch.properties.notify && onNotify) {
+      if ((ch.properties.notify || ch.properties.indicate) && onNotify) {
         try {
           await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) =>
             onNotify(new Uint8Array(v.buffer)),
@@ -325,10 +352,15 @@ export async function connectNative(
           // optional
         }
       }
-      if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
-        writable = { service: service.uuid, characteristic: ch.uuid };
-      }
     }
+    // A notify/write pair identifies the UART service. Keep a known-service
+    // write-only fallback for firmware that does not expose notifications.
+    const candidate = { service: service.uuid, characteristic: write.uuid };
+    if (notify) {
+      writable = candidate;
+      break;
+    }
+    writable = writable ?? candidate;
   }
   if (!writable) {
     await ble.disconnect(deviceId).catch(() => undefined);
