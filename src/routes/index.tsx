@@ -435,19 +435,26 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               icon={false}
               label="Edit settings"
               onClick={() => {
-                // Re-check the link at the moment of the tap: settings can only
-                // be changed while the diffuser is really connected.
-                void checkConnection(diffuser.device_id).then((live) => {
+                void (async () => {
+                  // Bluetooth off or permission missing must never reach the
+                  // intensity step — tell the user what to fix first.
+                  if (!(await bluetoothReady())) return;
+                  // Re-check the link at the moment of the tap: settings can only
+                  // be changed while the diffuser is really connected.
+                  const live = await checkConnection(diffuser.device_id);
                   setConnected(live);
                   if (live) {
                     void navigate({ to: "/setup", search: { edit: diffuser.id } });
                   } else {
                     setError("Your diffuser is not connected. Pair it again to change its settings.");
                   }
-                });
+                })();
               }}
             />
           </div>
+          {error && (
+            <p className="mt-3 whitespace-pre-line text-center text-sm text-destructive">{error}</p>
+          )}
 
         </>
       )}
