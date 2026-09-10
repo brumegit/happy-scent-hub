@@ -5,7 +5,11 @@
  * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
-export type NativeChar = { service: string; characteristic: string };
+export type NativeChar = {
+  service: string;
+  characteristic: string;
+  writeMode: "with-response" | "without-response";
+};
 
 export type NativeDevice = {
   deviceId: string;
@@ -313,8 +317,9 @@ export async function connectNative(
   }
   const services = await ble.getServices(deviceId);
 
-  let writable: NativeChar | null = null;
+  const candidates: Array<NativeChar & { hasNotify: boolean }> = [];
   for (const service of services) {
+    const hasNotify = service.characteristics.some((ch) => ch.properties.notify);
     for (const ch of service.characteristics) {
       if (ch.properties.notify && onNotify) {
         try {
@@ -325,15 +330,31 @@ export async function connectNative(
           // optional
         }
       }
-      // This serial module needs GATT flow control for multi-chunk commands.
-      // Prefer an acknowledged-write characteristic whenever one is exposed.
       if (ch.properties.write) {
-        writable = writable ?? { service: service.uuid, characteristic: ch.uuid };
-      } else if (!writable && ch.properties.writeWithoutResponse) {
-        writable = { service: service.uuid, characteristic: ch.uuid };
+        candidates.push({
+          service: service.uuid,
+          characteristic: ch.uuid,
+          writeMode: "with-response",
+          hasNotify,
+        });
+      } else if (ch.properties.writeWithoutResponse) {
+        candidates.push({
+          service: service.uuid,
+          characteristic: ch.uuid,
+          writeMode: "without-response",
+          hasNotify,
+        });
       }
     }
   }
+  // The transparent serial channel is the write characteristic in the same
+  // service as notifications. Within that service, use flow-controlled writes.
+  const writable =
+    candidates.find((candidate) => candidate.hasNotify && candidate.writeMode === "with-response") ??
+    candidates.find((candidate) => candidate.hasNotify) ??
+    candidates.find((candidate) => candidate.writeMode === "with-response") ??
+    candidates[0] ??
+    null;
   if (!writable) {
     await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
@@ -344,14 +365,12 @@ export async function connectNative(
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
-  try {
-    // Acknowledged writes provide the flow control required by the diffuser's
-    // small serial buffer. Unacknowledged bursts can resolve locally and then
-    // make the peripheral drop the Bluetooth link without accepting the frame.
+  if (target.writeMode === "with-response") {
     await ble.write(deviceId, target.service, target.characteristic, view);
-  } catch {
-    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+    return target.writeMode;
   }
+  await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+  return target.writeMode;
 }
 
 export async function isNativeConnected(deviceId: string) {
