@@ -603,18 +603,7 @@ function Setup() {
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
               {/* Quick picks: very generic home and professional spaces. */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                {ROOM_SUGGESTIONS.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => setRoom(suggestion)}
-                    className="rounded-[5px] bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
+              <RoomSuggestions onPick={setRoom} />
             </div>
             <Button
               size="lg"
