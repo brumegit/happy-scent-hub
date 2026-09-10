@@ -47,7 +47,8 @@ const SERVICE_UUIDS = [
 ];
 
 const CHUNK_SIZE = 20;
-const CHUNK_DELAY_MS = 30;
+/** Leave enough time for the diffuser's serial buffer to consume each chunk. */
+const CHUNK_DELAY_MS = 60;
 
 type Link = {
   write: (frame: Uint8Array) => Promise<void>;
@@ -286,10 +287,10 @@ async function attachLink(device: {
   const write = async (frame: Uint8Array) => {
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-      if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
-        await writable.writeValueWithoutResponse(chunk);
-      } else if (writable.writeValueWithResponse) {
+      if (writable.properties?.write && writable.writeValueWithResponse) {
         await writable.writeValueWithResponse(chunk);
+      } else if (writable.writeValueWithoutResponse) {
+        await writable.writeValueWithoutResponse(chunk);
       } else {
         await writable.writeValue?.(chunk);
       }
@@ -436,6 +437,10 @@ export async function sendWithoutConfirmation(
   if (!link || link.simulated) {
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
+  if (link.isLive && !(await link.isLive())) {
+    links.delete(deviceId as string);
+    throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
+  }
 
   for (const frame of frames) {
     const hex = toHex(frame);
@@ -443,6 +448,10 @@ export async function sendWithoutConfirmation(
     onLog?.(`TX ${hex}`);
     await link.write(frame);
     await wait(200);
+  }
+  if (link.isLive && !(await link.isLive())) {
+    links.delete(deviceId as string);
+    throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
 }
 
