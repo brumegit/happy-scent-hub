@@ -325,7 +325,10 @@ export async function connectNative(
           // optional
         }
       }
-      if (!writable && (ch.properties.writeWithoutResponse || ch.properties.write)) {
+      // Prefer a characteristic that supports acknowledged writes.
+      if (ch.properties.write) {
+        writable = writable ?? { service: service.uuid, characteristic: ch.uuid };
+      } else if (!writable && ch.properties.writeWithoutResponse) {
         writable = { service: service.uuid, characteristic: ch.uuid };
       }
     }
