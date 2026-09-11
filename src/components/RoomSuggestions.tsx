@@ -69,8 +69,8 @@ function Row({
       last = now;
       if (!paused.current) {
         const half = el.scrollWidth / 2;
-        // 0.024 px/ms — 3x the previous gentle drift, still calm.
-        let next = el.scrollLeft + direction * (dt * 0.024);
+        // 0.0096 px/ms — gentle drift, visible but unhurried.
+        let next = el.scrollLeft + direction * (dt * 0.0096);
         if (next >= half) next -= half;
         if (next <= 0) next += half;
         el.scrollLeft = next;
