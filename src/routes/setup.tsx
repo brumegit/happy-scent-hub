@@ -594,7 +594,7 @@ function Setup() {
               {/* Quick picks: very generic home and professional spaces.
                   Distanced 50–100px from the room-name input above and the
                   Continue CTA below. */}
-              <div className="mt-10 mb-10">
+              <div className="mt-[60px] mb-[60px]">
                 <RoomSuggestions onPick={setRoom} />
               </div>
             </div>
