@@ -69,8 +69,8 @@ function Row({
       last = now;
       if (!paused.current) {
         const half = el.scrollWidth / 2;
-        // 0.008 px/ms — gentle drift, clearly visible but unhurried.
-        let next = el.scrollLeft + direction * (dt * 0.008);
+        // 0.024 px/ms — 3x the previous gentle drift, still calm.
+        let next = el.scrollLeft + direction * (dt * 0.024);
         if (next >= half) next -= half;
         if (next <= 0) next += half;
         el.scrollLeft = next;
@@ -107,7 +107,7 @@ function Row({
           key={`${suggestion}-${index}`}
           type="button"
           onClick={() => onPick(suggestion)}
-          className="flex h-11 shrink-0 items-center rounded-[10px] border border-border px-3 font-body text-base whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground md:text-sm"
+          className="flex h-11 shrink-0 items-center rounded-[10px] border border-border px-3 text-base whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground md:text-sm"
         >
           {suggestion}
         </button>
