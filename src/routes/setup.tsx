@@ -372,8 +372,11 @@ function Setup() {
         />
         <div
           key={phase === "pairing" ? "idle" : phase}
-          className={`flex min-h-0 flex-1 flex-col justify-center overflow-x-hidden overscroll-none ${
-            phase === "schedule" ? "overflow-y-auto" : "overflow-y-hidden"
+          className={`flex min-h-0 flex-1 flex-col justify-center overscroll-none ${
+            // NB: any overflow-* class here forces overflow-x to compute as
+            // auto/clip, which would clip the full-bleed room-suggestion rows
+            // on the name step. Only the schedule step needs internal scroll.
+            phase === "schedule" ? "overflow-y-auto" : ""
           }`}
         >
 

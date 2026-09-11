@@ -56,15 +56,21 @@ function Row({
 
     let raf = 0;
     let last = performance.now();
-    if (direction === -1) el.scrollLeft = el.scrollWidth / 2;
+    // Start the left-drifting row from the middle of the duplicated list.
+    // Deferred into rAF so fonts/layout have settled and scrollWidth is final.
+    if (direction === -1) {
+      raf = requestAnimationFrame(() => {
+        el.scrollLeft = el.scrollWidth / 2;
+      });
+    }
 
     const tick = (now: number) => {
       const dt = now - last;
       last = now;
       if (!paused.current) {
         const half = el.scrollWidth / 2;
-        // 0.004 px/ms — 5x slower than the previous 0.02 drift.
-        let next = el.scrollLeft + direction * (dt * 0.004);
+        // 0.008 px/ms — gentle drift, clearly visible but unhurried.
+        let next = el.scrollLeft + direction * (dt * 0.008);
         if (next >= half) next -= half;
         if (next <= 0) next += half;
         el.scrollLeft = next;
@@ -101,7 +107,7 @@ function Row({
           key={`${suggestion}-${index}`}
           type="button"
           onClick={() => onPick(suggestion)}
-          className="flex h-11 shrink-0 items-center rounded-[10px] border border-border px-3 text-base whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground md:text-sm"
+          className="flex h-11 shrink-0 items-center rounded-[10px] border border-border px-3 font-body text-base whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground md:text-sm"
         >
           {suggestion}
         </button>
