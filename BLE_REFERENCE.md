@@ -63,8 +63,10 @@ endCommandSequence()             // starts the 5 s quiet period
 5. **Do reopen the link once only if the very first write is refused** (nothing
    has reached the diffuser yet), then resend that first routine. Never for later slots.
 6. **Do poll connection status every 5 s** on the diffuser list and on the
-   intensity/schedule screens — using the **phone's connection registry only**
-   (`getConnectedDevices` / cached state), sending zero bytes.
+   intensity/schedule screens — and nowhere else. The check sends **zero bytes**:
+   the phone's connection registry (`getConnectedDevices`) confirmed by the real
+   CoreBluetooth session (`getMtu`). The registry alone keeps listing a
+   powered-off diffuser, so both must agree before the UI shows "connected".
 7. **Do suspend polling for the whole save** and resume 5 s after it ends.
 8. **Do rely on the passive native disconnect event** to show "disconnected".
 9. **Do keep names app-only** — room and diffuser names never leave the app.
