@@ -232,7 +232,17 @@ function Setup() {
     new Promise<NativeDevice | null>((resolve) => {
       pickerResolve.current = resolve;
       setPicker([]);
-      subscribe((devices) => setPicker(devices));
+      subscribe((devices) => {
+        // A diffuser identifying itself as "BRUME" is picked immediately —
+        // same auto-connect rule as the pre-picker scan, applied live while
+        // the nearby-devices list is open.
+        const brume = devices.find((d) => d.name.toUpperCase().includes("BRUME"));
+        if (brume) {
+          settlePicker(brume);
+          return;
+        }
+        setPicker(devices);
+      });
     });
 
   function settlePicker(device: NativeDevice | null) {
