@@ -101,8 +101,11 @@ const batteries = new Map<string, BatteryStatus>();
 const batteryListeners = new Set<() => void>();
 
 function captureBattery(deviceId: string, frame: Uint8Array) {
-  // Status reports must be acknowledged, otherwise the module stops sending
-  // them and the battery level never refreshes.
+  // Status reports are normally acknowledged so the module keeps reporting.
+  // Never inject that acknowledgment into a protected routine save, though:
+  // this firmware emits 0x21 after accepting 0x14 and disconnects if 0xA1 is
+  // written while it is committing the routine. Do not defer/replay the ack
+  // after the save either, because the required post-save period is silent.
   const fn = frame[3] ?? 0;
   const signature = toHex(frame);
   const previous = lastStatusFrames.get(deviceId);
@@ -117,10 +120,16 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   lastStatusFrames.set(deviceId, { signature, receivedAt });
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
-    void links
-      .get(deviceId)
-      ?.write(buildReportAck(fn))
-      .catch(() => {});
+    if (isTrafficBlocked(deviceId)) {
+      trace(`status ack 0x${((fn + 0x80) & 0xff).toString(16)} suppressed during protected save`);
+    } else {
+      void links
+        .get(deviceId)
+        ?.write(buildReportAck(fn))
+        .catch((error: unknown) => {
+          trace(`status ack failed outside save: ${describeError(error)}`);
+        });
+    }
   }
   const status = parseBatteryReport(frame);
   if (!status) return;

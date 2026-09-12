@@ -69,6 +69,11 @@ header. The log sheet can be scrolled, copied, or shared.
 10. **Never reconnect or replay in the middle of a save.** If iOS refuses a
     slot write, stop and discard the stale cached session. Replaying after earlier
     slots began committing is ambiguous and can write into a dead connection.
+11. **Never acknowledge unsolicited status during or after a save.** The diffuser
+    can emit `0x21` after accepting a routine. Although `0xA1` is its normal
+    application acknowledgment, inserting it between `0x14` writes makes this
+    firmware close the iPhone connection. Suppress the acknowledgment while the
+    save guard or post-save quiet period is active; never defer or replay it.
 
 
 ## 4. Reproducing quickly
