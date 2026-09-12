@@ -1,4 +1,11 @@
-import { ensureLink, isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
+import {
+  beginCommandSequence,
+  endCommandSequence,
+  ensureLink,
+  isRealLink,
+  queryTimers,
+  sendFrames,
+} from "@/lib/bluetooth";
 import {
   buildModifyTimer,
   type TimerSlot,
@@ -53,6 +60,9 @@ export async function pushSettings(opts: {
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
+    // Block screen keepalives and all optional reads for the whole five-slot
+    // transaction. The transport write queue still serializes packet chunks.
+    beginCommandSequence(opts.deviceId);
     // Observe the existing link before sending. Never reconnect here: opening a
     // second native session can close the one the diffuser is already using.
     if (opts.deviceId) {
@@ -119,9 +129,11 @@ export async function pushSettings(opts: {
         activeCount === 1 ? "" : "s"
       } written · ${5 - activeCount} slot(s) turned off`,
     );
+    endCommandSequence(opts.deviceId);
     return acks;
 
   } catch (error) {
+    endCommandSequence(opts.deviceId);
     // Keep the failing step and recent transport trace available only in the
     // opt-in debug log. Customers should see a short, actionable message rather
     // than protocol commands and internal Bluetooth diagnostics.
