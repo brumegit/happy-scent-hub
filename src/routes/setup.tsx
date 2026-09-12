@@ -270,18 +270,43 @@ function Setup() {
     };
   }, [phase]);
 
+  // One-shot read of the diffuser's stored routines when the intensity screen
+  // opens, so the selectors start from the hardware's real state. This is not a
+  // keepalive: it runs once, never between routine writes, and never after a
+  // save. A failure is silent — the app keeps its own last saved values.
+  useEffect(() => {
+    if (phase !== "intensity" || !deviceId || settingsRead || savingRef.current) return;
+    let cancelled = false;
+    readingRef.current = true;
+    void (async () => {
+      const live = await readSettings(deviceId).catch(() => null);
+      if (!cancelled && live) {
+        setIntensity(live.intensity);
+        if (live.schedule.some((d) => d.active)) setSchedule(live.schedule);
+      }
+      readingRef.current = false;
+      if (!cancelled) setSettingsRead(true);
+    })();
+    return () => {
+      cancelled = true;
+      readingRef.current = false;
+    };
+  }, [phase, deviceId, settingsRead]);
+
   // Observe the operating system's connection state while the user edits. This
   // must never send a command: active polling can interfere with this firmware.
   useEffect(() => {
     if ((phase !== "intensity" && phase !== "schedule") || !deviceId) return;
+    // Never run alongside the one-shot routine read.
+    if (!settingsRead) return;
     let cancelled = false;
     let checking = false;
     const verifyLink = async () => {
-      if (checking || savingRef.current) return;
+      if (checking || savingRef.current || readingRef.current) return;
       checking = true;
       const live = await checkConnection(deviceId).catch(() => false);
       checking = false;
-      if (cancelled || savingRef.current || live) return;
+      if (cancelled || savingRef.current || readingRef.current || live) return;
       setConnectionLost(true);
       setDeviceId(null);
       setPhase("idle");
@@ -293,15 +318,17 @@ function Setup() {
       setPhase("idle");
     });
     // Do not check on entry: tapping Change routine and mounting this screen
-    // must be completely Bluetooth-silent. The first status-only check runs
-    // five seconds later, then repeats every five seconds.
+    // must be completely Bluetooth-silent apart from the single routine read.
+    // The first status-only check runs five seconds after that read finishes,
+    // then repeats every five seconds.
     const interval = window.setInterval(() => void verifyLink(), 5000);
     return () => {
       cancelled = true;
       unsubscribe();
       window.clearInterval(interval);
     };
-  }, [deviceId, phase]);
+  }, [deviceId, phase, settingsRead]);
+
 
   async function push(next: Phase, onDone?: () => void) {
     if (savingRef.current) return;
