@@ -156,6 +156,10 @@ function Setup() {
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [connectionLost, setConnectionLost] = useState(false);
+  // React effect cleanup runs after a click handler returns. This ref closes
+  // that gap synchronously so an interval already due cannot start (or act on)
+  // a connection check after Confirm has been tapped.
+  const savingRef = useRef(false);
   const {
     checking: checkingRequirements,
     bluetoothOff: btOff,
@@ -269,17 +273,17 @@ function Setup() {
     let cancelled = false;
     let checking = false;
     const verifyLink = async () => {
-      if (checking) return;
+      if (checking || savingRef.current) return;
       checking = true;
       const live = await checkConnection(deviceId).catch(() => false);
       checking = false;
-      if (cancelled || live) return;
+      if (cancelled || savingRef.current || live) return;
       setConnectionLost(true);
       setDeviceId(null);
       setPhase("idle");
     };
     const unsubscribe = subscribeConnection((changedId, live) => {
-      if (changedId !== deviceId || live || cancelled) return;
+      if (changedId !== deviceId || live || cancelled || savingRef.current) return;
       setConnectionLost(true);
       setDeviceId(null);
       setPhase("idle");
@@ -291,9 +295,9 @@ function Setup() {
     // mid-setup. A harmless read every 15s keeps the session awake; it changes
     // nothing on the device, makes no sound, and is skipped while saving.
     const keepalive = window.setInterval(() => {
-      if (cancelled) return;
+      if (cancelled || savingRef.current) return;
       void pingLink(deviceId).then((live) => {
-        if (cancelled || live) return;
+        if (cancelled || savingRef.current || live) return;
         setConnectionLost(true);
         setDeviceId(null);
         setPhase("idle");
@@ -309,6 +313,10 @@ function Setup() {
 
   async function push(next: Phase, onDone?: () => void) {
     const previous = phase;
+    // Gate polling before the first await. setPhase alone is not sufficient:
+    // the old screen's interval remains alive until React runs effect cleanup.
+    savingRef.current = true;
+    setPhase("pushing");
     setError(null);
 
     // Nothing can be saved without a live link: check the radio, the app's
@@ -321,17 +329,10 @@ function Setup() {
         locationOff: req.locationOff,
       });
       toast.error(prompt.message, { className: "whitespace-pre-line" });
+      savingRef.current = false;
+      setPhase(previous);
       return;
     }
-    const live = await checkConnection(deviceId);
-    if (!live) {
-      toast.error("Your diffuser is not connected. Pair it again to change its settings.");
-      setDeviceId(null);
-      setPhase("idle");
-      return;
-    }
-
-    setPhase("pushing");
     setResult("pairing");
     try {
       await pushSettings({
@@ -346,6 +347,7 @@ function Setup() {
       setResult("success");
       setTimeout(() => {
         setResult("idle");
+        savingRef.current = false;
         setPhase(next);
         onDone?.();
       }, 1400);
@@ -354,6 +356,7 @@ function Setup() {
       setResult("error");
       setTimeout(() => {
         setResult("idle");
+        savingRef.current = false;
         setPhase(previous);
       }, 6000);
     }
