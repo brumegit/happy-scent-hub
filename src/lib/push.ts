@@ -105,8 +105,37 @@ export async function pushSettings(opts: {
       } turned off`,
     );
 
-    // 0x13 only confirms receipt on this firmware and can leave the persisted
-    // list unchanged. Write each slot with the persistent 0x14 command. The
+    // Experiment (TRY_BATCH_SAVE): one grouped 0x13 write for all five slots —
+    // a single beep when the firmware persists it. Verified once with 0x08;
+    // any mismatch falls back to the proven per-slot 0x14 writes below.
+    if (TRY_BATCH_SAVE) {
+      const batchStartedAt = Date.now();
+      try {
+        log("Trying grouped save · one 0x13 frame with all 5 slots");
+        const payload = slots.map(disabledPayload);
+        await sendFrames(opts.deviceId, [buildTimerList(payload)], log);
+        // Let the firmware commit the list to flash, then confirm once.
+        await wait(1200);
+        const stored = await queryTimers(opts.deviceId, log).catch(() => null);
+        if (stored && payload.every((slot) => slotMatches(stored.find((t) => t.index === slot.index), slot))) {
+          const activeCount = slots.filter((slot) => slot.enabled).length;
+          log(
+            `Grouped save confirmed · ${activeCount} active routine(s) persisted in ${Date.now() - batchStartedAt}ms`,
+          );
+          endCommandSequence(opts.deviceId);
+          return [];
+        }
+        log(
+          stored
+            ? "Grouped save NOT persisted by the firmware — falling back to per-slot writes"
+            : "Grouped save unreadable — falling back to per-slot writes",
+        );
+      } catch (error) {
+        log(`Grouped save failed (${describeError(error)}) — falling back to per-slot writes`);
+      }
+    }
+
+    // Write each slot with the persistent 0x14 command. The
     // transport serializes the packets. Start the first write immediately while
     // the checked link is still active; only later slots need flash-settle time.
     const acks = [];
