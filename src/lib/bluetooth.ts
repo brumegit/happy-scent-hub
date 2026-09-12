@@ -625,34 +625,15 @@ export async function sendFrames(
       response = null;
       const reason = error instanceof Error ? error.message : String(error);
       if (error instanceof BleWriteError) {
-        // The operating system refused the bytes because the link is gone. The
-        // command never reached the diffuser, so reopening the session and
-        // sending it once more cannot duplicate a routine.
-        trace(`write refused by the OS for 0x${fn.toString(16)}: ${reason} — reconnecting once`);
-        onLog?.("Bluetooth link dropped — reconnecting");
-        const recovered = await reopenLink(deviceId);
-        link = (deviceId ? links.get(deviceId) : undefined) ?? link;
-        if (!recovered) {
-          throw new Error(
-            `Bluetooth link lost while sending command 0x${fn.toString(16)} (${reason}).\nDouble tap the diffuser button, reconnect, and try again.`,
-          );
-        }
-        try {
-          markCommandTraffic(deviceId);
-          trace(`retrying 0x${fn.toString(16)} after reconnect`);
-          if (link.routineRepliesExpected === false) {
-            await link.write(frame);
-          } else {
-            response = await link.request(frame, (fn + 0x80) & 0xff);
-          }
-          trace(`retry of 0x${fn.toString(16)} succeeded after reconnect`);
-        } catch (retryError) {
-          const retryReason = retryError instanceof Error ? retryError.message : String(retryError);
-          trace(`retry of 0x${fn.toString(16)} failed: ${retryReason}`);
-          throw new Error(
-            `Bluetooth link lost while sending command 0x${fn.toString(16)} (${retryReason}).\nDouble tap the diffuser button, reconnect, and try again.`,
-          );
-        }
+        // Never reconnect or replay during a five-slot save. The diffuser may
+        // already be committing the preceding slots, and reopening here cannot
+        // establish which bytes reached it. Forget the stale cached channel so
+        // the next user-initiated connection opens a genuinely new session.
+        if (deviceId && isNativeSync()) forgetNativeSession(deviceId);
+        trace(`write refused by the OS for 0x${fn.toString(16)}: ${reason} · save stopped without replay`);
+        throw new Error(
+          `Bluetooth link lost while sending command 0x${fn.toString(16)} (${reason}).\nDouble tap the diffuser button, reconnect, and try again.`,
+        );
       } else {
         // Some modules acknowledge silently (no notify characteristic).
         trace(`no RX for 0x${fn.toString(16)} after ${Date.now() - begun}ms (${reason})`);
@@ -665,7 +646,10 @@ export async function sendFrames(
     // so a non-zero byte is logged but never treated as a refusal here. The
     // caller decides; a real refusal shows up as a transport/write failure.
     if (code) onLog?.(`Reply status byte for 0x${fn.toString(16)}: ${code}`);
-    await wait(200);
+    // Chrome waits for a protocol reply and benefits from a short settle pause.
+    // Native iPhone writes have no 0x94 reply; pushSettings owns their single
+    // inter-slot delay so the same command is not delayed twice.
+    if (link.routineRepliesExpected !== false) await wait(200);
   }
 
   // No liveness probe or other traffic after the final frame, and the keepalive

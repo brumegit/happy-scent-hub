@@ -62,6 +62,13 @@ header. The log sheet can be scrolled, copied, or shared.
    Native saves continue as soon as the write completes, retaining only the
    700 ms firmware-settle pause between slots. Chrome keeps its response-aware
    path because Web Bluetooth hardware can expose acknowledgments differently.
+9. **Apply only one delay between native routine writes.** `pushSettings` owns
+   the 700 ms slot-to-slot pause; the transport must not add another 200 ms.
+   There is no pause after slot 5. This keeps all five authoritative writes
+   inside the diffuser's roughly four-second command window.
+10. **Never reconnect or replay in the middle of a save.** If iOS refuses a
+    slot write, stop and discard the stale cached session. Replaying after earlier
+    slots began committing is ambiguous and can write into a dead connection.
 
 
 ## 4. Reproducing quickly
