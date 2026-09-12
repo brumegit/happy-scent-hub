@@ -82,9 +82,8 @@ export async function pushSettings(opts: {
 
     // 0x13 only confirms receipt on this firmware and can leave the persisted
     // list unchanged. Write each slot with the persistent 0x14 command. The
-    // transport serializes the packets; the pause lets flash settle before the
-    // next slot without creating an automatic retry burst.
-    await wait(500);
+    // transport serializes the packets. Start the first write immediately while
+    // the checked link is still active; only later slots need flash-settle time.
     const acks = [];
     for (const slot of slots) {
       const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
@@ -123,8 +122,9 @@ export async function pushSettings(opts: {
     return acks;
 
   } catch (error) {
-    // Always report the failing step plus what happened just before it, so a
-    // failure on a phone can be diagnosed without the debug strip.
+    // Keep the failing step and recent transport trace available only in the
+    // opt-in debug log. Customers should see a short, actionable message rather
+    // than protocol commands and internal Bluetooth diagnostics.
     const message = (error as Error).message || describeError(error);
     const context = recentTrace(14).join("\n· ");
     const full = context ? `${message}\n\nWhat happened:\n· ${context}` : message;
@@ -132,7 +132,10 @@ export async function pushSettings(opts: {
     for (const key of ["modes", "intensity", "schedule"] as const) {
       debug.set(key, "fail", full);
     }
-    throw new Error(full, { cause: error });
+    throw new Error(
+      "We couldn't save your routine. Please contact customer service at contact@brume.me.",
+      { cause: error },
+    );
   }
 }
 
