@@ -210,9 +210,8 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
   /**
-   * True when the diffuser is really reachable. A known diffuser that has gone
-   * to sleep is woken up silently by re-opening the link with its id, so the
-   * user does not have to go through the pairing list again.
+   * True when the diffuser is reachable. This check never closes or reopens the
+   * link; only the explicit pairing action may establish a new session.
    */
   async function ensureLive() {
     return checkConnection(diffuser.device_id);

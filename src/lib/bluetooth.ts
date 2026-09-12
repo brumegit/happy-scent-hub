@@ -560,7 +560,7 @@ export async function sendFrames(
   frames: Uint8Array[],
   onLog?: (line: string) => void,
 ): Promise<FrameAck[]> {
-  let link = deviceId ? links.get(deviceId) : undefined;
+  const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) {
     trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
@@ -635,21 +635,6 @@ export async function ensureLink(
   trace("link check before sending: down — no automatic reconnect attempted");
   onLog?.("Bluetooth link is not live");
   return false;
-}
-
-/**
- * Silently re-opens the link to a diffuser we already know, used after a save
- * when the module drops its connection on its own.
- */
-export async function reconnectDevice(deviceId: string | null) {
-  if (!deviceId) return false;
-  if (!(await isNativePlatform())) return false;
-  try {
-    await connectPickedDevice({ deviceId });
-    return await isNativeConnected(deviceId).catch(() => false);
-  } catch {
-    return false;
-  }
 }
 
 /**

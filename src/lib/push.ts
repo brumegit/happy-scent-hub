@@ -53,9 +53,8 @@ export async function pushSettings(opts: {
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
-    // The diffuser sleeps between edits, so the link registered at pairing time
-    // is often already gone here. Wake it once before sending anything: every
-    // write below would otherwise fail with "Not connected to device".
+    // Observe the existing link before sending. Never reconnect here: opening a
+    // second native session can close the one the diffuser is already using.
     if (opts.deviceId) {
       const ready = await ensureLink(opts.deviceId, log);
       if (!ready) {

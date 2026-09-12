@@ -403,39 +403,20 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
   const hex = Array.from(chunk)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join(" ");
-  try {
-    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-    trace(`chunk ${chunk.length}B write-no-response ok · ${hex}`);
-  } catch (error) {
-    trace(
-      `chunk ${chunk.length}B write-no-response failed (${
-        error instanceof Error ? error.message : String(error)
-      }) — retrying with response`,
-    );
-    await ble.write(deviceId, target.service, target.characteristic, view);
-    trace(`chunk ${chunk.length}B write-with-response ok · ${hex}`);
-  }
+  // This diffuser's confirmed iPhone path is write-without-response. Never
+  // replay the same bytes with another write mode: the first write may already
+  // have reached the firmware, and a duplicate can reset its BLE session.
+  await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+  trace(`chunk ${chunk.length}B write-no-response ok · ${hex}`);
 }
 
 /**
- * True only while the OS still holds the GATT link. The plugin's disconnect
- * callback can be missed (app backgrounded, device slept), so we also ask the
- * platform for its currently connected peripherals on the serial service.
+ * True until CoreBluetooth sends its disconnect callback. This callback is the
+ * authoritative iOS signal; polling getConnectedDevices can transiently omit a
+ * live peripheral and must never make the app tear down a working session.
  */
 export async function isNativeConnected(deviceId: string) {
-  if (!connectedIds.has(deviceId)) return false;
-  const service = connectedServices.get(deviceId);
-  if (!service) return true;
-  try {
-    const ble = await client();
-    const devices = await ble.getConnectedDevices([service]);
-    const live = devices.some((device) => device.deviceId === deviceId);
-    if (!live) trace("liveness check: OS does not currently report the diffuser connected");
-    return live;
-  } catch {
-    // Platform could not answer — trust the disconnect callback instead.
-    return connectedIds.has(deviceId);
-  }
+  return connectedIds.has(deviceId);
 }
 
 /**
