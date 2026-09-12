@@ -143,14 +143,20 @@ against it before inventing a new mechanism.
 
 ---
 
-## 8. Grouped 0x13 save — tested, rejected (2026-09-13)
+## 8. Grouped 0x13 save — tested twice, rejected (2026-09-13)
 
 A single `0x13` timer-list frame (one beep) was tried behind `TRY_BATCH_SAVE` in
-`src/lib/push.ts`. Result on hardware: the diffuser ACKs with `0x93`, but
-confirming persistence requires a `0x08` read right after a write — exactly the
-traffic that historically drops the link, and the command-sequence protection
-blocks that read by design. With no safe way to verify, the app fell back to
-per-slot `0x14` writes, producing duplicate writes and 5 beeps anyway.
+`src/lib/push.ts`. Two attempts:
+
+1. **With verification + fallback**: the diffuser ACKs with `0x93`, but
+   confirming persistence requires a `0x08` read right after a write — exactly
+   the traffic that historically drops the link, and the command-sequence
+   protection blocks that read by design. The app fell back to per-slot `0x14`
+   writes, producing duplicate writes and 5 beeps anyway.
+
+2. **Without verification, no fallback** (user request): the `0x13` frame was
+   sent alone. The user confirmed the diffuser did **not** persist the settings
+   — the routines were not saved. Reverted immediately.
 
 **Rule: do not re-enable `TRY_BATCH_SAVE` unless the supplier confirms in
 writing that this firmware persists `0x13`.** Per-slot `0x14` with one beep per

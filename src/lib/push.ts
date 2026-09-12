@@ -36,7 +36,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * and falls back to the proven per-slot 0x14 writes when the firmware did not
  * persist the list. Set to false to revert instantly to per-slot writes only.
  */
-const TRY_BATCH_SAVE = true;
+const TRY_BATCH_SAVE = false;
 
 
 /**
