@@ -12,9 +12,6 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
-import { PushDebugStrip } from "@/components/PushDebugStrip";
-import { ReadDebugStrip } from "@/components/ReadDebugStrip";
-import { DebugExitBanner } from "@/components/DebugExitBanner";
 import { DebugLogSheet } from "@/components/DebugLogSheet";
 import { useCartSync } from "@/hooks/useCartSync";
 import { initMetaPixel, trackEvent } from "@/lib/meta";
@@ -147,13 +144,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Development strip: what the diffuser confirmed on the last push. */}
-      <PushDebugStrip />
-      <ReadDebugStrip />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <DebugLogSheet />
-      <DebugExitBanner />
       <Toaster position="top-center" />
     </QueryClientProvider>
   );

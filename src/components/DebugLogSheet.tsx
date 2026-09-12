@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
-import { useDebugMode } from "@/hooks/useDebugMode";
+import { setDebugEnabled, useDebugMode } from "@/hooks/useDebugMode";
 import { usePushDebugStore } from "@/stores/pushDebugStore";
 
 /**
@@ -45,14 +45,25 @@ export function DebugLogSheet() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed inset-x-0 z-[59] border-t border-border bg-background/95 px-4 py-3 text-center text-sm font-medium text-foreground backdrop-blur"
-        style={{ bottom: "calc(env(safe-area-inset-bottom) + 3rem)" }}
+      <div
+        className="fixed left-1/2 z-[59] flex -translate-x-1/2 items-stretch overflow-hidden rounded-[5px] border border-gold bg-background shadow-lg"
+        style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)" }}
       >
-        Open debug log
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="h-10 whitespace-nowrap border-r border-gold px-4 text-xs font-medium text-gold"
+        >
+          Open debug log
+        </button>
+        <button
+          type="button"
+          onClick={() => setDebugEnabled(false)}
+          className="h-10 whitespace-nowrap px-4 text-xs font-medium text-gold"
+        >
+          Exit debug mode
+        </button>
+      </div>
 
       {open && (
         <div className="fixed inset-0 z-[70] flex flex-col bg-background">
