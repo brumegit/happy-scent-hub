@@ -2,6 +2,7 @@ import {
   beginCommandSequence,
   endCommandSequence,
   isRealLink,
+  reopenLink,
   queryTimers,
   sendFrames,
 } from "@/lib/bluetooth";
