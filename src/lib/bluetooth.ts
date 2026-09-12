@@ -554,10 +554,20 @@ export async function sendFrames(
     trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
-  if (link.isLive && !(await link.isLive())) {
-    trace("sendFrames aborted: liveness check says the link is down");
-    if (deviceId) links.delete(deviceId);
-    throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
+  if (!link.simulated && link.isLive && !(await link.isLive().catch(() => false))) {
+    // The module drops the link between commands to save power. Wake it and
+    // continue instead of failing the whole save.
+    trace("sendFrames: link down before sending — reconnecting once");
+    onLog?.("Diffuser asleep — reconnecting");
+    const back = await reconnectDevice(deviceId);
+    const fresh = deviceId ? links.get(deviceId) : undefined;
+    if (!back || !fresh) {
+      if (deviceId) links.delete(deviceId);
+      throw new Error(
+        "Bluetooth link lost. Double tap the diffuser button to wake it, then try again.",
+      );
+    }
+    link = fresh;
   }
 
   // One frame per command — the module beeps once per accepted command, so the
@@ -620,6 +630,32 @@ export async function sendFrames(
   // No liveness probe after the last frame: every frame was acknowledged, and
   // some firmware drops the link right after saving. That is not a failure.
   return acks;
+}
+
+/**
+ * Guarantees a usable link before any command is sent. The diffuser falls
+ * asleep quickly, so the link registered at pairing time is often already dead
+ * by the time the user finishes picking a routine. Reconnects once instead of
+ * letting the first write fail.
+ */
+export async function ensureLink(
+  deviceId: string | null,
+  onLog?: (line: string) => void,
+): Promise<boolean> {
+  if (!deviceId) return false;
+  const link = links.get(deviceId);
+  if (link?.simulated) return true;
+  const live = link?.isLive ? await link.isLive().catch(() => false) : !!link;
+  if (live) {
+    trace("link check before sending: live");
+    return true;
+  }
+  trace("link check before sending: down — reconnecting once");
+  onLog?.("Diffuser asleep — reconnecting");
+  const back = await reconnectDevice(deviceId);
+  const fresh = links.get(deviceId);
+  trace(back && fresh ? "reconnect before sending succeeded" : "reconnect before sending failed");
+  return !!(back && fresh);
 }
 
 /**

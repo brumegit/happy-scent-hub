@@ -1,4 +1,4 @@
-import { isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
+import { ensureLink, isRealLink, queryTimers, sendFrames } from "@/lib/bluetooth";
 import {
   buildModifyTimer,
   type TimerSlot,
@@ -53,6 +53,18 @@ export async function pushSettings(opts: {
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
+    // The diffuser sleeps between edits, so the link registered at pairing time
+    // is often already gone here. Wake it once before sending anything: every
+    // write below would otherwise fail with "Not connected to device".
+    if (opts.deviceId) {
+      const ready = await ensureLink(opts.deviceId, log);
+      if (!ready) {
+        throw new Error(
+          "Bluetooth link lost before the settings could be sent.\nThe diffuser goes to sleep to preserve battery — double tap its button, then try again.",
+        );
+      }
+    }
+
     // Best-effort read, only to reuse the timer IDs the hardware already holds:
     // pushing fresh IDs can make the firmware keep its old working modes next to
     // ours. This is a read (0x08) — it does not beep, and a failure is harmless
