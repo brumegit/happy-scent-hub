@@ -18,7 +18,7 @@ import {
   type TimerSlot,
 } from "@/lib/scentlife";
 import { pushDebug } from "@/stores/pushDebugStore";
-import { trace } from "@/lib/ble-log";
+import { describeError, trace } from "@/lib/ble-log";
 import {
   connectNative,
   isBluetoothEnabled as nativeBluetoothEnabled,
@@ -62,6 +62,8 @@ type Link = {
   routineRepliesExpected?: boolean;
   /** True while the physical link is still up. */
   isLive?: () => Promise<boolean>;
+  /** Reopens the same physical link after the OS reported a disconnect. */
+  reconnect?: () => Promise<boolean>;
 };
 
 /** Prevents status replies and user actions from interleaving BLE packets. */
@@ -372,6 +374,10 @@ async function attachLink(device: {
         return false;
       }
     },
+    reconnect: async () => {
+      trace("web reconnect: reopening GATT session");
+      return await attachLink(device).catch(() => false);
+    },
   });
   publishConnection(device.id, true);
   return true;
@@ -417,6 +423,11 @@ export async function connectPickedDevice(device: {
       },
       waitFor: (fn) => responses.waitFor(fn, 4000),
       isLive: () => isNativeConnected(device.deviceId),
+      reconnect: async () => {
+        trace("native reconnect: reopening the diffuser session");
+        await connectPickedDevice({ deviceId: device.deviceId, ...(device.name ? { name: device.name } : {}) });
+        return await isNativeConnected(device.deviceId).catch(() => false);
+      },
     });
     publishConnection(device.deviceId, true);
   }
@@ -558,7 +569,7 @@ export async function sendFrames(
   frames: Uint8Array[],
   onLog?: (line: string) => void,
 ): Promise<FrameAck[]> {
-  const link = deviceId ? links.get(deviceId) : undefined;
+  let link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) {
     trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
@@ -567,8 +578,13 @@ export async function sendFrames(
   // protected command sequence. Do not repeat native bridge checks between
   // routine slots while that sequence is active.
   if (!isTrafficBlocked(deviceId) && !link.simulated && link.isLive && !(await link.isLive().catch(() => false))) {
-    trace("sendFrames: link down before sending — stopping without reconnecting");
-    throw new Error("Bluetooth link lost. Double tap the diffuser button, reconnect, and try again.");
+    trace("sendFrames: link down before sending — attempting one automatic reconnect");
+    onLog?.("Bluetooth link dropped — reconnecting");
+    const recovered = await reopenLink(deviceId);
+    if (!recovered) {
+      throw new Error("Bluetooth link lost. Double tap the diffuser button, reconnect, and try again.");
+    }
+    link = links.get(deviceId!) ?? link;
   }
 
   // One frame per command. Routine saves currently call this once for each of
@@ -601,12 +617,34 @@ export async function sendFrames(
       response = null;
       const reason = error instanceof Error ? error.message : String(error);
       if (error instanceof BleWriteError) {
-        // Never close/reopen the GATT session or replay a command automatically:
-        // both actions can interrupt the diffuser while it commits routines.
-        trace(`write refused by the OS for 0x${fn.toString(16)}: ${reason}`);
-        throw new Error(
-          `Bluetooth link lost while sending command 0x${fn.toString(16)} (${reason}).\nDouble tap the diffuser button, reconnect, and try again.`,
-        );
+        // The operating system refused the bytes because the link is gone. The
+        // command never reached the diffuser, so reopening the session and
+        // sending it once more cannot duplicate a routine.
+        trace(`write refused by the OS for 0x${fn.toString(16)}: ${reason} — reconnecting once`);
+        onLog?.("Bluetooth link dropped — reconnecting");
+        const recovered = await reopenLink(deviceId);
+        link = (deviceId ? links.get(deviceId) : undefined) ?? link;
+        if (!recovered) {
+          throw new Error(
+            `Bluetooth link lost while sending command 0x${fn.toString(16)} (${reason}).\nDouble tap the diffuser button, reconnect, and try again.`,
+          );
+        }
+        try {
+          markCommandTraffic(deviceId);
+          trace(`retrying 0x${fn.toString(16)} after reconnect`);
+          if (link.routineRepliesExpected === false) {
+            await link.write(frame);
+          } else {
+            response = await link.request(frame, (fn + 0x80) & 0xff);
+          }
+          trace(`retry of 0x${fn.toString(16)} succeeded after reconnect`);
+        } catch (retryError) {
+          const retryReason = retryError instanceof Error ? retryError.message : String(retryError);
+          trace(`retry of 0x${fn.toString(16)} failed: ${retryReason}`);
+          throw new Error(
+            `Bluetooth link lost while sending command 0x${fn.toString(16)} (${retryReason}).\nDouble tap the diffuser button, reconnect, and try again.`,
+          );
+        }
       } else {
         // Some modules acknowledge silently (no notify characteristic).
         trace(`no RX for 0x${fn.toString(16)} after ${Date.now() - begun}ms (${reason})`);
@@ -629,8 +667,39 @@ export async function sendFrames(
 }
 
 /**
- * Observes whether the existing link is usable before any command is sent.
- * It never reconnects, closes, or replaces the native session.
+ * Reopens the diffuser session after the operating system reported the link is
+ * gone. Only ever called once per failure, and never while a link is still up,
+ * so it cannot interrupt a diffuser that is committing routines.
+ */
+let reopening: Promise<boolean> | null = null;
+export async function reopenLink(deviceId: string | null): Promise<boolean> {
+  if (!deviceId) return false;
+  if (reopening) return reopening;
+  const link = links.get(deviceId);
+  if (!link?.reconnect) {
+    trace("auto-reconnect unavailable for this link");
+    return false;
+  }
+  reopening = (async () => {
+    const begun = Date.now();
+    try {
+      const ok = await link.reconnect!();
+      trace(`auto-reconnect ${ok ? "succeeded" : "failed"} after ${Date.now() - begun}ms`);
+      if (ok) publishConnection(deviceId, true);
+      return ok;
+    } catch (error) {
+      trace(`auto-reconnect failed after ${Date.now() - begun}ms · ${describeError(error)}`);
+      return false;
+    } finally {
+      reopening = null;
+    }
+  })();
+  return reopening;
+}
+
+/**
+ * Observes whether the existing link is usable before any command is sent, and
+ * reopens it once when the operating system says it dropped.
  */
 export async function ensureLink(
   deviceId: string | null,
@@ -644,7 +713,13 @@ export async function ensureLink(
     trace("link check before sending: live");
     return true;
   }
-  trace("link check before sending: down — no automatic reconnect attempted");
+  trace("link check before sending: down — attempting one automatic reconnect");
+  onLog?.("Bluetooth link dropped — reconnecting");
+  const recovered = await reopenLink(deviceId);
+  if (recovered) {
+    onLog?.("Reconnected");
+    return true;
+  }
   onLog?.("Bluetooth link is not live");
   return false;
 }
