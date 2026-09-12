@@ -76,7 +76,10 @@ function Row({
         el.scrollLeft = pos;
         started = true;
       }
-      if (started && !paused.current && half > 0) {
+      if (started && paused.current) {
+        // Follow the user's own dragging so drift resumes from where they left.
+        pos = el.scrollLeft;
+      } else if (started && half > 0) {
         pos += direction * (dt * DRIFT_SPEED);
         if (pos >= half) pos -= half;
         if (pos <= 0) pos += half;
