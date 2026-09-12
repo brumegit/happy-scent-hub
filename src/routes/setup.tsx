@@ -312,6 +312,7 @@ function Setup() {
   }, [deviceId, phase]);
 
   async function push(next: Phase, onDone?: () => void) {
+    if (savingRef.current) return;
     const previous = phase;
     // Gate polling before the first await. setPhase alone is not sufficient:
     // the old screen's interval remains alive until React runs effect cleanup.
