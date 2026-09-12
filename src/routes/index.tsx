@@ -228,12 +228,17 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       // A diffuser we already know usually just needs its link re-opened.
       if (await ensureLive()) {
         setConnected(true);
+        // The tap on Change routine already stated the intent: once the link
+        // is live, go straight to editing instead of asking for a second tap.
+        void navigate({ to: "/setup", search: { edit: diffuser.id } });
         return;
       }
       // Named devices only, shown in the app's own list.
       const paired = await pairDiffuser(chooseDevice);
       updateDiffuser(diffuser.id, { device_id: paired.deviceId });
-      setConnected(await checkConnection(paired.deviceId));
+      const live = await checkConnection(paired.deviceId);
+      setConnected(live);
+      if (live) void navigate({ to: "/setup", search: { edit: diffuser.id } });
     } catch (err) {
       setError((err as Error).message || "Could not connect to the diffuser.");
     } finally {
@@ -446,10 +451,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                   setConnected(live);
                   if (live) {
                     void navigate({ to: "/setup", search: { edit: diffuser.id } });
-                  } else {
-                    setError(
-                      "Your diffuser is asleep and could not be woken up.\nDouble tap its button, then tap Change routine again.",
-                    );
                   }
                 })();
               }}
