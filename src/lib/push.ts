@@ -29,6 +29,8 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export async function pushSettings(opts: {
   deviceId: string | null;
   schedule: DaySchedule[];
+  /** Last schedule successfully saved by this app, used when iOS cannot read the device. */
+  previousSchedule?: DaySchedule[] | null;
   intensity: Intensity;
   /** Advanced mode: user-set spray/pause durations replacing the preset. */
   custom?: CustomTiming | null;
@@ -49,6 +51,9 @@ export async function pushSettings(opts: {
   );
 
   const slots = buildTimerSlots(opts.schedule, opts.intensity, opts.custom ?? null);
+  const previousSlots = opts.previousSchedule
+    ? buildTimerSlots(opts.previousSchedule, opts.intensity, opts.custom ?? null)
+    : [];
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
@@ -66,18 +71,27 @@ export async function pushSettings(opts: {
       }
     }
 
-    // A first read can be missed while iOS finishes enabling notifications.
-    // It is only an optimisation for preserving IDs: if unavailable, write all
-    // five slots, including explicit disabled entries for unused routines.
-    // Always write every routine the user asked for: comparing with the read
-    // list once made the app skip all writes and report success with no beep.
-    // If the initial read failed, we cannot assume an absent disabled slot is
-    // already clear. Send all five slots so routines removed in the app cannot
-    // remain enabled on the diffuser. When a read did succeed, avoid redundant
-    // clear commands for slots the hardware already reports as disabled.
-    const changed = slots.filter((slot) =>
-      existing === null ? true : slot.enabled || !slotMatches(existing, slot),
+    // Always write active routines. For disabled slots, only send a persistent
+    // clear when we know that slot exists: either the diffuser reported it as
+    // enabled, or this app successfully saved that slot previously. Sending a
+    // 0x14 clear for a nonexistent slot makes some iPhone-connected firmware
+    // revisions close Bluetooth immediately (usually at slot 4 or 5).
+    const previouslyEnabled = new Set(
+      previousSlots.filter((slot) => slot.enabled).map((slot) => slot.index),
     );
+    const changed = slots.filter((slot) => {
+      if (slot.enabled) return true;
+      if (existing) return !slotMatches(existing, slot);
+      return previouslyEnabled.has(slot.index);
+    });
+    if (!existing) {
+      const safeClears = changed.filter((slot) => !slot.enabled).map((slot) => slot.index);
+      log(
+        safeClears.length
+          ? `Routine read unavailable · clearing previously saved slot(s): ${safeClears.join(", ")}`
+          : "Routine read unavailable · no previously saved slots need clearing",
+      );
+    }
     log(
       changed.length
         ? `Writing timer slots: ${changed.map((slot) => `#${slot.index}`).join(", ")} (${

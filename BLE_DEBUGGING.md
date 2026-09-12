@@ -54,6 +54,10 @@ write (no channel, no link) or *after* it (no response).
    but a successful `0x93` acknowledgment takes precedence over a stale or
    unavailable read-back. Without an acknowledgment, a failed verification must
    stop and show an error without another write.
+6. **Never clear unknown timer slots.** When `0x08` is unavailable on iPhone,
+   clear only slots that the app previously saved as active. Some firmware closes
+   Bluetooth when `0x14` tries to disable a slot that does not exist. Active
+   routines are still written every time.
 
 ## 4. Reproducing quickly
 

@@ -323,6 +323,7 @@ function Setup() {
       await pushSettings({
         deviceId,
         schedule,
+        previousSchedule: editing?.last_pushed_schedule ?? editing?.schedule ?? null,
         intensity,
         custom,
       });
