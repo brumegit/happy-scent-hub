@@ -25,10 +25,12 @@ Transport constants (do not change without hardware testing):
 - `CHUNK_SIZE = 20` bytes, `CHUNK_DELAY_MS = 30` ms between chunks.
 - **700 ms** between routine commands, owned by `push.ts` only.
 - `QUIET_AFTER_COMMAND_MS = 5_000` — no optional traffic for 5 s after a
-  persistent write (0x13 / 0x14 only).
+  persistent write (0x13 / 0x14 only). This protects the flash-commit window.
 - `QUIET_AFTER_LIGHT_COMMAND_MS = 600` — short pause after a non-persistent
-  command (clock sync 0x06, status queries) so the one-shot settings read can
-  run right after pairing.
+  command (clock sync `0x06`, status queries). The clock sync sent at pairing
+  does not write to flash, so it only blocks 600 ms — not 5 s. This lets the
+  one-shot `0x08` settings read run right after pairing instead of waiting 5 s,
+  so the intensity screen shows the diffuser's real stored settings immediately.
 - Screen status polling: every **5 s**, registry-only, first run 5 s after mount.
 
 ---
@@ -91,7 +93,10 @@ endCommandSequence()             // starts the 5 s quiet period
    cause. The only allowed read is a **single** best-effort `0x08` when the
    intensity screen opens (or right after pairing), to preload the user's real
    settings. It runs once, status polling is suspended while it runs and only
-   starts five seconds after it finishes, and a failure is silent.
+   starts five seconds after it finishes, and a failure is silent. The clock
+   sync (`0x06`) sent at pairing only triggers a 600 ms quiet period (not 5 s),
+   so this read can proceed right after pairing — the diffuser's real intensity
+   and schedule appear on screen without waiting.
 
 5. **Don't send `0xA1`** (or any acknowledgment of an unsolicited `0x21`) during a
    save or the quiet period. Suppress it; never defer or replay it.

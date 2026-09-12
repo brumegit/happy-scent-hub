@@ -103,6 +103,17 @@ header. The log sheet can be scrolled, copied, or shared.
 ## Protected save and passive status checks
 
 The diffuser drops the link if anything is sent while it commits routines to flash.
+The quiet period is **proportional to the command type**:
+
+- **5 s** (`QUIET_AFTER_COMMAND_MS`) after persistent writes (`0x13` / `0x14`) —
+  these write to flash and need the full protection window.
+- **600 ms** (`QUIET_AFTER_LIGHT_COMMAND_MS`) after non-persistent commands
+  (clock sync `0x06`, status queries) — these do not write to flash, so a short
+  pause is enough. This is why the one-shot `0x08` settings read can run right
+  after pairing instead of waiting 5 s: the clock sync only blocks 600 ms, then
+  the read proceeds and the intensity screen shows the diffuser's real stored
+  settings immediately.
+
 All optional reads and keepalives are blocked throughout the five-slot save and for
 5 seconds after its final command. Normal five-second screen checks query only the
 phone's connection registry and send no bytes to the diffuser. Never add active
