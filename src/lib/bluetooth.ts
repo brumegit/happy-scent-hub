@@ -102,10 +102,10 @@ const batteryListeners = new Set<() => void>();
 
 function captureBattery(deviceId: string, frame: Uint8Array) {
   // Status reports are normally acknowledged so the module keeps reporting.
-  // Never inject that acknowledgment into a protected routine save, though:
-  // this firmware emits 0x21 after accepting 0x14 and disconnects if 0xA1 is
-  // written while it is committing the routine. Do not defer/replay the ack
-  // after the save either, because the required post-save period is silent.
+  // Never inject that acknowledgment between routine writes, though. Once all
+  // five slots are complete, acknowledge the final report even during the
+  // post-save quiet window; older working builds did this, and leaving that
+  // final report unanswered lets the diffuser close its serial session.
   const fn = frame[3] ?? 0;
   const signature = toHex(frame);
   const previous = lastStatusFrames.get(deviceId);
@@ -120,9 +120,11 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   lastStatusFrames.set(deviceId, { signature, receivedAt });
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
-    if (isTrafficBlocked(deviceId)) {
-      trace(`status ack 0x${((fn + 0x80) & 0xff).toString(16)} suppressed during protected save`);
+    const ackFn = (fn + 0x80) & 0xff;
+    if (isCommandSequenceActive(deviceId)) {
+      trace(`status ack 0x${ackFn.toString(16)} suppressed between routine writes`);
     } else {
+      trace(`status ack 0x${ackFn.toString(16)} sent after completed save`);
       void links
         .get(deviceId)
         ?.write(buildReportAck(fn))
@@ -840,6 +842,11 @@ function isTrafficBlocked(deviceId: string | null) {
   if (!deviceId) return false;
   const state = trafficByDevice.get(deviceId);
   return !!state && (state.saving || Date.now() - state.lastCommandAt < QUIET_AFTER_COMMAND_MS);
+}
+
+function isCommandSequenceActive(deviceId: string | null) {
+  if (!deviceId) return false;
+  return trafficByDevice.get(deviceId)?.saving === true;
 }
 
 export function beginCommandSequence(deviceId: string | null) {
