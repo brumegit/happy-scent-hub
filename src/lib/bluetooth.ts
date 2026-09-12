@@ -920,8 +920,15 @@ export async function pingLink(deviceId: string | null): Promise<boolean> {
  */
 export async function checkConnection(deviceId: string | null) {
   if (!deviceId) return false;
+  // While a save runs (and for the quiet window afterwards) report the last
+  // known state instead of querying anything at all.
+  if (isTrafficBlocked(deviceId)) {
+    return (await isNativePlatform()) ? isNativeSessionConnected(deviceId) : !!links.get(deviceId);
+  }
   if (await isNativePlatform()) {
-    return isNativeSessionConnected(deviceId);
+    // Ask the operating system's registry: this reads state only, no bytes are
+    // sent to the diffuser, so the five-second UI refresh cannot disturb BLE.
+    return isNativeSystemConnected(deviceId);
   }
   const link = links.get(deviceId);
   if (!link || link.simulated) return false;
