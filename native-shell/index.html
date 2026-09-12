@@ -18,14 +18,23 @@
         letter-spacing: 0.18em;
         font-size: 1.4rem;
       }
+      .wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+      }
       .spin {
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
         border: 2px solid rgba(255, 228, 157, 0.25);
         border-top-color: #ffe49d;
         border-radius: 50%;
         animation: r 0.9s linear infinite;
-        margin-right: 14px;
+      }
+      .label {
+        font-size: 0.95rem;
+        letter-spacing: 0.22em;
       }
       @keyframes r {
         to {
@@ -35,8 +44,9 @@
     </style>
   </head>
   <body>
-    <div style="display: flex; align-items: center">
-      <span class="spin"></span> BRUME
+    <div class="wrap">
+      <span class="spin"></span>
+      <span class="label">Opening Brume 24/7</span>
     </div>
   </body>
 </html>
