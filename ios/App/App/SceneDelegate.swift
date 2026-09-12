@@ -2,96 +2,107 @@ import UIKit
 import WebKit
 import Capacitor
 
-/// The native shell loads the published web app from a remote URL, so the
-/// local `native-shell/index.html` splash is never displayed. This bridge
-/// controller draws the loading state natively on top of the webview and
-/// removes it once the remote app has finished loading.
-class BrumeBridgeViewController: CAPBridgeViewController {
-    private let overlay = UIView()
-    private var progressObservation: NSKeyValueObservation?
-    private var loadingObservation: NSKeyValueObservation?
-    private var dismissed = false
+let brumeWebAppReady = Notification.Name("BrumeWebAppReady")
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        installOverlay()
-        observeWebView()
-        // Safety net: never trap the user behind the overlay.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
-            self?.dismissOverlay()
+/// Native loading screen drawn on top of everything (window level), so it is
+/// visible from the very first frame after the launch screen and cannot be
+/// replaced by whatever view controller Capacitor installs.
+final class BrumeLoadingOverlay: UIView {
+    private static weak var current: BrumeLoadingOverlay?
+    private static var dismissed = false
+
+    static let champagne = UIColor(red: 1.0, green: 0.894, blue: 0.616, alpha: 1.0)
+
+    @discardableResult
+    static func install(on window: UIWindow) -> BrumeLoadingOverlay? {
+        if dismissed { return nil }
+        if let existing = current, existing.superview != nil {
+            existing.superview?.bringSubviewToFront(existing)
+            return existing
+        }
+        let overlay = BrumeLoadingOverlay(frame: window.bounds)
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlay.build()
+        window.addSubview(overlay)
+        window.bringSubviewToFront(overlay)
+        current = overlay
+        return overlay
+    }
+
+    static func dismiss() {
+        DispatchQueue.main.async {
+            dismissed = true
+            guard let overlay = current else { return }
+            UIView.animate(withDuration: 0.3, animations: {
+                overlay.alpha = 0
+            }, completion: { _ in
+                overlay.removeFromSuperview()
+                current = nil
+            })
         }
     }
 
-    private func installOverlay() {
-        overlay.backgroundColor = UIColor.black
-        overlay.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(overlay)
-        NSLayoutConstraint.activate([
-            overlay.topAnchor.constraint(equalTo: view.topAnchor),
-            overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-
-        let champagne = UIColor(red: 1.0, green: 0.894, blue: 0.616, alpha: 1.0)
+    private func build() {
+        backgroundColor = .black
+        isUserInteractionEnabled = true
 
         let spinner = UIActivityIndicatorView(style: .large)
-        spinner.color = champagne
+        spinner.color = BrumeLoadingOverlay.champagne
         spinner.startAnimating()
-        spinner.translatesAutoresizingMaskIntoConstraints = false
 
         let label = UILabel()
-        label.text = "Opening Brume 24/7"
-        label.textColor = champagne
-        label.font = UIFont(name: "Georgia", size: 15) ?? UIFont.systemFont(ofSize: 15)
+        label.textAlignment = .center
         label.attributedText = NSAttributedString(
             string: "Opening Brume 24/7",
             attributes: [
                 .kern: 3.0,
-                .foregroundColor: champagne,
+                .foregroundColor: BrumeLoadingOverlay.champagne,
                 .font: UIFont(name: "Georgia", size: 15) ?? UIFont.systemFont(ofSize: 15)
             ]
         )
-        label.translatesAutoresizingMaskIntoConstraints = false
 
         let stack = UIStackView(arrangedSubviews: [spinner, label])
         stack.axis = .vertical
         stack.alignment = .center
         stack.spacing = 22
         stack.translatesAutoresizingMaskIntoConstraints = false
-        overlay.addSubview(stack)
+        addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: overlay.centerYAnchor)
+            stack.centerXAnchor.constraint(equalTo: centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
+    }
+}
+
+/// Bridge controller that reports when the remote web app has finished loading.
+class BrumeBridgeViewController: CAPBridgeViewController {
+    private var progressObservation: NSKeyValueObservation?
+    private var loadingObservation: NSKeyValueObservation?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .black
+        observeWebView()
+        // Safety net: never trap the user behind the overlay.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+            BrumeLoadingOverlay.dismiss()
+        }
     }
 
     private func observeWebView() {
         guard let webView = self.webView as? WKWebView else { return }
-        progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] _, change in
+        webView.isOpaque = false
+        webView.backgroundColor = .black
+        webView.scrollView.backgroundColor = .black
+        progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { _, change in
             if let value = change.newValue, value >= 0.95 {
-                self?.dismissOverlay()
+                NotificationCenter.default.post(name: brumeWebAppReady, object: nil)
             }
         }
-        loadingObservation = webView.observe(\.isLoading, options: [.new]) { [weak self] web, change in
+        loadingObservation = webView.observe(\.isLoading, options: [.new]) { web, change in
             if change.newValue == false, web.estimatedProgress > 0 {
-                self?.dismissOverlay()
+                NotificationCenter.default.post(name: brumeWebAppReady, object: nil)
             }
-        }
-    }
-
-    private func dismissOverlay() {
-        guard !dismissed else { return }
-        dismissed = true
-        progressObservation = nil
-        loadingObservation = nil
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            UIView.animate(withDuration: 0.35, animations: {
-                self.overlay.alpha = 0
-            }, completion: { _ in
-                self.overlay.removeFromSuperview()
-            })
         }
     }
 }
@@ -100,13 +111,34 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let windowScene = scene as? UIWindowScene else { return }
-
-        window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = BrumeBridgeViewController()
-        window?.makeKeyAndVisible()
-
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
+
+        NotificationCenter.default.addObserver(
+            forName: brumeWebAppReady,
+            object: nil,
+            queue: .main
+        ) { _ in
+            // Give the first painted frame a moment before fading out.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                BrumeLoadingOverlay.dismiss()
+            }
+        }
+
+        guard let windowScene = scene as? UIWindowScene else { return }
+        installOverlay(in: windowScene)
+        // The bridge window can be created slightly later; keep it covered.
+        for delay in [0.0, 0.05, 0.2, 0.5, 1.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak windowScene] in
+                guard let windowScene = windowScene else { return }
+                self.installOverlay(in: windowScene)
+            }
+        }
+    }
+
+    private func installOverlay(in windowScene: UIWindowScene) {
+        let target = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first ?? window
+        guard let target = target else { return }
+        BrumeLoadingOverlay.install(on: target)
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
