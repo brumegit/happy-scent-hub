@@ -415,24 +415,26 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
  */
 export async function isNativeConnected(deviceId: string) {
   if (!connectedIds.has(deviceId)) return false;
-  const target = connectedTargets.get(deviceId);
-  if (!target) return false;
+  if (!connectedTargets.has(deviceId)) return false;
   try {
-    // CoreBluetooth's retrieveConnectedPeripherals call is passive: it asks iOS
-    // for its current connection registry and sends no GATT command. This avoids
-    // the stale in-memory "connected" state seen after firmware restarts.
+    // getMtu reads a cached native property and sends no GATT traffic. Crucially,
+    // the plugin first checks the same CBPeripheral session state used by write,
+    // unlike getConnectedDevices(), which can report a stale system-level link.
     const ble = await client();
-    const devices = await ble.getConnectedDevices([target.service]);
-    const connected = devices.some((device) => device.deviceId === deviceId);
-    if (!connected) markDisconnected(deviceId);
-    return connected;
+    await ble.getMtu(deviceId);
+    trace("direct native write-session check: connected");
+    return true;
   } catch (error) {
     trace(
-      `passive native connection check failed: ${
+      `direct native write-session check failed: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
-    return connectedIds.has(deviceId);
+    markDisconnected(deviceId);
+    // A failed native state check must never be interpreted as permission to
+    // write. Refuse the save before its first byte instead of showing a false
+    // success or discovering the stale link during the routine command.
+    return false;
   }
 }
 
