@@ -18,7 +18,7 @@ import {
   type TimerSlot,
 } from "@/lib/scentlife";
 import { pushDebug } from "@/stores/pushDebugStore";
-import { trace } from "@/lib/ble-log";
+import { describeError, trace } from "@/lib/ble-log";
 import {
   connectNative,
   isBluetoothEnabled as nativeBluetoothEnabled,
@@ -425,7 +425,7 @@ export async function connectPickedDevice(device: {
       isLive: () => isNativeConnected(device.deviceId),
       reconnect: async () => {
         trace("native reconnect: reopening the diffuser session");
-        await connectPickedDevice({ deviceId: device.deviceId, name: device.name });
+        await connectPickedDevice({ deviceId: device.deviceId, ...(device.name ? { name: device.name } : {}) });
         return await isNativeConnected(device.deviceId).catch(() => false);
       },
     });
