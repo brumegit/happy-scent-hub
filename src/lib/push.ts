@@ -2,6 +2,7 @@ import {
   beginCommandSequence,
   endCommandSequence,
   isRealLink,
+  reopenLink,
   queryTimers,
   sendFrames,
 } from "@/lib/bluetooth";
@@ -97,7 +98,18 @@ export async function pushSettings(opts: {
           : `Turning off slot #${slot.index} with persistent command 0x14 · save +${slotStartedAt - saveStartedAt}ms`,
       );
       try {
-        const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(disabledPayload(slot))], log);
+        let [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(disabledPayload(slot))], log)
+          .catch(async (error) => {
+            // Only the very first write may be retried: nothing has reached the
+            // diffuser yet, so reopening the link once cannot duplicate or
+            // interrupt a routine. Later slots never reconnect or replay.
+            if (position !== 0) throw error;
+            log("first write refused on a stale session · reopening the link once");
+            const reopened = await reopenLink(opts.deviceId);
+            if (!reopened) throw error;
+            log("link reopened · retrying the first routine");
+            return sendFrames(opts.deviceId, [buildModifyTimer(disabledPayload(slot))], log);
+          });
         if (ack) acks.push(ack);
         // A silent reply is normal on this firmware (some modules answer
         // nothing and simply beep). Only a failed write means the routine did
