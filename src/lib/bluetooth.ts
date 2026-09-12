@@ -62,6 +62,8 @@ type Link = {
   routineRepliesExpected?: boolean;
   /** True while the physical link is still up. */
   isLive?: () => Promise<boolean>;
+  /** Reopens the same physical link after the OS reported a disconnect. */
+  reconnect?: () => Promise<boolean>;
 };
 
 /** Prevents status replies and user actions from interleaving BLE packets. */
