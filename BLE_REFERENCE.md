@@ -82,8 +82,13 @@ endCommandSequence()             // starts the 5 s quiet period
    `writeWithoutResponse` only; there is no fallback write mode.
 3. **Don't wait for `0x94`/reply frames on iPhone.** This firmware does not send
    them; waiting stretches the save past the connection window.
-4. **Don't read (`0x08`) as a keepalive**, ever — not on screen entry, not between
-   routine writes, not after saving. This was the single most common disconnect cause.
+4. **Don't read (`0x08`) as a keepalive**, ever — not on a timer, not between
+   routine writes, not after saving. This was the single most common disconnect
+   cause. The only allowed read is a **single** best-effort `0x08` when the
+   intensity screen opens (or right after pairing), to preload the user's real
+   settings. It runs once, status polling is suspended while it runs and only
+   starts five seconds after it finishes, and a failure is silent.
+
 5. **Don't send `0xA1`** (or any acknowledgment of an unsolicited `0x21`) during a
    save or the quiet period. Suppress it; never defer or replay it.
 6. **Don't trigger any BLE call on "CHANGE ROUTINE"** — no `initialize`, no
