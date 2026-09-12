@@ -77,11 +77,14 @@ header. The log sheet can be scrolled, copied, or shared.
     application acknowledgment, inserting it between `0x14` writes makes this
     firmware close the iPhone connection. Suppress the acknowledgment while the
     save guard or post-save quiet period is active; never defer or replay it.
-12. **Opening Edit settings must be Bluetooth-silent.** Tapping **Change routine**
+12. **Opening Edit settings must stay Bluetooth-quiet.** Tapping **Change routine**
     and mounting the intensity screen must not initialize the adapter, query its
-    enabled state, read `0x08`, or probe the connection. Start the status-only
-    connection check five seconds after navigation, then repeat every five seconds.
-    Never use a protocol read as a keepalive while the user edits.
+    enabled state, or probe the connection. The only allowed traffic is one
+    best-effort `0x08` routine read when the intensity screen opens, to preload
+    the user's real settings; it runs once and fails silently. Status-only
+    connection checks start five seconds after that read, then repeat every five
+    seconds. Never use a protocol read as a keepalive while the user edits.
+
 
 
 ## 4. Reproducing quickly
