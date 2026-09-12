@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { trace } from "@/lib/ble-log";
+
 import { DevicePicker } from "@/components/DevicePicker";
 import type { DeviceChooser, NativeDevice } from "@/lib/native-ble";
 
