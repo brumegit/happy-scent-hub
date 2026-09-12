@@ -285,7 +285,7 @@ function Setup() {
     });
     void verifyLink();
     // Passive five-second status refresh; no bytes are sent to the diffuser.
-    const interval = window.setInterval(() => void verifyLink(), 4000);
+    const interval = window.setInterval(() => void verifyLink(), 5000);
     return () => {
       cancelled = true;
       unsubscribe();

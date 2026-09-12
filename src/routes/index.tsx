@@ -183,7 +183,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setNow(new Date());
     // Re-check the physical link often: a diffuser that went out of range or was
     // taken over by another phone must stop showing as connected.
-    const link = setInterval(refresh, 4000);
+    const link = setInterval(refresh, 5000);
     const clock = setInterval(() => setNow(new Date()), 60_000);
     const onVisible = () => document.visibilityState === "visible" && refresh();
     document.addEventListener("visibilitychange", onVisible);
