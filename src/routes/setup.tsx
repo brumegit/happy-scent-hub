@@ -26,7 +26,6 @@ import {
   isRealLink,
   sendFrames,
   checkConnection,
-  pingLink,
   subscribeConnection,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
@@ -262,10 +261,8 @@ function Setup() {
     };
   }, [phase]);
 
-  // Keep the link busy while the user chooses an intensity or edits routines:
-  // the diffuser drops an idle Bluetooth link after a few seconds to preserve
-  // battery, which would otherwise interrupt the flow before anything is saved.
-  // The keepalive doubles as the liveness check.
+  // Observe the operating system's connection state while the user edits. This
+  // must never send a command: active polling can interfere with this firmware.
   useEffect(() => {
     if ((phase !== "intensity" && phase !== "schedule") || !deviceId) return;
     let cancelled = false;
@@ -273,9 +270,7 @@ function Setup() {
     const verifyLink = async () => {
       if (checking) return;
       checking = true;
-      const live =
-        (await pingLink(deviceId).catch(() => false)) ||
-        (await checkConnection(deviceId).catch(() => false));
+      const live = await checkConnection(deviceId).catch(() => false);
       checking = false;
       if (cancelled || live) return;
       setConnectionLost(true);
@@ -289,7 +284,7 @@ function Setup() {
       setPhase("idle");
     });
     void verifyLink();
-    // Faster than the module's idle timeout so the link never goes to sleep.
+    // Passive five-second status refresh; no bytes are sent to the diffuser.
     const interval = window.setInterval(() => void verifyLink(), 4000);
     return () => {
       cancelled = true;

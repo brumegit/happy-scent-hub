@@ -77,11 +77,15 @@ header. The log sheet can be scrolled, copied, or shared.
 - Every configured routine is accepted, and the link remains up afterwards.
 - Fresh onboarding *and* Edit settings both work on a physical device.
 
-## Protected save and keepalive timing
+## Protected save and passive status checks
 
 The diffuser drops the link if anything is sent while it commits routines to flash.
 All optional reads and keepalives are blocked throughout the five-slot save and for
-5 seconds after its final command. The first later keepalive runs before the
-diffuser's own idle timeout, and only one keepalive per device can be in flight.
-Never increase this silence beyond the peripheral's idle timeout and never remove
-the save guard.
+5 seconds after its final command. Normal five-second screen checks query only the
+phone's connection registry and send no bytes to the diffuser. Never add active
+`0x08` keepalives to screen polling and never remove the save guard.
+
+Some firmware revisions intentionally close their radio after persistent `0x14`
+writes while committing settings. The app cannot prevent a peripheral-initiated
+firmware sleep; it must accept the completed save, show the resulting offline state,
+and never respond with another command, reconnect, replay, or disconnect call.

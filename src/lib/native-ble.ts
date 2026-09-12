@@ -414,7 +414,26 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
  * live peripheral and must never make the app tear down a working session.
  */
 export async function isNativeConnected(deviceId: string) {
-  return connectedIds.has(deviceId);
+  if (!connectedIds.has(deviceId)) return false;
+  const target = connectedTargets.get(deviceId);
+  if (!target) return false;
+  try {
+    // CoreBluetooth's retrieveConnectedPeripherals call is passive: it asks iOS
+    // for its current connection registry and sends no GATT command. This avoids
+    // the stale in-memory "connected" state seen after firmware restarts.
+    const ble = await client();
+    const devices = await ble.getConnectedDevices([target.service]);
+    const connected = devices.some((device) => device.deviceId === deviceId);
+    if (!connected) markDisconnected(deviceId);
+    return connected;
+  } catch (error) {
+    trace(
+      `passive native connection check failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return connectedIds.has(deviceId);
+  }
 }
 
 /**
