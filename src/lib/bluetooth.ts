@@ -58,6 +58,8 @@ type Link = {
   /** Waits for a reply with the given function code (used for batched writes). */
   waitFor?: (fn: number) => Promise<Uint8Array>;
   simulated: boolean;
+  /** Native write-without-response completes without a protocol reply. */
+  routineRepliesExpected?: boolean;
   /** True while the physical link is still up. */
   isLive?: () => Promise<boolean>;
 };
@@ -400,6 +402,7 @@ export async function connectPickedDevice(device: {
     });
     links.set(device.deviceId, {
       simulated: false,
+      routineRepliesExpected: false,
       write,
       request: async (frame, responseFn) => {
         // CoreBluetooth can deliver the first notification slowly immediately
@@ -572,9 +575,20 @@ export async function sendFrames(
     const begun = Date.now();
     let response: Uint8Array | null = null;
     try {
-      response = await link.request(frame, (fn + 0x80) & 0xff);
-      trace(`RX 0x${fn.toString(16)} after ${Date.now() - begun}ms · ${toHex(response)}`);
-      onLog?.(`RX ${toHex(response)}`);
+      if (link.routineRepliesExpected === false) {
+        // iOS uses CoreBluetooth's write-without-response path. The plugin
+        // resolves as soon as CoreBluetooth accepts the bytes, and this diffuser
+        // does not notify a 0x94 reply. Waiting four seconds for one after every
+        // slot leaves the connection idle long enough for the peripheral to
+        // sleep mid-save. Keep the five writes contiguous instead.
+        await link.write(frame);
+        trace(`native 0x${fn.toString(16)} write complete · no reply expected`);
+        onLog?.(`Write complete for 0x${fn.toString(16)}`);
+      } else {
+        response = await link.request(frame, (fn + 0x80) & 0xff);
+        trace(`RX 0x${fn.toString(16)} after ${Date.now() - begun}ms · ${toHex(response)}`);
+        onLog?.(`RX ${toHex(response)}`);
+      }
     } catch (error) {
       response = null;
       const reason = error instanceof Error ? error.message : String(error);
