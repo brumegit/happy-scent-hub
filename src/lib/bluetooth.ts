@@ -824,11 +824,18 @@ export async function queryTimers(
 
 
 
-type TrafficState = { lastCommandAt: number; saving: boolean };
+type TrafficState = { lastCommandAt: number; saving: boolean; quietUntil: number };
 const trafficByDevice = new Map<string, TrafficState>();
 /** Optional reads remain blocked briefly after persistent writes. Normal screen
  * status checks are passive and do not use this command path. */
 const QUIET_AFTER_COMMAND_MS = 5_000;
+/** A non-persistent command (clock sync, status query) only needs the module a
+ * moment to answer — blocking reads for five seconds after pairing would hide
+ * the diffuser's stored settings from the setup screens. */
+const QUIET_AFTER_LIGHT_COMMAND_MS = 600;
+/** Commands that write to flash and need the long quiet window. */
+const PERSISTENT_FNS = new Set([0x13, 0x14]);
+
 const pingsInFlight = new Map<string, Promise<boolean>>();
 
 function trafficState(deviceId: string) {
