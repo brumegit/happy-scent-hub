@@ -27,7 +27,6 @@ import {
   sendFrames,
   checkConnection,
   subscribeConnection,
-  pingLink,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
@@ -291,23 +290,10 @@ function Setup() {
     void verifyLink();
     // Passive five-second status refresh; no bytes are sent to the diffuser.
     const interval = window.setInterval(() => void verifyLink(), 5000);
-    // The diffuser closes an idle link on its own, which used to drop the user
-    // mid-setup. A harmless read every 15s keeps the session awake; it changes
-    // nothing on the device, makes no sound, and is skipped while saving.
-    const keepalive = window.setInterval(() => {
-      if (cancelled || savingRef.current) return;
-      void pingLink(deviceId).then((live) => {
-        if (cancelled || savingRef.current || live) return;
-        setConnectionLost(true);
-        setDeviceId(null);
-        setPhase("idle");
-      });
-    }, 15_000);
     return () => {
       cancelled = true;
       unsubscribe();
       window.clearInterval(interval);
-      window.clearInterval(keepalive);
     };
   }, [deviceId, phase]);
 
@@ -320,20 +306,9 @@ function Setup() {
     setPhase("pushing");
     setError(null);
 
-    // Nothing can be saved without a live link: check the radio, the app's
-    // permissions and the actual connection before pretending to send.
-    const req = await refreshRequirements();
-    if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
-      const prompt = bluetoothRequirementPrompt({
-        bluetoothOff: req.bluetoothOff,
-        permissionDenied: req.permissionDenied,
-        locationOff: req.locationOff,
-      });
-      toast.error(prompt.message, { className: "whitespace-pre-line" });
-      savingRef.current = false;
-      setPhase(previous);
-      return;
-    }
+    // Do not query Bluetooth, permissions, routines, or the OS after Confirm.
+    // The editing screen has already monitored those states; this path starts
+    // the five routine writes immediately.
     setResult("pairing");
     try {
       await pushSettings({
