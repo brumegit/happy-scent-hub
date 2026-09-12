@@ -415,36 +415,22 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
  */
 export async function isNativeConnected(deviceId: string) {
   if (!connectedIds.has(deviceId)) return false;
-  const target = connectedTargets.get(deviceId);
-  if (!target) return false;
+  if (!connectedTargets.has(deviceId)) return false;
   try {
-    const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
-    let connected: boolean;
-    if (cap?.getPlatform?.() === "ios") {
-      // The plugin's getConnectedDevices() uses
-      // retrieveConnectedPeripherals(withServices:), which can briefly return a
-      // stale peripheral after the firmware has closed the link. This patched
-      // native method reads CBPeripheral.state directly from the exact session
-      // that writes use, without sending any GATT traffic.
-      const mod = await import("@capacitor-community/bluetooth-le");
-      const nativePlugin = mod.BluetoothLe as typeof mod.BluetoothLe & {
-        isDeviceConnected(options: { deviceId: string }): Promise<{ value: boolean }>;
-      };
-      connected = (await nativePlugin.isDeviceConnected({ deviceId })).value;
-      trace(`direct native connection state: ${connected ? "connected" : "disconnected"}`);
-    } else {
-      const ble = await client();
-      const devices = await ble.getConnectedDevices([target.service]);
-      connected = devices.some((device) => device.deviceId === deviceId);
-    }
-    if (!connected) markDisconnected(deviceId);
-    return connected;
+    // getMtu reads a cached native property and sends no GATT traffic. Crucially,
+    // the plugin first checks the same CBPeripheral session state used by write,
+    // unlike getConnectedDevices(), which can report a stale system-level link.
+    const ble = await client();
+    await ble.getMtu(deviceId);
+    trace("direct native write-session check: connected");
+    return true;
   } catch (error) {
     trace(
-      `passive native connection check failed: ${
+      `direct native write-session check failed: ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
+    markDisconnected(deviceId);
     // A failed native state check must never be interpreted as permission to
     // write. Refuse the save before its first byte instead of showing a false
     // success or discovering the stale link during the routine command.

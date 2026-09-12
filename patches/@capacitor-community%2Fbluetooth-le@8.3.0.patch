@@ -86,28 +86,3 @@ diff --git a/android/src/main/java/com/capacitorjs/community/plugins/bluetoothle
          }
      }
  
-diff --git a/ios/Sources/BluetoothLe/Plugin.swift b/ios/Sources/BluetoothLe/Plugin.swift
---- a/ios/Sources/BluetoothLe/Plugin.swift
-+++ b/ios/Sources/BluetoothLe/Plugin.swift
-@@ -30,6 +30,7 @@ public class BluetoothLe: CAPPlugin, CAPBridgedPlugin {
-         CAPPluginMethod(name: "getDevices", returnType: CAPPluginReturnPromise),
-         CAPPluginMethod(name: "discoverServices", returnType: CAPPluginReturnPromise),
-         CAPPluginMethod(name: "getConnectedDevices", returnType: CAPPluginReturnPromise),
-+        CAPPluginMethod(name: "isDeviceConnected", returnType: CAPPluginReturnPromise),
-         CAPPluginMethod(name: "connect", returnType: CAPPluginReturnPromise),
-         CAPPluginMethod(name: "createBond", returnType: CAPPluginReturnPromise),
-         CAPPluginMethod(name: "isBonded", returnType: CAPPluginReturnPromise),
-@@ -274,6 +275,13 @@ public class BluetoothLe: CAPPlugin, CAPBridgedPlugin {
-         }
-     }
- 
-+    @objc func isDeviceConnected(_ call: CAPPluginCall) {
-+        DispatchQueue.main.async {
-+            guard let device = self.getDevice(call, checkConnection: false) else { return }
-+            call.resolve(["value": device.isConnected()])
-+        }
-+    }
-+
-     @objc func connect(_ call: CAPPluginCall) {
-         DispatchQueue.main.async {
-             guard let device = self.getDevice(call, checkConnection: false) else { return }
