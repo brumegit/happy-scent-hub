@@ -569,7 +569,7 @@ export async function sendFrames(
   frames: Uint8Array[],
   onLog?: (line: string) => void,
 ): Promise<FrameAck[]> {
-  const link = deviceId ? links.get(deviceId) : undefined;
+  let link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) {
     trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
@@ -578,8 +578,13 @@ export async function sendFrames(
   // protected command sequence. Do not repeat native bridge checks between
   // routine slots while that sequence is active.
   if (!isTrafficBlocked(deviceId) && !link.simulated && link.isLive && !(await link.isLive().catch(() => false))) {
-    trace("sendFrames: link down before sending — stopping without reconnecting");
-    throw new Error("Bluetooth link lost. Double tap the diffuser button, reconnect, and try again.");
+    trace("sendFrames: link down before sending — attempting one automatic reconnect");
+    onLog?.("Bluetooth link dropped — reconnecting");
+    const recovered = await reopenLink(deviceId);
+    if (!recovered) {
+      throw new Error("Bluetooth link lost. Double tap the diffuser button, reconnect, and try again.");
+    }
+    link = links.get(deviceId!) ?? link;
   }
 
   // One frame per command. Routine saves currently call this once for each of
