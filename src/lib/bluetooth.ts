@@ -423,6 +423,11 @@ export async function connectPickedDevice(device: {
       },
       waitFor: (fn) => responses.waitFor(fn, 4000),
       isLive: () => isNativeConnected(device.deviceId),
+      reconnect: async () => {
+        trace("native reconnect: reopening the diffuser session");
+        await connectPickedDevice({ deviceId: device.deviceId, name: device.name });
+        return await isNativeConnected(device.deviceId).catch(() => false);
+      },
     });
     publishConnection(device.deviceId, true);
   }
