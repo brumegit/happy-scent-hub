@@ -29,6 +29,7 @@ import {
   subscribeConnection,
   msUntilOptionalTrafficAllowed,
 
+  isBluetoothOn,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
@@ -175,6 +176,20 @@ function Setup() {
     // Editing an existing diffuser still needs Bluetooth on and allowed: the
     // settings can only be saved over a live link.
   } = useBluetoothRequirements(phase === "idle");
+  // Pairing step only: while the radio is off, quietly re-check every 5 s so
+  // the pairing CTA appears as soon as the user turns Bluetooth back on.
+  // isBluetoothOn() is a passive adapter query — it never prompts or touches
+  // the diffuser link.
+  useEffect(() => {
+    if (phase !== "idle" || !btOff) return;
+    const timer = setInterval(() => {
+      void (async () => {
+        if (await isBluetoothOn()) await refreshRequirements();
+      })();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [phase, btOff, refreshRequirements]);
+
   const autostarted = useRef(false);
   // In-app Bluetooth chooser (named devices only).
   const [picker, setPicker] = useState<NativeDevice[] | null>(null);
@@ -564,7 +579,7 @@ function Setup() {
                       <p
                         className={
                           "text-sm " +
-                          (prompt.tone === "destructive" ? "text-destructive" : "text-foreground")
+                          (prompt.tone === "destructive" ? "text-center text-destructive" : "text-foreground")
                         }
                       >
                         {prompt.message}
