@@ -3,6 +3,9 @@
 Practical checklist for when the diffuser connects but settings do not reach it,
 or the link drops. Written from the regressions we actually hit.
 
+For the binding rules of the working version (what the code must always do and
+never do), see **`BLE_REFERENCE.md`** — this guide only covers diagnosis.
+
 ## 0. Know which layer changed
 
 - **Web/JS changes** (anything in `src/`) reach the installed iPhone/Android app
