@@ -114,9 +114,9 @@ export function bluetoothRequirementPrompt(req: {
     return {
       message: locationOff
         ? "Turn Bluetooth and Location on to pair your diffuser."
-        : "Turn Bluetooth ON",
+        : "Activate Bluetooth on your device to pair your diffuser.",
       cta: locationOff ? ("Open location settings" as const) : ("" as const),
-      target: locationOff ? ("location" as const) : ("app" as const),
+      target: locationOff ? ("location" as const) : ("none" as const),
       tone: "destructive" as const,
     };
   }

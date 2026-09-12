@@ -183,15 +183,24 @@ export async function requestNotificationPermission() {
  * permissions without starting a scan. Safe to call on mount so the pairing
  * screen can hide the pairing option until access is granted.
  */
+let permissionInitialized = false;
+
 export async function ensureBluetoothPermission(): Promise<boolean> {
   if (!isNativeSync()) return true;
+  // initialize() only needs to run once per session — calling it again on iOS
+  // when the radio is off triggers the system "Turn on Bluetooth" dialog with a
+  // Settings button. After the first call, isEnabled() detects the radio state
+  // silently.
+  if (permissionInitialized) return !permissionDenied;
   try {
     const mod = await import("@capacitor-community/bluetooth-le");
     await mod.BleClient.initialize({ androidNeverForLocation: false });
+    permissionInitialized = true;
     permissionDenied = false;
     void requestNotificationPermission();
     return true;
   } catch {
+    permissionInitialized = true;
     permissionDenied = true;
     return false;
   }
