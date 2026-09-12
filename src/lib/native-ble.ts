@@ -56,8 +56,13 @@ function markDisconnected(deviceId: string) {
 export function forgetNativeSession(deviceId: string) {
   if (!connectedIds.has(deviceId) && !connectedTargets.has(deviceId)) return;
   trace(`dropping stale native session for ${deviceId}`);
+  // Invalidate the old CoreBluetooth disconnect callback before a new session
+  // is opened. Otherwise a late callback from the dead connection can erase
+  // the newly connected session.
+  connectionGenerations.set(deviceId, (connectionGenerations.get(deviceId) ?? 0) + 1);
   connectedIds.delete(deviceId);
   connectedTargets.delete(deviceId);
+  connectedNotify.delete(deviceId);
   liveChecks.delete(deviceId);
 }
 
@@ -335,6 +340,7 @@ export async function connectNative(
   }
   const generation = (connectionGenerations.get(deviceId) ?? 0) + 1;
   connectionGenerations.set(deviceId, generation);
+  if (onNotify) connectedNotify.set(deviceId, onNotify);
   // Android can reject a GATT connection when it starts in the same radio
   // timeslice as the chooser's scan teardown. Give scanning time to stop, then
   // retry only transient GATT failures after fully closing the stale client.

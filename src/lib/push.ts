@@ -95,13 +95,15 @@ export async function pushSettings(opts: {
     // transport serializes the packets. Start the first write immediately while
     // the checked link is still active; only later slots need flash-settle time.
     const acks = [];
-    for (const slot of slots) {
+    const saveStartedAt = Date.now();
+    for (const [position, slot] of slots.entries()) {
       const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
       const action = slot.enabled ? `save ${label}` : `turn off unused routine slot ${slot.index}`;
+      const slotStartedAt = Date.now();
       log(
         slot.enabled
-          ? `Writing slot #${slot.index} (${label}) with persistent command 0x14`
-          : `Turning off slot #${slot.index} with persistent command 0x14`,
+          ? `Writing slot #${slot.index} (${label}) with persistent command 0x14 · save +${slotStartedAt - saveStartedAt}ms`
+          : `Turning off slot #${slot.index} with persistent command 0x14 · save +${slotStartedAt - saveStartedAt}ms`,
       );
       try {
         const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(disabledPayload(slot))], log);
@@ -110,6 +112,7 @@ export async function pushSettings(opts: {
         // nothing and simply beep). Only a failed write means the routine did
         // not reach the diffuser.
         if (!ack?.acked) log(`Slot #${slot.index} answered silently — treated as written`);
+        log(`Slot #${slot.index} finished in ${Date.now() - slotStartedAt}ms`);
       } catch (error) {
         throw new Error(
           `Step “${action} with command 0x14” failed — ${describeError(
@@ -117,7 +120,9 @@ export async function pushSettings(opts: {
           )} Make sure the diffuser is still paired, then try again.`,
         );
       }
-      await wait(700);
+      // One firmware-settle pause between slots. Never pause after slot 5, and
+      // do not add a second transport-layer pause on native iPhone saves.
+      if (position < slots.length - 1) await wait(700);
     }
 
     // Each 0x14 acknowledgment and beep confirms that routine. Do not send a
@@ -127,7 +132,7 @@ export async function pushSettings(opts: {
     log(
       `Save complete · ${activeCount} active routine${
         activeCount === 1 ? "" : "s"
-      } written · ${5 - activeCount} slot(s) turned off`,
+      } written · ${5 - activeCount} slot(s) turned off · ${Date.now() - saveStartedAt}ms total`,
     );
     endCommandSequence(opts.deviceId);
     return acks;
