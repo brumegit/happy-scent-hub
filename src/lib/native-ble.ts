@@ -47,6 +47,20 @@ function markDisconnected(deviceId: string) {
   disconnectListeners.forEach((listener) => listener(deviceId));
 }
 
+/**
+ * Drops the cached session for a device without announcing a disconnect to the
+ * UI. Used when the operating system refuses a write ("Not connected to
+ * device."): the cached channel is dead, so the next connect must open a real
+ * session instead of reusing it.
+ */
+export function forgetNativeSession(deviceId: string) {
+  if (!connectedIds.has(deviceId) && !connectedTargets.has(deviceId)) return;
+  trace(`dropping stale native session for ${deviceId}`);
+  connectedIds.delete(deviceId);
+  connectedTargets.delete(deviceId);
+  liveChecks.delete(deviceId);
+}
+
 /** Delivers the operating system's disconnect event without waiting for polling. */
 export function subscribeNativeDisconnect(listener: (deviceId: string) => void) {
   disconnectListeners.add(listener);
