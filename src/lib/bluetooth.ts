@@ -60,8 +60,6 @@ type Link = {
   simulated: boolean;
   /** True while the physical link is still up. */
   isLive?: () => Promise<boolean>;
-  /** Drops the physical GATT link (web only; native goes through Capacitor). */
-  close?: () => Promise<void>;
 };
 
 /** Prevents status replies and user actions from interleaving BLE packets. */
@@ -254,7 +252,6 @@ async function attachLink(device: {
   addEventListener?: (type: string, cb: () => void) => void;
   gatt?: {
     connected?: boolean;
-    disconnect?: () => void;
     connect: () => Promise<{ getPrimaryServices: () => Promise<{ getCharacteristics: () => Promise<Char[]> }[]> }>;
   };
 }) {
@@ -368,11 +365,6 @@ async function attachLink(device: {
       } catch {
         return false;
       }
-    },
-    close: async () => {
-      // Physically drop the GATT link so the device LED stops showing connected.
-      device.gatt?.disconnect?.();
-      await wait(150);
     },
   });
   publishConnection(device.id, true);

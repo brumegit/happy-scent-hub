@@ -26,8 +26,6 @@ let bleClient: BleClientType | null = null;
  */
 const connectedIds = new Set<string>();
 
-/** Service UUID of the serial channel per device, used to verify liveness. */
-const connectedServices = new Map<string, string>();
 const connectedTargets = new Map<string, NativeChar>();
 const connectionGenerations = new Map<string, number>();
 
@@ -36,7 +34,6 @@ const disconnectListeners = new Set<(deviceId: string) => void>();
 function markDisconnected(deviceId: string) {
   trace(`native disconnect event for ${deviceId}`);
   connectedIds.delete(deviceId);
-  connectedServices.delete(deviceId);
   connectedTargets.delete(deviceId);
   disconnectListeners.forEach((listener) => listener(deviceId));
 }
@@ -389,7 +386,6 @@ export async function connectNative(
       }
     }
   }
-  connectedServices.set(deviceId, writable.service);
   connectedTargets.set(deviceId, writable);
   trace(
     `serial channel selected ${writable.service.slice(0, 8)}/${writable.characteristic.slice(0, 8)}`,
