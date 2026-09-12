@@ -24,8 +24,8 @@ const ROOM_SUGGESTIONS = [
   "Stairway",
 ];
 
-/** Shared drift pace: 5 px/second, with the two rows moving opposite ways. */
-const DRIFT_SPEED = 0.005;
+/** Drift pace: 15 px/second. Uses sub-pixel transforms for smoothness. */
+const DRIFT_SPEED = 0.015; // px/ms
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
@@ -37,8 +37,9 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 /**
- * One endlessly drifting row. The list is rendered twice so scrollLeft can wrap
- * seamlessly, and the drift pauses while the user is dragging the row.
+ * One endlessly drifting row. Content is duplicated and moved via a sub-pixel
+ * `transform: translateX` (browsers interpolate transforms smoothly, unlike
+ * `scrollLeft` which snaps to whole pixels). Drift pauses while dragging.
  */
 function Row({
   items,
@@ -49,41 +50,44 @@ function Row({
   direction: 1 | -1;
   onPick: (value: string) => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
+  const posRef = useRef(0);
+  const widthRef = useRef(0);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = trackRef.current;
     if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    // Measure one copy's width so we can wrap seamlessly.
+    const measure = () => {
+      widthRef.current = el.scrollWidth / 2;
+    };
+    measure();
+
     let raf = 0;
     let last = performance.now();
-    // scrollLeft is rounded by the browser, so the sub-pixel drift is kept in a
-    // float here; otherwise a slow row would round back to the same pixel and
-    // appear frozen.
-    let pos = 0;
     let started = false;
 
     const tick = (now: number) => {
       const dt = now - last;
       last = now;
-      const half = el.scrollWidth / 2;
+      const half = widthRef.current;
       if (half > 0 && !started) {
-        // The right-drifting row starts from the middle of the duplicated list
-        // so it has room to move backwards.
-        pos = direction === -1 ? half : 0;
-        el.scrollLeft = pos;
+        posRef.current = direction === -1 ? -half : 0;
+        el.style.transform = `translate3d(${posRef.current}px,0,0)`;
         started = true;
       }
-      if (started && paused.current) {
-        // Follow the user's own dragging so drift resumes from where they left.
-        pos = el.scrollLeft;
-      } else if (started && half > 0) {
-        pos += direction * (dt * DRIFT_SPEED);
-        if (pos >= half) pos -= half;
-        if (pos <= 0) pos += half;
-        el.scrollLeft = pos;
+      if (started && half > 0) {
+        if (paused.current) {
+          // Keep transform synced if needed (no change while paused).
+        } else {
+          posRef.current += direction * (dt * DRIFT_SPEED);
+          if (posRef.current <= -half) posRef.current += half;
+          if (posRef.current >= 0) posRef.current -= half;
+          el.style.transform = `translate3d(${posRef.current}px,0,0)`;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
@@ -91,38 +95,29 @@ function Row({
     return () => cancelAnimationFrame(raf);
   }, [direction]);
 
-  const hold = () => {
-    paused.current = true;
-  };
-  const release = () => {
-    paused.current = false;
-  };
-
-
   return (
     <div
-      ref={ref}
-      onPointerDown={hold}
-      onPointerUp={release}
-      onPointerCancel={release}
-      onPointerLeave={release}
-      onTouchStart={hold}
-      onTouchEnd={release}
       // -mx-11 breaks out of the page's px-11 padding so badges bleed past the
-      // screen edges; 0 horizontal padding on the row makes them appear to exit
-      // the viewport. h-11 matches the room-name input height.
-      className="-mx-11 flex h-11 gap-2 overflow-x-auto px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      // screen edges; overflow hidden clips the duplicated track. h-11 matches
+      // the room-name input height. The inner track uses translateX (sub-pixel
+      // smooth) rather than scrollLeft (integer-jerky).
+      className="-mx-11 h-11 overflow-hidden px-0"
     >
-      {[...items, ...items].map((suggestion, index) => (
-        <button
-          key={`${suggestion}-${index}`}
-          type="button"
-          onClick={() => onPick(suggestion)}
-          className="flex h-11 shrink-0 items-center rounded-[10px] border border-border px-2 py-1 text-base tracking-normal whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground md:text-sm"
-        >
-          {suggestion}
-        </button>
-      ))}
+      <div
+        ref={trackRef}
+        className="flex h-11 gap-2 w-max will-change-transform"
+      >
+        {[...items, ...items].map((suggestion, index) => (
+          <button
+            key={`${suggestion}-${index}`}
+            type="button"
+            onClick={() => onPick(suggestion)}
+            className="flex h-11 shrink-0 items-center rounded-[10px] border border-border px-2 py-1 text-base tracking-normal whitespace-nowrap text-muted-foreground transition-colors hover:border-foreground hover:text-foreground md:text-sm"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
