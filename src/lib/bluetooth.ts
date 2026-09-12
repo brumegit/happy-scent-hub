@@ -518,7 +518,6 @@ export async function sendWithoutReadback(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
@@ -562,8 +561,8 @@ export async function sendFrames(
     throw new Error("Bluetooth link lost. Double tap the diffuser button, reconnect, and try again.");
   }
 
-  // One frame per command — the module beeps once per accepted command, so the
-  // schedule is pushed as a single timer-list frame (0x13), never expanded.
+  // One frame per command. Routine saves currently call this once for each of
+  // the five authoritative 0x14 hardware slots.
   const acks: FrameAck[] = [];
   for (const frame of frames) {
     const hex = toHex(frame);
@@ -601,16 +600,13 @@ export async function sendFrames(
     await wait(200);
   }
 
-  // No liveness probe after the last frame: every frame was acknowledged, and
-  // some firmware drops the link right after saving. That is not a failure.
+  // No liveness probe or other traffic after the final frame.
   return acks;
 }
 
 /**
- * Guarantees a usable link before any command is sent. The diffuser falls
- * asleep quickly, so the link registered at pairing time is often already dead
- * by the time the user finishes picking a routine. Reconnects once instead of
- * letting the first write fail.
+ * Observes whether the existing link is usable before any command is sent.
+ * It never reconnects, closes, or replaces the native session.
  */
 export async function ensureLink(
   deviceId: string | null,
@@ -644,7 +640,6 @@ export async function sendBatch(
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
-    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
 
@@ -681,7 +676,6 @@ export async function sendBatch(
   });
 
   if (link.isLive && !(await link.isLive())) {
-    if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost while sending. Reconnect the diffuser and try again.");
   }
   return acks;

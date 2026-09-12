@@ -27,6 +27,7 @@ let bleClient: BleClientType | null = null;
 const connectedIds = new Set<string>();
 
 const connectedTargets = new Map<string, NativeChar>();
+const connectedNotify = new Map<string, (value: Uint8Array) => void>();
 const connectionGenerations = new Map<string, number>();
 
 const disconnectListeners = new Set<(deviceId: string) => void>();
@@ -35,6 +36,7 @@ function markDisconnected(deviceId: string) {
   trace(`native disconnect event for ${deviceId}`);
   connectedIds.delete(deviceId);
   connectedTargets.delete(deviceId);
+  connectedNotify.delete(deviceId);
   disconnectListeners.forEach((listener) => listener(deviceId));
 }
 
@@ -228,6 +230,7 @@ function isNamed(name: string | undefined): name is string {
  */
 export async function requestNativeDevice(choose?: DeviceChooser): Promise<NativeDevice> {
   const ble = await client();
+  if (onNotify) connectedNotify.set(deviceId, onNotify);
 
   const known = await scanForBrume(ble).catch(() => null);
   if (known) return known;
@@ -374,7 +377,7 @@ export async function connectNative(
       if (!ch.properties.notify && !ch.properties.indicate) continue;
       try {
         await ble.startNotifications(deviceId, writable.service, ch.uuid, (v) => {
-          onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+          connectedNotify.get(deviceId)?.(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
         });
         trace(`notifications started on ${writable.service.slice(0, 8)}/${ch.uuid.slice(0, 8)}`);
       } catch (error) {
