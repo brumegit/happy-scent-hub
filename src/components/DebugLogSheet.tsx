@@ -71,7 +71,7 @@ export function DebugLogSheet() {
               >
                 Copy
               </button>
-              {typeof navigator !== "undefined" && navigator.share && (
+              {typeof navigator !== "undefined" && "share" in navigator && (
                 <button
                   type="button"
                   onClick={() => void share()}
