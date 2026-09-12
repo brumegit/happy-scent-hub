@@ -219,19 +219,16 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
    * link; only the explicit pairing action may establish a new session.
    */
   async function connect() {
+    // Already live: navigate with zero Bluetooth work — no adapter query, no
+    // permission refresh, no plugin call of any kind.
+    if (connected) {
+      void navigate({ to: "/setup", search: { edit: diffuser.id } });
+      return;
+    }
     if (!(await bluetoothReady())) return;
     setConnecting(true);
     setError(null);
     try {
-      // Trust the passive five-second monitor: tapping Change routine must not
-      // trigger any extra Bluetooth activity on an already-connected diffuser.
-      if (connected) {
-        setConnected(true);
-        // The tap on Change routine already stated the intent: once the link
-        // is live, go straight to editing instead of asking for a second tap.
-        void navigate({ to: "/setup", search: { edit: diffuser.id } });
-        return;
-      }
       // Named devices only, shown in the app's own list.
       const paired = await pairDiffuser(chooseDevice);
       updateDiffuser(diffuser.id, { device_id: paired.deviceId });
