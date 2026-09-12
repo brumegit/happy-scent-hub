@@ -261,9 +261,10 @@ function Setup() {
     };
   }, [phase]);
 
-  // Keep checking the physical link while the user chooses an intensity or
-  // edits routines. If the diffuser sleeps or moves out of range, stop the flow
-  // immediately rather than letting the user reach a save that cannot work.
+  // Keep the link busy while the user chooses an intensity or edits routines:
+  // the diffuser drops an idle Bluetooth link after a few seconds to preserve
+  // battery, which would otherwise interrupt the flow before anything is saved.
+  // The keepalive doubles as the liveness check.
   useEffect(() => {
     if ((phase !== "intensity" && phase !== "schedule") || !deviceId) return;
     let cancelled = false;
@@ -271,7 +272,9 @@ function Setup() {
     const verifyLink = async () => {
       if (checking) return;
       checking = true;
-      const live = await checkConnection(deviceId).catch(() => false);
+      const live =
+        (await pingLink(deviceId).catch(() => false)) ||
+        (await checkConnection(deviceId).catch(() => false));
       checking = false;
       if (cancelled || live) return;
       setConnectionLost(true);
