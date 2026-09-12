@@ -32,9 +32,6 @@ const connectionGenerations = new Map<string, number>();
 
 const disconnectListeners = new Set<(deviceId: string) => void>();
 
-/** One shared in-flight liveness check per device (no duplicate bridge calls). */
-const liveChecks = new Map<string, Promise<boolean>>();
-
 /** Timestamp of the last byte we handed to CoreBluetooth, for disconnect forensics. */
 let lastNativeWriteAt = 0;
 
@@ -422,41 +419,13 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
  * live peripheral and must never make the app tear down a working session.
  */
 export async function isNativeConnected(deviceId: string) {
-  if (!connectedIds.has(deviceId)) return false;
-  if (!connectedTargets.has(deviceId)) return false;
-  // Two screens can ask at the same moment. Xcode showed the duplicate bridge
-  // call (`To Native -> BluetoothLe getMtu`) hanging for seconds before the
-  // session died, so concurrent callers share one in-flight check.
-  const pending = liveChecks.get(deviceId);
-  if (pending) {
-    trace("write-session check already in flight · reusing result");
-    return pending;
-  }
-  const run = (async () => {
-    const begun = Date.now();
-    try {
-      // getMtu reads a cached native property and sends no GATT traffic. Crucially,
-      // the plugin first checks the same CBPeripheral session state used by write,
-      // unlike getConnectedDevices(), which can report a stale system-level link.
-      const ble = await client();
-      const mtu = await ble.getMtu(deviceId);
-      trace(`direct native write-session check: connected · mtu=${mtu} · ${Date.now() - begun}ms`);
-      return true;
-    } catch (error) {
-      trace(
-        `direct native write-session check failed after ${Date.now() - begun}ms: ${describeError(error)}`,
-      );
-      markDisconnected(deviceId);
-      // A failed native state check must never be interpreted as permission to
-      // write. Refuse the save before its first byte instead of showing a false
-      // success or discovering the stale link during the routine command.
-      return false;
-    } finally {
-      liveChecks.delete(deviceId);
-    }
-  })();
-  liveChecks.set(deviceId, run);
-  return run;
+  // Do not call getMtu/getConnectedDevices from screen polling. The supplied
+  // Xcode trace showed those bridge checks were the only app activity between a
+  // completed save and the disconnect. CoreBluetooth's disconnect callback is
+  // the passive, authoritative signal and produces no peripheral traffic.
+  const connected = connectedIds.has(deviceId) && connectedTargets.has(deviceId);
+  trace(`passive native connection state: ${connected ? "connected" : "disconnected"}`);
+  return connected;
 }
 
 /**
