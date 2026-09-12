@@ -277,9 +277,12 @@ function Setup() {
     let cancelled = false;
     readingRef.current = true;
     void (async () => {
-      // One silent retry: the first read right after pairing is often too early
-      // for the diffuser to answer. Never more than two attempts, never later.
-      let live = await readSettings(deviceId).catch(() => null);
+      // The clock sync sent at pairing opens a quiet period during which
+      // optional reads are dropped. Wait it out once, then read.
+      const wait = msUntilOptionalTrafficAllowed(deviceId);
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait + 150));
+      // One silent retry: the diffuser sometimes needs a moment to answer.
+      let live = cancelled ? null : await readSettings(deviceId).catch(() => null);
       if (!cancelled && !live) {
         await new Promise((r) => setTimeout(r, 900));
         if (!cancelled) live = await readSettings(deviceId).catch(() => null);
@@ -291,6 +294,7 @@ function Setup() {
       readingRef.current = false;
       if (!cancelled) setSettingsRead(true);
     })();
+
 
     return () => {
       cancelled = true;
