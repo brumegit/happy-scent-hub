@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { trace } from "@/lib/ble-log";
+
 import { DevicePicker } from "@/components/DevicePicker";
 import type { DeviceChooser, NativeDevice } from "@/lib/native-ble";
 
@@ -441,19 +443,15 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               icon={false}
               label="Change routine"
               onClick={() => {
-                void (async () => {
-                  // Bluetooth off or permission missing must never reach the
-                  // intensity step — tell the user what to fix first.
-                  if (!(await bluetoothReady())) return;
-                  // Re-check the link at the moment of the tap: settings can only
-                  // be changed while the diffuser is really connected.
-                  const live = await ensureLive();
-                  setConnected(live);
-                  if (live) {
-                    void navigate({ to: "/setup", search: { edit: diffuser.id } });
-                  }
-                })();
+                // The card only shows this button while the five-second monitor
+                // reports a live link. Tapping it must not send any Bluetooth
+                // action — an extra probe or scan here is what dropped the
+                // already-paired diffuser. Setup keeps monitoring the link and
+                // shows the reconnect popup if it really goes away.
+                trace("change routine tapped on a live link · navigating without any BLE action");
+                void navigate({ to: "/setup", search: { edit: diffuser.id } });
               }}
+
             />
           </div>
           {error && (
