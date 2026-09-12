@@ -198,16 +198,11 @@ function Setup() {
     try {
       // Only sync the clock on pairing — settings are pushed at each step.
       await sendFrames(device.deviceId, [buildSyncTimestamp()]);
-      // Pull the diffuser's live configuration so the selectors start from the
-      // hardware's real state instead of app defaults.
-      const live = await readSettings(device.deviceId).catch(() => null);
-      if (live) {
-        setIntensity(live.intensity);
-        if (live.schedule.some((d) => d.active)) setSchedule(live.schedule);
-      }
-      // Already read here; the intensity screen must not read a second time.
-      setSettingsRead(true);
+      // The stored routines are read once when the intensity screen opens, so
+      // the link stays quiet here. Reading right after pairing was unreliable.
+      setSettingsRead(false);
       setPhase("paired");
+
 
       trackEvent("Lead", { content_category: "diffuser_pairing" });
     } catch (err) {
