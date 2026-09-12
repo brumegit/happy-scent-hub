@@ -35,8 +35,12 @@ const disconnectListeners = new Set<(deviceId: string) => void>();
 /** One shared in-flight liveness check per device (no duplicate bridge calls). */
 const liveChecks = new Map<string, Promise<boolean>>();
 
+/** Timestamp of the last byte we handed to CoreBluetooth, for disconnect forensics. */
+let lastNativeWriteAt = 0;
+
 function markDisconnected(deviceId: string) {
-  trace(`native disconnect event for ${deviceId}`);
+  const idle = lastNativeWriteAt ? `${Date.now() - lastNativeWriteAt}ms after last write` : "no write yet";
+  trace(`native disconnect event for ${deviceId} · ${idle}`);
   connectedIds.delete(deviceId);
   connectedTargets.delete(deviceId);
   connectedNotify.delete(deviceId);
