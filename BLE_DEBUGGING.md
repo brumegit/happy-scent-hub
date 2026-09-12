@@ -55,6 +55,13 @@ header. The log sheet can be scrolled, copied, or shared.
 7. **Do not read before or after saving.** Saving sends only the five serialized
    `0x14` writes, 700 ms apart. There is no `0x08` read, final liveness probe, or
    other Bluetooth traffic after the fifth slot.
+8. **Do not wait for `0x94` replies on iPhone.** The native transport uses
+   CoreBluetooth write-without-response, and this diffuser firmware does not
+   notify a reply to each `0x14`. Waiting four seconds after every accepted
+   write stretches a five-slot save beyond the peripheral's connection window.
+   Native saves continue as soon as the write completes, retaining only the
+   700 ms firmware-settle pause between slots. Chrome keeps its response-aware
+   path because Web Bluetooth hardware can expose acknowledgments differently.
 
 
 ## 4. Reproducing quickly
