@@ -24,7 +24,11 @@ Transport constants (do not change without hardware testing):
 
 - `CHUNK_SIZE = 20` bytes, `CHUNK_DELAY_MS = 30` ms between chunks.
 - **700 ms** between routine commands, owned by `push.ts` only.
-- `QUIET_AFTER_COMMAND_MS = 5_000` — no optional traffic for 5 s after a save.
+- `QUIET_AFTER_COMMAND_MS = 5_000` — no optional traffic for 5 s after a
+  persistent write (0x13 / 0x14 only).
+- `QUIET_AFTER_LIGHT_COMMAND_MS = 600` — short pause after a non-persistent
+  command (clock sync 0x06, status queries) so the one-shot settings read can
+  run right after pairing.
 - Screen status polling: every **5 s**, registry-only, first run 5 s after mount.
 
 ---
