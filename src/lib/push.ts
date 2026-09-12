@@ -105,34 +105,29 @@ export async function pushSettings(opts: {
       } turned off`,
     );
 
-    // Experiment (TRY_BATCH_SAVE): one grouped 0x13 write for all five slots —
-    // a single beep when the firmware persists it. Verified once with 0x08;
-    // any mismatch falls back to the proven per-slot 0x14 writes below.
+    // Experiment (TRY_BATCH_SAVE): one grouped 0x13 write for all five slots,
+    // sent WITHOUT verification read and WITHOUT fallback. Success = the OS
+    // accepted the write; the user confirms on the diffuser itself. Set
+    // TRY_BATCH_SAVE to false to revert to the proven per-slot 0x14 writes.
     if (TRY_BATCH_SAVE) {
       const batchStartedAt = Date.now();
-      try {
-        log("Trying grouped save · one 0x13 frame with all 5 slots");
-        const payload = slots.map(disabledPayload);
-        await sendFrames(opts.deviceId, [buildTimerList(payload)], log);
-        // Let the firmware commit the list to flash, then confirm once.
-        await wait(1200);
-        const stored = await queryTimers(opts.deviceId, log).catch(() => null);
-        if (stored && payload.every((slot) => slotMatches(stored.find((t) => t.index === slot.index), slot))) {
-          const activeCount = slots.filter((slot) => slot.enabled).length;
-          log(
-            `Grouped save confirmed · ${activeCount} active routine(s) persisted in ${Date.now() - batchStartedAt}ms`,
-          );
-          endCommandSequence(opts.deviceId);
-          return [];
-        }
-        log(
-          stored
-            ? "Grouped save NOT persisted by the firmware — falling back to per-slot writes"
-            : "Grouped save unreadable — falling back to per-slot writes",
-        );
-      } catch (error) {
-        log(`Grouped save failed (${describeError(error)}) — falling back to per-slot writes`);
-      }
+      log("Grouped save · one 0x13 frame with all 5 slots · no verification, no fallback");
+      const payload = slots.map(disabledPayload);
+      const [ack] = await sendFrames(opts.deviceId, [buildTimerList(payload)], log)
+        .catch(async (error) => {
+          log("grouped write refused on a stale session · reopening the link once");
+          const reopened = await reopenLink(opts.deviceId);
+          if (!reopened) throw error;
+          log("link reopened · retrying the grouped write");
+          return sendFrames(opts.deviceId, [buildTimerList(payload)], log);
+        });
+      if (ack && !ack.acked) log("0x13 answered silently — treated as written");
+      const activeCount = slots.filter((slot) => slot.enabled).length;
+      log(
+        `Grouped save sent · ${activeCount} active routine(s) · ${Date.now() - batchStartedAt}ms · persistence NOT verified`,
+      );
+      endCommandSequence(opts.deviceId);
+      return ack ? [ack] : [];
     }
 
     // Write each slot with the persistent 0x14 command. The
