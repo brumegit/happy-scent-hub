@@ -1,7 +1,6 @@
 import {
   beginCommandSequence,
   endCommandSequence,
-  ensureLink,
   isRealLink,
   queryTimers,
   sendFrames,
@@ -60,16 +59,11 @@ export async function pushSettings(opts: {
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
-    // Block screen keepalives before validating the physical session. If a
-    // five-second status check is already running, the native layer reuses that
-    // same promise instead of starting a competing bridge operation.
+    // Confirm is deliberately write-only. Block monitoring before the first
+    // byte, then send the five authoritative routine commands without a read,
+    // connection probe, reconnect, or replay anywhere in the transaction.
     beginCommandSequence(opts.deviceId);
-    log("Pre-save connection validation started");
-    const live = await ensureLink(opts.deviceId, log);
-    if (!live) {
-      throw new Error("Bluetooth connection could not be restored before saving.");
-    }
-    log("Pre-save connection validated · routine writes starting");
+    log("Write-only save started · no reads or connection probes");
 
     // Authoritative save: every one of the 5 hardware slots is written on each
     // save. Slots the user did not define are written as disabled, so routines
