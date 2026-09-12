@@ -32,6 +32,9 @@ const connectionGenerations = new Map<string, number>();
 
 const disconnectListeners = new Set<(deviceId: string) => void>();
 
+/** One shared in-flight liveness check per device (no duplicate bridge calls). */
+const liveChecks = new Map<string, Promise<boolean>>();
+
 /** Timestamp of the last byte we handed to CoreBluetooth, for disconnect forensics. */
 let lastNativeWriteAt = 0;
 
@@ -419,13 +422,31 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
  * live peripheral and must never make the app tear down a working session.
  */
 export async function isNativeConnected(deviceId: string) {
-  // Do not call getMtu/getConnectedDevices from screen polling. The supplied
-  // Xcode trace showed those bridge checks were the only app activity between a
-  // completed save and the disconnect. CoreBluetooth's disconnect callback is
-  // the passive, authoritative signal and produces no peripheral traffic.
-  const connected = connectedIds.has(deviceId) && connectedTargets.has(deviceId);
-  trace(`passive native connection state: ${connected ? "connected" : "disconnected"}`);
-  return connected;
+  if (!connectedIds.has(deviceId) || !connectedTargets.has(deviceId)) return false;
+  const pending = liveChecks.get(deviceId);
+  if (pending) {
+    trace("native connection check already in flight · reusing result");
+    return pending;
+  }
+  const run = (async () => {
+    const begun = Date.now();
+    try {
+      // The plugin checks the CBPeripheral session used by writes. Unlike the
+      // app's in-memory set, this detects a link iOS has already discarded.
+      const ble = await client();
+      const mtu = await ble.getMtu(deviceId);
+      trace(`native connection check: connected · mtu=${mtu} · ${Date.now() - begun}ms`);
+      return true;
+    } catch (error) {
+      trace(`native connection check: disconnected after ${Date.now() - begun}ms · ${describeError(error)}`);
+      markDisconnected(deviceId);
+      return false;
+    } finally {
+      liveChecks.delete(deviceId);
+    }
+  })();
+  liveChecks.set(deviceId, run);
+  return run;
 }
 
 /**

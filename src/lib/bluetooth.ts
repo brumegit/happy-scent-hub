@@ -563,7 +563,10 @@ export async function sendFrames(
     trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
-  if (!link.simulated && link.isLive && !(await link.isLive().catch(() => false))) {
+  // pushSettings performs one real connection check before beginning its
+  // protected command sequence. Do not repeat native bridge checks between
+  // routine slots while that sequence is active.
+  if (!isTrafficBlocked(deviceId) && !link.simulated && link.isLive && !(await link.isLive().catch(() => false))) {
     trace("sendFrames: link down before sending — stopping without reconnecting");
     throw new Error("Bluetooth link lost. Double tap the diffuser button, reconnect, and try again.");
   }
@@ -819,8 +822,8 @@ export async function pingLink(deviceId: string | null): Promise<boolean> {
 
 
 /**
- * Async connection check — on native builds the OS keeps the GATT link, so we
- * ask the platform instead of relying on the in-memory map.
+ * Async connection check — ask the native session every five seconds instead
+ * of trusting the in-memory map, which can remain stale after iOS drops a link.
  */
 export async function checkConnection(deviceId: string | null) {
   if (!deviceId) return false;
