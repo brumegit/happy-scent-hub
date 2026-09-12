@@ -26,6 +26,7 @@ import {
   isRealLink,
   sendFrames,
   checkConnection,
+  pingLink,
   subscribeConnection,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
@@ -288,7 +289,8 @@ function Setup() {
       setPhase("idle");
     });
     void verifyLink();
-    const interval = window.setInterval(() => void verifyLink(), 5000);
+    // Faster than the module's idle timeout so the link never goes to sleep.
+    const interval = window.setInterval(() => void verifyLink(), 4000);
     return () => {
       cancelled = true;
       unsubscribe();
