@@ -27,7 +27,6 @@ import {
   sendFrames,
   checkConnection,
   subscribeConnection,
-  pingLink,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
@@ -168,7 +167,7 @@ function Setup() {
     refresh: refreshRequirements,
     // Editing an existing diffuser still needs Bluetooth on and allowed: the
     // settings can only be saved over a live link.
-  } = useBluetoothRequirements(!!editing || phase === "idle");
+  } = useBluetoothRequirements(phase === "idle");
   const autostarted = useRef(false);
   // In-app Bluetooth chooser (named devices only).
   const [picker, setPicker] = useState<NativeDevice[] | null>(null);
@@ -288,21 +287,14 @@ function Setup() {
       setDeviceId(null);
       setPhase("idle");
     });
-    void verifyLink();
-    // Passive five-second status refresh; no bytes are sent to the diffuser.
+    // Do not check on entry: tapping Change routine and mounting this screen
+    // must be completely Bluetooth-silent. The first status-only check runs
+    // five seconds later, then repeats every five seconds.
     const interval = window.setInterval(() => void verifyLink(), 5000);
-    // This firmware closes the link after a few idle seconds. A silent read
-    // (0x08) keeps it awake while the user edits; it never beeps and never
-    // runs while a save is in progress.
-    const keepalive = window.setInterval(() => {
-      if (cancelled || savingRef.current) return;
-      void pingLink(deviceId).catch(() => false);
-    }, 4000);
     return () => {
       cancelled = true;
       unsubscribe();
       window.clearInterval(interval);
-      window.clearInterval(keepalive);
     };
   }, [deviceId, phase]);
 
