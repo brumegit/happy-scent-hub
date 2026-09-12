@@ -570,6 +570,7 @@ export async function sendFrames(
   for (const frame of frames) {
     const hex = toHex(frame);
     const fn = frame[3] ?? 0;
+    markCommandTraffic();
     trace(`TX 0x${fn.toString(16)} · ${hex}`);
     onLog?.(`TX ${hex}`);
     const begun = Date.now();
@@ -614,7 +615,9 @@ export async function sendFrames(
     await wait(200);
   }
 
-  // No liveness probe or other traffic after the final frame.
+  // No liveness probe or other traffic after the final frame, and the keepalive
+  // stays silent for the quiet window so the module can commit to flash.
+  markCommandTraffic();
   return acks;
 }
 
@@ -722,6 +725,18 @@ export async function queryTimers(
 
 
 
+/** Timestamp of the last command we sent, used to keep the radio quiet after a save. */
+let lastCommandAt = 0;
+/** Quiet window after a routine save: the module commits to flash and drops the
+ * link if we poke it too soon. Observed on iPhone: a keepalive ~1.4s after the
+ * final 0x14 killed the connection. */
+const QUIET_AFTER_COMMAND_MS = 12_000;
+const pingsInFlight = new Map<string, Promise<boolean>>();
+
+export function markCommandTraffic() {
+  lastCommandAt = Date.now();
+}
+
 /**
  * Keeps the diffuser awake. The module drops an idle BLE link after roughly ten
  * seconds to preserve battery, which used to kick the user out of the routine
@@ -734,18 +749,29 @@ export async function pingLink(deviceId: string | null): Promise<boolean> {
   const link = links.get(deviceId);
   if (!link) return false;
   if (link.simulated) return true;
-  try {
-    await link.request(buildGetTimers(), 0x88);
-    return true;
-  } catch (error) {
-    if (error instanceof BleWriteError) {
-      trace(`keepalive write failed: ${(error as Error).message}`);
-      return false;
+  // Never send anything while the diffuser is still committing a save.
+  if (Date.now() - lastCommandAt < QUIET_AFTER_COMMAND_MS) return true;
+  const pending = pingsInFlight.get(deviceId);
+  if (pending) return pending;
+  const run = (async () => {
+    try {
+      await link.request(buildGetTimers(), 0x88);
+      return true;
+    } catch (error) {
+      if (error instanceof BleWriteError) {
+        trace(`keepalive write failed: ${(error as Error).message}`);
+        return false;
+      }
+      // A silent module still accepted the write, so the link is alive.
+      return link.isLive ? await link.isLive().catch(() => false) : true;
+    } finally {
+      pingsInFlight.delete(deviceId);
     }
-    // A silent module still accepted the write, so the link is alive.
-    return link.isLive ? await link.isLive().catch(() => false) : true;
-  }
+  })();
+  pingsInFlight.set(deviceId, run);
+  return run;
 }
+
 
 /**
  * Async connection check — on native builds the OS keeps the GATT link, so we
