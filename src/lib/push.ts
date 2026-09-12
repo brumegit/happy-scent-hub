@@ -1,6 +1,7 @@
 import {
   beginCommandSequence,
   endCommandSequence,
+  ensureLink,
   isRealLink,
   queryTimers,
   sendFrames,
@@ -50,8 +51,8 @@ export async function pushSettings(opts: {
   const log = (line: string) => trace(line);
 
   log(
-    `Push start · device ${opts.deviceId ?? "none"} · link ${
-      isRealLink(opts.deviceId) ? "live" : "not live (simulated or missing)"
+    `Push start · device ${opts.deviceId ?? "none"} · cached link ${
+      isRealLink(opts.deviceId) ? "registered" : "missing or simulated"
     }`,
   );
 
@@ -59,13 +60,16 @@ export async function pushSettings(opts: {
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
-    // Block screen keepalives and all optional reads for the whole five-slot
-    // transaction. The transport write queue still serializes packet chunks.
+    // Block screen keepalives before validating the physical session. If a
+    // five-second status check is already running, the native layer reuses that
+    // same promise instead of starting a competing bridge operation.
     beginCommandSequence(opts.deviceId);
-    // Confirm already had a live connection on the editing screen. Do not run
-    // another native probe here: routine writes must be the only Bluetooth
-    // operations after the user taps Confirm. A dead link is reported by the
-    // first write without reconnecting or replaying a partial save.
+    log("Pre-save connection validation started");
+    const live = await ensureLink(opts.deviceId, log);
+    if (!live) {
+      throw new Error("Bluetooth connection could not be restored before saving.");
+    }
+    log("Pre-save connection validated · routine writes starting");
 
     // Authoritative save: every one of the 5 hardware slots is written on each
     // save. Slots the user did not define are written as disabled, so routines

@@ -23,7 +23,6 @@ import {
   connectNative,
   forgetNativeSession,
   isBluetoothEnabled as nativeBluetoothEnabled,
-  isNativeConnected,
   isNativeSessionConnected,
   isNativeSystemConnected,
   isNativePlatform,
@@ -712,8 +711,11 @@ export async function ensureLink(
   if (link?.simulated) return true;
   // This is the single real check per save: the passive in-memory flag can
   // still say "live" seconds after iOS has already discarded the session.
+  // Use the connected-peripheral registry rather than getMtu: it detects the
+  // stale session without touching the diffuser's serial channel. The native
+  // helper also reuses a five-second check already in flight.
   const live = isNativeSync()
-    ? await isNativeConnected(deviceId).catch(() => false)
+    ? await isNativeSystemConnected(deviceId).catch(() => false)
     : link?.isLive
       ? await link.isLive().catch(() => false)
       : !!link;
