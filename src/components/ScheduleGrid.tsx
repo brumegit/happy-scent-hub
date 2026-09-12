@@ -162,7 +162,7 @@ export function ScheduleGrid({
       {blocks.length < MAX_TIMERS ? (
         <button
           type="button"
-          onClick={() => commit([...blocks, { start: 8 * 60, end: 20 * 60, days: [1, 2, 3, 4, 5] }])}
+          onClick={() => commit([...blocks, nextRoutine(blocks)])}
           className="flex w-full items-center justify-center gap-3 border border-border bg-background px-6 py-4 text-sm uppercase tracking-[0.22em] text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
         >
           <Plus className="size-4" aria-hidden />
