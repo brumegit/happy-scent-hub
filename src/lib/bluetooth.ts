@@ -845,6 +845,19 @@ function isTrafficBlocked(deviceId: string | null) {
   return !!state && (state.saving || Date.now() - state.lastCommandAt < QUIET_AFTER_COMMAND_MS);
 }
 
+/**
+ * How long optional traffic (like the one-shot routine read) must still wait.
+ * Returns 0 when a read is allowed right now, and -1 while a save is running.
+ */
+export function msUntilOptionalTrafficAllowed(deviceId: string | null) {
+  if (!deviceId) return 0;
+  const state = trafficByDevice.get(deviceId);
+  if (!state) return 0;
+  if (state.saving) return -1;
+  return Math.max(0, QUIET_AFTER_COMMAND_MS - (Date.now() - state.lastCommandAt));
+}
+
+
 function isCommandSequenceActive(deviceId: string | null) {
   if (!deviceId) return false;
   return trafficByDevice.get(deviceId)?.saving === true;
