@@ -613,7 +613,10 @@ export async function sendFrames(
   for (const frame of frames) {
     const hex = toHex(frame);
     const fn = frame[3] ?? 0;
-    markCommandTraffic(deviceId);
+    const quietMs = PERSISTENT_FNS.has(fn)
+      ? QUIET_AFTER_COMMAND_MS
+      : QUIET_AFTER_LIGHT_COMMAND_MS;
+    markCommandTraffic(deviceId, quietMs);
     trace(`TX 0x${fn.toString(16)} · ${hex}`);
     onLog?.(`TX ${hex}`);
     const begun = Date.now();
