@@ -68,10 +68,9 @@ export async function pushSettings(opts: {
 
     // A first read can be missed while iOS finishes enabling notifications.
     // It is only an optimisation for preserving IDs: if unavailable, write all
-    // requested slots and rely on the mandatory final read-back for proof.
+    // five slots, including explicit disabled entries for unused routines.
     // Always write every routine the user asked for: comparing with the read
     // list once made the app skip all writes and report success with no beep.
-    // Unused slots are only written when the device still holds them enabled.
     // If the initial read failed, we cannot assume an absent disabled slot is
     // already clear. Send all five slots so routines removed in the app cannot
     // remain enabled on the diffuser. When a read did succeed, avoid redundant
