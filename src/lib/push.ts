@@ -30,6 +30,28 @@ import { readDebug } from "@/stores/readDebugStore";
 /** Small pause so the firmware can finish processing one command before the next. */
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * EXPERIMENT — single-beep save. When true, the app first tries one grouped
+ * 0x13 timer-list write (one beep), verifies with a single 0x08 read-back,
+ * and falls back to the proven per-slot 0x14 writes when the firmware did not
+ * persist the list. Set to false to revert instantly to per-slot writes only.
+ */
+const TRY_BATCH_SAVE = true;
+
+/** A read-back slot matches the requested one when every persisted field agrees. */
+function slotMatches(actual: TimerSlot | undefined, wanted: TimerSlot) {
+  if (!actual) return !wanted.enabled;
+  return (
+    actual.enabled === wanted.enabled &&
+    (!wanted.enabled ||
+      (actual.weekdayMask === wanted.weekdayMask &&
+        actual.startMinute === wanted.startMinute &&
+        actual.endMinute === wanted.endMinute &&
+        actual.onSeconds === wanted.onSeconds &&
+        actual.offSeconds === wanted.offSeconds))
+  );
+}
+
 
 /**
  * Pushes the full configuration to the diffuser and reports, per area, what the
