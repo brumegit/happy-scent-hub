@@ -926,9 +926,12 @@ export async function checkConnection(deviceId: string | null) {
     return (await isNativePlatform()) ? isNativeSessionConnected(deviceId) : !!links.get(deviceId);
   }
   if (await isNativePlatform()) {
-    // Ask the operating system's registry: this reads state only, no bytes are
-    // sent to the diffuser, so the five-second UI refresh cannot disturb BLE.
-    return isNativeSystemConnected(deviceId);
+    // Ask the operating system's registry first: state only, no bytes sent.
+    // iOS keeps listing a peripheral it has not noticed is gone, so confirm
+    // with the real CoreBluetooth session used by writes (still zero bytes to
+    // the diffuser). Only both agreeing counts as connected.
+    if (!(await isNativeSystemConnected(deviceId).catch(() => false))) return false;
+    return isNativeConnected(deviceId).catch(() => false);
   }
   const link = links.get(deviceId);
   if (!link || link.simulated) return false;
