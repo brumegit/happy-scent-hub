@@ -5,6 +5,8 @@
  * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
+import { trace } from "@/lib/ble-log";
+
 export type NativeChar = { service: string; characteristic: string };
 
 export type NativeDevice = {
@@ -30,6 +32,7 @@ const connectedServices = new Map<string, string>();
 const disconnectListeners = new Set<(deviceId: string) => void>();
 
 function markDisconnected(deviceId: string) {
+  trace(`native disconnect event for ${deviceId}`);
   connectedIds.delete(deviceId);
   connectedServices.delete(deviceId);
   disconnectListeners.forEach((listener) => listener(deviceId));
@@ -314,6 +317,7 @@ export async function connectNative(
         skipDescriptorDiscovery: true,
       });
       connectedIds.add(deviceId);
+      trace(`native connect ok (attempt ${attempt + 1})`);
       lastError = undefined;
       break;
     } catch (error) {
@@ -331,6 +335,7 @@ export async function connectNative(
     );
   }
   const services = await ble.getServices(deviceId);
+  trace(`native services discovered: ${services.length}`);
 
   let writable: NativeChar | null = null;
   for (const service of services) {
@@ -340,8 +345,13 @@ export async function connectNative(
           await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) => {
             onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
           });
-        } catch {
-          // optional
+          trace(`notifications started on ${service.uuid.slice(0, 8)}/${ch.uuid.slice(0, 8)}`);
+        } catch (error) {
+          trace(
+            `notifications failed on ${ch.uuid.slice(0, 8)}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
         }
       }
       // Keep the proven iPhone transport behavior: use the first writable
@@ -358,6 +368,9 @@ export async function connectNative(
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
   }
   connectedServices.set(deviceId, writable.service);
+  trace(
+    `serial channel selected ${writable.service.slice(0, 8)}/${writable.characteristic.slice(0, 8)}`,
+  );
   return writable;
 }
 
