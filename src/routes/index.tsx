@@ -170,9 +170,14 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
-      void checkConnection(diffuser.device_id).then((live) => {
+      // The keepalive both keeps the diffuser from sleeping on us and tells us
+      // whether it is still reachable.
+      void (async () => {
+        const live =
+          (await pingLink(diffuser.device_id).catch(() => false)) ||
+          (await checkConnection(diffuser.device_id).catch(() => false));
         if (!cancelled) setConnected(live);
-      });
+      })();
     };
     refresh();
     const unsubscribe = subscribeConnection((changedId, live) => {
