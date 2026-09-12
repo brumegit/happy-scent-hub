@@ -25,6 +25,7 @@ import {
   isBluetoothEnabled as nativeBluetoothEnabled,
   isNativeConnected,
   isNativeSessionConnected,
+  isNativeSystemConnected,
   isNativePlatform,
   isNativeSync,
   requestNativeDevice,
@@ -910,10 +911,10 @@ export async function pingLink(deviceId: string | null): Promise<boolean> {
 export async function checkConnection(deviceId: string | null) {
   if (!deviceId) return false;
   if (await isNativePlatform()) {
-    // The native disconnect callback is authoritative. Do not call getMtu (or
-    // any other GATT operation) from a status poll or CTA transition: this
-    // firmware can drop its serial link when that probe overlaps normal use.
-    return isNativeSessionConnected(deviceId);
+    // Query the operating system's connected-peripheral registry. This sends no
+    // bytes to the diffuser, but detects links iOS dropped without invoking the
+    // plugin callback. Never use getMtu here: that touches the active channel.
+    return isNativeSystemConnected(deviceId);
   }
   const link = links.get(deviceId);
   if (!link || link.simulated) return false;

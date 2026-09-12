@@ -479,6 +479,36 @@ export function isNativeSessionConnected(deviceId: string) {
 }
 
 /**
+ * Reads CoreBluetooth/Android's connected-peripheral registry without touching
+ * the diffuser's GATT channel. Unlike the cached session flag, this notices a
+ * link that iOS dropped without delivering the plugin disconnect callback.
+ */
+export async function isNativeSystemConnected(deviceId: string) {
+  const target = connectedTargets.get(deviceId);
+  if (!connectedIds.has(deviceId) || !target) return false;
+  const pending = liveChecks.get(deviceId);
+  if (pending) return pending;
+  const run = (async () => {
+    const begun = Date.now();
+    try {
+      const ble = await client();
+      const devices = await ble.getConnectedDevices([target.service]);
+      const live = devices.some((device) => device.deviceId.toLowerCase() === deviceId.toLowerCase());
+      trace(`native 5s connection check: ${live ? "connected" : "disconnected"} · ${Date.now() - begun}ms`);
+      if (!live) markDisconnected(deviceId);
+      return live;
+    } catch (error) {
+      trace(`native 5s connection check failed · ${describeError(error)}`);
+      return false;
+    } finally {
+      liveChecks.delete(deviceId);
+    }
+  })();
+  liveChecks.set(deviceId, run);
+  return run;
+}
+
+/**
  * Reports whether Bluetooth is currently switched on. On native builds this
  * queries the adapter directly (Android) or the CoreBluetooth state (iOS);
  * on the web it falls back to the Web Bluetooth availability promise. It

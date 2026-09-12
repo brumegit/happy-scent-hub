@@ -292,7 +292,12 @@ function Setup() {
     // nothing on the device, makes no sound, and is skipped while saving.
     const keepalive = window.setInterval(() => {
       if (cancelled) return;
-      void pingLink(deviceId);
+      void pingLink(deviceId).then((live) => {
+        if (cancelled || live) return;
+        setConnectionLost(true);
+        setDeviceId(null);
+        setPhase("idle");
+      });
     }, 15_000);
     return () => {
       cancelled = true;
