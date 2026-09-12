@@ -623,6 +623,32 @@ export async function sendFrames(
 }
 
 /**
+ * Guarantees a usable link before any command is sent. The diffuser falls
+ * asleep quickly, so the link registered at pairing time is often already dead
+ * by the time the user finishes picking a routine. Reconnects once instead of
+ * letting the first write fail.
+ */
+export async function ensureLink(
+  deviceId: string | null,
+  onLog?: (line: string) => void,
+): Promise<boolean> {
+  if (!deviceId) return false;
+  const link = links.get(deviceId);
+  if (link?.simulated) return true;
+  const live = link?.isLive ? await link.isLive().catch(() => false) : !!link;
+  if (live) {
+    trace("link check before sending: live");
+    return true;
+  }
+  trace("link check before sending: down — reconnecting once");
+  onLog?.("Diffuser asleep — reconnecting");
+  const back = await reconnectDevice(deviceId);
+  const fresh = links.get(deviceId);
+  trace(back && fresh ? "reconnect before sending succeeded" : "reconnect before sending failed");
+  return !!(back && fresh);
+}
+
+/**
  * Silently re-opens the link to a diffuser we already know, used after a save
  * when the module drops its connection on its own.
  */

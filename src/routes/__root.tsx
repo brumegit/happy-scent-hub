@@ -151,6 +151,7 @@ function RootComponent() {
       <ReadDebugStrip />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <DebugLogSheet />
       <DebugExitBanner />
       <Toaster position="top-center" />
     </QueryClientProvider>
