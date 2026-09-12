@@ -364,10 +364,20 @@ export async function connectNative(
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
+  const hex = Array.from(chunk)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join(" ");
   try {
     await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-  } catch {
+    trace(`chunk ${chunk.length}B write-no-response ok · ${hex}`);
+  } catch (error) {
+    trace(
+      `chunk ${chunk.length}B write-no-response failed (${
+        error instanceof Error ? error.message : String(error)
+      }) — retrying with response`,
+    );
     await ble.write(deviceId, target.service, target.characteristic, view);
+    trace(`chunk ${chunk.length}B write-with-response ok · ${hex}`);
   }
 }
 
