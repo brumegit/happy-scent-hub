@@ -28,6 +28,7 @@ const connectedIds = new Set<string>();
 
 /** Service UUID of the serial channel per device, used to verify liveness. */
 const connectedServices = new Map<string, string>();
+const connectionGenerations = new Map<string, number>();
 
 const disconnectListeners = new Set<(deviceId: string) => void>();
 
@@ -305,6 +306,8 @@ export async function connectNative(
   onNotify?: (value: Uint8Array) => void,
 ): Promise<NativeChar | null> {
   const ble = await client();
+  const generation = (connectionGenerations.get(deviceId) ?? 0) + 1;
+  connectionGenerations.set(deviceId, generation);
   // A stale iOS connection can still appear in getConnectedDevices while every
   // write fails with "Not connected to device." Close that CoreBluetooth
   // session before registering a new disconnect callback and notification
@@ -324,7 +327,9 @@ export async function connectNative(
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await ble.connect(deviceId, markDisconnected, {
+      await ble.connect(deviceId, () => {
+        if (connectionGenerations.get(deviceId) === generation) markDisconnected(deviceId);
+      }, {
         timeout: 15_000,
         skipDescriptorDiscovery: true,
       });
