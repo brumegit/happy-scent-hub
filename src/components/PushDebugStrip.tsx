@@ -72,9 +72,20 @@ export function PushDebugStrip() {
             </p>
           ))}
           {log.length > 0 && (
-            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all text-[10px] leading-4 text-muted-foreground/70">
-              {log.join("\n")}
-            </pre>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(log.join("\n"));
+                }}
+                className="rounded-[5px] border border-border px-2 py-1 text-[10px] uppercase tracking-[0.15em]"
+              >
+                Copy log
+              </button>
+              <pre className="max-h-60 overflow-auto whitespace-pre-wrap break-all text-[10px] leading-4 text-muted-foreground/70">
+                {log.join("\n")}
+              </pre>
+            </>
           )}
         </div>
       )}
