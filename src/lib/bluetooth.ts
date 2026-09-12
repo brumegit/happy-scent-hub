@@ -428,6 +428,10 @@ export async function connectPickedDevice(device: {
       isLive: async () => isNativeSessionConnected(device.deviceId),
       reconnect: async () => {
         trace("native reconnect: reopening the diffuser session");
+        // The cached CoreBluetooth channel is what just failed, so discard it
+        // first — otherwise the connect call short-circuits as "already live"
+        // and the retry writes into the same dead session.
+        forgetNativeSession(device.deviceId);
         await connectPickedDevice({ deviceId: device.deviceId, ...(device.name ? { name: device.name } : {}) });
         return isNativeSessionConnected(device.deviceId);
       },
