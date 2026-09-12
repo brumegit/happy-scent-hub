@@ -613,7 +613,10 @@ export async function sendFrames(
   for (const frame of frames) {
     const hex = toHex(frame);
     const fn = frame[3] ?? 0;
-    markCommandTraffic(deviceId);
+    const quietMs = PERSISTENT_FNS.has(fn)
+      ? QUIET_AFTER_COMMAND_MS
+      : QUIET_AFTER_LIGHT_COMMAND_MS;
+    markCommandTraffic(deviceId, quietMs);
     trace(`TX 0x${fn.toString(16)} · ${hex}`);
     onLog?.(`TX ${hex}`);
     const begun = Date.now();
@@ -664,9 +667,15 @@ export async function sendFrames(
     if (link.routineRepliesExpected !== false) await wait(200);
   }
 
-  // No liveness probe or other traffic after the final frame, and the keepalive
-  // stays silent for the quiet window so the module can commit to flash.
-  markCommandTraffic(deviceId);
+  // No liveness probe or other traffic after the final frame. Persistent writes
+  // hold the long quiet window so the module can commit to flash; a light
+  // command (clock sync, status) only needs a short pause.
+  markCommandTraffic(
+    deviceId,
+    frames.some((f) => PERSISTENT_FNS.has(f[3] ?? 0))
+      ? QUIET_AFTER_COMMAND_MS
+      : QUIET_AFTER_LIGHT_COMMAND_MS,
+  );
   return acks;
 }
 
@@ -824,17 +833,24 @@ export async function queryTimers(
 
 
 
-type TrafficState = { lastCommandAt: number; saving: boolean };
+type TrafficState = { lastCommandAt: number; saving: boolean; quietUntil: number };
 const trafficByDevice = new Map<string, TrafficState>();
 /** Optional reads remain blocked briefly after persistent writes. Normal screen
  * status checks are passive and do not use this command path. */
 const QUIET_AFTER_COMMAND_MS = 5_000;
+/** A non-persistent command (clock sync, status query) only needs the module a
+ * moment to answer — blocking reads for five seconds after pairing would hide
+ * the diffuser's stored settings from the setup screens. */
+const QUIET_AFTER_LIGHT_COMMAND_MS = 600;
+/** Commands that write to flash and need the long quiet window. */
+const PERSISTENT_FNS = new Set([0x13, 0x14]);
+
 const pingsInFlight = new Map<string, Promise<boolean>>();
 
 function trafficState(deviceId: string) {
   const existing = trafficByDevice.get(deviceId);
   if (existing) return existing;
-  const created = { lastCommandAt: 0, saving: false };
+  const created = { lastCommandAt: 0, saving: false, quietUntil: 0 };
   trafficByDevice.set(deviceId, created);
   return created;
 }
@@ -842,7 +858,7 @@ function trafficState(deviceId: string) {
 function isTrafficBlocked(deviceId: string | null) {
   if (!deviceId) return false;
   const state = trafficByDevice.get(deviceId);
-  return !!state && (state.saving || Date.now() - state.lastCommandAt < QUIET_AFTER_COMMAND_MS);
+  return !!state && (state.saving || Date.now() < state.quietUntil);
 }
 
 /**
@@ -854,7 +870,7 @@ export function msUntilOptionalTrafficAllowed(deviceId: string | null) {
   const state = trafficByDevice.get(deviceId);
   if (!state) return 0;
   if (state.saving) return -1;
-  return Math.max(0, QUIET_AFTER_COMMAND_MS - (Date.now() - state.lastCommandAt));
+  return Math.max(0, state.quietUntil - Date.now());
 }
 
 
@@ -874,14 +890,21 @@ export function endCommandSequence(deviceId: string | null) {
   if (!deviceId) return;
   const state = trafficState(deviceId);
   state.lastCommandAt = Date.now();
+  state.quietUntil = state.lastCommandAt + QUIET_AFTER_COMMAND_MS;
   state.saving = false;
   trace(`exclusive command sequence ended · quiet ${QUIET_AFTER_COMMAND_MS}ms`);
 }
 
-export function markCommandTraffic(deviceId: string | null) {
+export function markCommandTraffic(
+  deviceId: string | null,
+  quietMs: number = QUIET_AFTER_COMMAND_MS,
+) {
   if (!deviceId) return;
-  trafficState(deviceId).lastCommandAt = Date.now();
+  const state = trafficState(deviceId);
+  state.lastCommandAt = Date.now();
+  state.quietUntil = Math.max(state.quietUntil, state.lastCommandAt + quietMs);
 }
+
 
 /**
  * Explicit diagnostic keepalive. Normal UI status polling must use
