@@ -94,6 +94,7 @@ export async function pushSettings(opts: {
     const acks = [];
     for (const slot of changed) {
       const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
+      const action = slot.enabled ? `save ${label}` : `clear unused routine slot ${slot.index}`;
       log(
         slot.enabled
           ? `Writing slot #${slot.index} (${label}) with persistent command 0x14`
@@ -108,7 +109,7 @@ export async function pushSettings(opts: {
         if (!ack?.acked) log(`Slot #${slot.index} answered silently — treated as written`);
       } catch (error) {
         throw new Error(
-          `Step “send routine ${slot.index} (${label}) with command 0x14” failed — ${describeError(
+          `Step “${action} with command 0x14” failed — ${describeError(
             error,
           )} Make sure the diffuser is still paired, then try again.`,
         );
