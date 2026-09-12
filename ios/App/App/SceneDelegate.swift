@@ -84,7 +84,7 @@ class BrumeBridgeViewController: CAPBridgeViewController {
         view.backgroundColor = .black
         observeWebView()
         // Safety net: never trap the user behind the overlay.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             BrumeLoadingOverlay.dismiss()
         }
     }
