@@ -159,6 +159,11 @@ function Setup() {
   // that gap synchronously so an interval already due cannot start (or act on)
   // a connection check after Confirm has been tapped.
   const savingRef = useRef(false);
+  // One-shot read of the diffuser's stored routines when the editing screens
+  // open. Status polling stays suspended while it runs so the two never overlap.
+  const readingRef = useRef(false);
+  const [settingsRead, setSettingsRead] = useState(false);
+
   const {
     checking: checkingRequirements,
     bluetoothOff: btOff,
