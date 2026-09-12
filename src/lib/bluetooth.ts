@@ -570,6 +570,7 @@ export async function sendFrames(
   for (const frame of frames) {
     const hex = toHex(frame);
     const fn = frame[3] ?? 0;
+    markCommandTraffic();
     trace(`TX 0x${fn.toString(16)} · ${hex}`);
     onLog?.(`TX ${hex}`);
     const begun = Date.now();
