@@ -5,7 +5,7 @@
  * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
-import { trace } from "@/lib/ble-log";
+import { describeError, trace } from "@/lib/ble-log";
 
 export type NativeChar = { service: string; characteristic: string };
 
@@ -31,6 +31,9 @@ const connectedNotify = new Map<string, (value: Uint8Array) => void>();
 const connectionGenerations = new Map<string, number>();
 
 const disconnectListeners = new Set<(deviceId: string) => void>();
+
+/** One shared in-flight liveness check per device (no duplicate bridge calls). */
+const liveChecks = new Map<string, Promise<boolean>>();
 
 function markDisconnected(deviceId: string) {
   trace(`native disconnect event for ${deviceId}`);
@@ -439,11 +442,16 @@ export async function isNativeConnected(deviceId: string) {
         `direct native write-session check failed after ${Date.now() - begun}ms: ${describeError(error)}`,
       );
       markDisconnected(deviceId);
-    // A failed native state check must never be interpreted as permission to
-    // write. Refuse the save before its first byte instead of showing a false
-    // success or discovering the stale link during the routine command.
-    return false;
-  }
+      // A failed native state check must never be interpreted as permission to
+      // write. Refuse the save before its first byte instead of showing a false
+      // success or discovering the stale link during the routine command.
+      return false;
+    } finally {
+      liveChecks.delete(deviceId);
+    }
+  })();
+  liveChecks.set(deviceId, run);
+  return run;
 }
 
 /**
