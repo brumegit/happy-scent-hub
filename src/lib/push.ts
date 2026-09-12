@@ -68,12 +68,15 @@ export async function pushSettings(opts: {
 
     // A first read can be missed while iOS finishes enabling notifications.
     // It is only an optimisation for preserving IDs: if unavailable, write all
-    // requested slots and rely on the mandatory final read-back for proof.
+    // five slots, including explicit disabled entries for unused routines.
     // Always write every routine the user asked for: comparing with the read
     // list once made the app skip all writes and report success with no beep.
-    // Unused slots are only written when the device still holds them enabled.
+    // If the initial read failed, we cannot assume an absent disabled slot is
+    // already clear. Send all five slots so routines removed in the app cannot
+    // remain enabled on the diffuser. When a read did succeed, avoid redundant
+    // clear commands for slots the hardware already reports as disabled.
     const changed = slots.filter((slot) =>
-      slot.enabled ? true : !slotMatches(existing, slot),
+      existing === null ? true : slot.enabled || !slotMatches(existing, slot),
     );
     log(
       changed.length
@@ -91,7 +94,12 @@ export async function pushSettings(opts: {
     const acks = [];
     for (const slot of changed) {
       const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
-      log(`Writing slot #${slot.index} (${label}) with persistent command 0x14`);
+      const action = slot.enabled ? `save ${label}` : `clear unused routine slot ${slot.index}`;
+      log(
+        slot.enabled
+          ? `Writing slot #${slot.index} (${label}) with persistent command 0x14`
+          : `Clearing unused slot #${slot.index} with persistent command 0x14`,
+      );
       try {
         const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(slot)], log);
         if (ack) acks.push(ack);
@@ -101,7 +109,7 @@ export async function pushSettings(opts: {
         if (!ack?.acked) log(`Slot #${slot.index} answered silently — treated as written`);
       } catch (error) {
         throw new Error(
-          `Step “send routine ${slot.index} (${label}) with command 0x14” failed — ${describeError(
+          `Step “${action} with command 0x14” failed — ${describeError(
             error,
           )} Make sure the diffuser is still paired, then try again.`,
         );
@@ -112,7 +120,13 @@ export async function pushSettings(opts: {
     // Each 0x14 acknowledgment and beep confirms that routine. Do not send a
     // final 0x08 query: on this firmware, traffic immediately after the last
     // persistent write can make the Bluetooth module drop its connection.
-    log(`Save complete · ${acks.length} routine${acks.length === 1 ? "" : "s"} confirmed`);
+    const activeCount = changed.filter((slot) => slot.enabled).length;
+    const clearedCount = changed.length - activeCount;
+    log(
+      `Save complete · ${activeCount} active routine${activeCount === 1 ? "" : "s"} written${
+        clearedCount ? ` · ${clearedCount} unused slot${clearedCount === 1 ? "" : "s"} cleared` : ""
+      }`,
+    );
     return acks;
   } catch (error) {
     // Always report the failing step plus what happened just before it, so a
