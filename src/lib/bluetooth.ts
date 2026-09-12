@@ -320,12 +320,18 @@ async function attachLink(device: {
     trace(`web write start · ${frame.length}B in ${chunks} chunk(s)`);
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
-      if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
-        await writable.writeValueWithoutResponse(chunk);
-      } else if (writable.writeValueWithResponse) {
-        await writable.writeValueWithResponse(chunk);
-      } else {
-        await writable.writeValue?.(chunk);
+      try {
+        if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
+          await writable.writeValueWithoutResponse(chunk);
+        } else if (writable.writeValueWithResponse) {
+          await writable.writeValueWithResponse(chunk);
+        } else {
+          await writable.writeValue?.(chunk);
+        }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        trace(`web write FAILED: ${reason}`);
+        throw new BleWriteError(reason);
       }
       await wait(CHUNK_DELAY_MS);
     }
@@ -381,12 +387,9 @@ export async function connectPickedDevice(device: {
         try {
           await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
         } catch (error) {
-          trace(
-            `native write FAILED on chunk ${index}/${chunks}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-          throw error;
+          const reason = error instanceof Error ? error.message : String(error);
+          trace(`native write FAILED on chunk ${index}/${chunks}: ${reason}`);
+          throw new BleWriteError(reason);
         }
         await wait(CHUNK_DELAY_MS);
       }
@@ -476,6 +479,18 @@ export async function pairDiffuser(choose?: DeviceChooser): Promise<PairedDevice
   };
 }
 
+/**
+ * Raised when the bytes could not even leave the phone (the OS refused the
+ * write). This is very different from a missing reply: nothing reached the
+ * diffuser, so the routine was definitely not saved.
+ */
+export class BleWriteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BleWriteError";
+  }
+}
+
 export type FrameAck = {
   /** Function code of the command that was sent. */
   fn: number;
@@ -534,7 +549,7 @@ export async function sendFrames(
   frames: Uint8Array[],
   onLog?: (line: string) => void,
 ): Promise<FrameAck[]> {
-  const link = deviceId ? links.get(deviceId) : undefined;
+  let link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) {
     trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
@@ -560,14 +575,38 @@ export async function sendFrames(
       trace(`RX 0x${fn.toString(16)} after ${Date.now() - begun}ms · ${toHex(response)}`);
       onLog?.(`RX ${toHex(response)}`);
     } catch (error) {
-      // Some modules acknowledge silently (no notify characteristic).
       response = null;
-      trace(
-        `no RX for 0x${fn.toString(16)} after ${Date.now() - begun}ms (${
-          error instanceof Error ? error.message : String(error)
-        })`,
-      );
-      onLog?.(`RX none for 0x${fn.toString(16)}`);
+      const reason = error instanceof Error ? error.message : String(error);
+      if (error instanceof BleWriteError) {
+        // The bytes never left the phone — the link is gone. Try once to bring
+        // it back, then replay this exact command before giving up.
+        trace(`write refused by the OS for 0x${fn.toString(16)}: ${reason} — reconnecting once`);
+        onLog?.("Bluetooth link dropped — reconnecting");
+        const back = await reconnectDevice(deviceId);
+        const fresh = deviceId ? links.get(deviceId) : undefined;
+        if (!back || !fresh) {
+          throw new Error(
+            "Bluetooth link lost before the settings could be sent.\nThe diffuser goes to sleep quickly — double tap its button and try again.",
+          );
+        }
+        link = fresh;
+        try {
+          response = await link.request(frame, (fn + 0x80) & 0xff);
+          trace(`RX 0x${fn.toString(16)} after reconnect · ${toHex(response)}`);
+        } catch (retryError) {
+          if (retryError instanceof BleWriteError) {
+            throw new Error(
+              `Bluetooth link lost while sending command 0x${fn.toString(16)} (${retryError.message}).\nDouble tap the diffuser button to wake it and try again.`,
+            );
+          }
+          response = null;
+          trace(`no RX for 0x${fn.toString(16)} after reconnect`);
+        }
+      } else {
+        // Some modules acknowledge silently (no notify characteristic).
+        trace(`no RX for 0x${fn.toString(16)} after ${Date.now() - begun}ms (${reason})`);
+        onLog?.(`RX none for 0x${fn.toString(16)}`);
+      }
     }
     const code = response && response.length >= 6 ? (response[4] ?? null) : null;
     acks.push({ fn, acked: !!response, code, hex });
