@@ -16,6 +16,7 @@ import {
   type Intensity,
 } from "@/lib/diffuser";
 import { pushDebug } from "@/stores/pushDebugStore";
+import { recentTrace, resetTrace, trace } from "@/lib/ble-log";
 import { readDebug } from "@/stores/readDebugStore";
 
 /** Small pause so the firmware can finish processing one command before the next. */
@@ -37,12 +38,10 @@ export async function pushSettings(opts: {
 }) {
   const debug = pushDebug();
   debug.begin();
-  // Keep a local trail so any failure can name the exact step that broke.
-  const trail: string[] = [];
-  const log = (line: string) => {
-    trail.push(line);
-    pushDebug().addLog(line);
-  };
+  // Every command, chunk write and reply is timestamped in the trace, so a
+  // failure on a phone can be diagnosed from the error message alone.
+  resetTrace();
+  const log = (line: string) => trace(line);
 
   log(
     `Push start · device ${opts.deviceId ?? "none"} · link ${
@@ -131,7 +130,7 @@ export async function pushSettings(opts: {
     // Always report the failing step plus what happened just before it, so a
     // failure on a phone can be diagnosed without the debug strip.
     const message = (error as Error).message || describeError(error);
-    const context = trail.slice(-3).join("\n· ");
+    const context = recentTrace(14).join("\n· ");
     const full = context ? `${message}\n\nWhat happened:\n· ${context}` : message;
     debug.setLinkError(full);
     for (const key of ["modes", "intensity", "schedule"] as const) {
