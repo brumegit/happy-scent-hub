@@ -842,7 +842,7 @@ function trafficState(deviceId: string) {
 function isTrafficBlocked(deviceId: string | null) {
   if (!deviceId) return false;
   const state = trafficByDevice.get(deviceId);
-  return !!state && (state.saving || Date.now() - state.lastCommandAt < QUIET_AFTER_COMMAND_MS);
+  return !!state && (state.saving || Date.now() < state.quietUntil);
 }
 
 /**
@@ -854,7 +854,7 @@ export function msUntilOptionalTrafficAllowed(deviceId: string | null) {
   const state = trafficByDevice.get(deviceId);
   if (!state) return 0;
   if (state.saving) return -1;
-  return Math.max(0, QUIET_AFTER_COMMAND_MS - (Date.now() - state.lastCommandAt));
+  return Math.max(0, state.quietUntil - Date.now());
 }
 
 
@@ -874,14 +874,21 @@ export function endCommandSequence(deviceId: string | null) {
   if (!deviceId) return;
   const state = trafficState(deviceId);
   state.lastCommandAt = Date.now();
+  state.quietUntil = state.lastCommandAt + QUIET_AFTER_COMMAND_MS;
   state.saving = false;
   trace(`exclusive command sequence ended · quiet ${QUIET_AFTER_COMMAND_MS}ms`);
 }
 
-export function markCommandTraffic(deviceId: string | null) {
+export function markCommandTraffic(
+  deviceId: string | null,
+  quietMs: number = QUIET_AFTER_COMMAND_MS,
+) {
   if (!deviceId) return;
-  trafficState(deviceId).lastCommandAt = Date.now();
+  const state = trafficState(deviceId);
+  state.lastCommandAt = Date.now();
+  state.quietUntil = Math.max(state.quietUntil, state.lastCommandAt + quietMs);
 }
+
 
 /**
  * Explicit diagnostic keepalive. Normal UI status polling must use
