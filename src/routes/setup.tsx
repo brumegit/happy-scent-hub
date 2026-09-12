@@ -236,7 +236,7 @@ function Setup() {
         // A diffuser identifying itself as "BRUME" is picked immediately —
         // same auto-connect rule as the pre-picker scan, applied live while
         // the nearby-devices list is open.
-        const brume = devices.find((d) => d.name.toUpperCase().includes("BRUME"));
+        const brume = devices.find((d) => (d.name ?? "").toUpperCase().includes("BRUME"));
         if (brume) {
           settlePicker(brume);
           return;
