@@ -6,17 +6,32 @@ import { useDebugMode } from "@/hooks/useDebugMode";
 
 /** Short human label for the element the user touched. */
 function describe(el: Element): string {
-  const target =
-    (el.closest("button, a, [role=button], input, select, textarea, label, summary") as
-      | HTMLElement
-      | null) ?? (el as HTMLElement);
+  // Many app controls (day chips, hour cells, tiles) are plain divs with an
+  // onClick — climb up to 4 ancestors to find the meaningful tap target.
+  let target = el.closest(
+    "button, a, [role=button], input, select, textarea, label, summary, [data-trace]",
+  ) as HTMLElement | null;
+  if (!target) {
+    let node = el as HTMLElement | null;
+    for (let depth = 0; node && depth < 4; depth += 1) {
+      const text = (node.innerText || "").trim();
+      if (text && text.length <= 60) {
+        target = node;
+        break;
+      }
+      node = node.parentElement;
+    }
+    target = target ?? (el as HTMLElement);
+  }
 
   const tag = target.tagName.toLowerCase();
   const aria = target.getAttribute("aria-label");
+  const traceLabel = target.getAttribute("data-trace");
   const name = (target as HTMLInputElement).name;
   const type = target.getAttribute("type");
   const text = (target.innerText || target.textContent || "").trim().replace(/\s+/g, " ");
-  const label = aria || text || (target as HTMLInputElement).placeholder || name || "";
+  const label =
+    traceLabel || aria || text || (target as HTMLInputElement).placeholder || name || "";
 
   return `${tag}${type ? `[${type}]` : ""}${label ? ` "${label.slice(0, 48)}"` : ""}`;
 }
