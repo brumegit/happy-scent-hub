@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { DebugLogSheet } from "@/components/DebugLogSheet";
+import { InteractionTracer } from "@/components/InteractionTracer";
 import { useCartSync } from "@/hooks/useCartSync";
 import { initMetaPixel, trackEvent } from "@/lib/meta";
 
@@ -146,6 +147,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <InteractionTracer />
       <DebugLogSheet />
       <Toaster position="top-center" />
     </QueryClientProvider>
