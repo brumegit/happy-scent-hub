@@ -24,7 +24,6 @@ import {
   forgetNativeSession,
   isBluetoothEnabled as nativeBluetoothEnabled,
   isNativeSessionConnected,
-  isNativeSystemConnected,
   isNativePlatform,
   isNativeSync,
   requestNativeDevice,
@@ -907,16 +906,14 @@ export async function pingLink(deviceId: string | null): Promise<boolean> {
 
 
 /**
- * Async connection check — ask the native session every five seconds instead
- * of trusting the in-memory map, which can remain stale after iOS drops a link.
+ * Passive connection check. On iPhone this reads only the session state kept
+ * by the native disconnect callback; it never queries the peripheral or the
+ * operating-system registry, so a five-second UI refresh cannot disturb BLE.
  */
 export async function checkConnection(deviceId: string | null) {
   if (!deviceId) return false;
   if (await isNativePlatform()) {
-    // Query the operating system's connected-peripheral registry. This sends no
-    // bytes to the diffuser, but detects links iOS dropped without invoking the
-    // plugin callback. Never use getMtu here: that touches the active channel.
-    return isNativeSystemConnected(deviceId);
+    return isNativeSessionConnected(deviceId);
   }
   const link = links.get(deviceId);
   if (!link || link.simulated) return false;
