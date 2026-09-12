@@ -617,12 +617,34 @@ export async function sendFrames(
       response = null;
       const reason = error instanceof Error ? error.message : String(error);
       if (error instanceof BleWriteError) {
-        // Never close/reopen the GATT session or replay a command automatically:
-        // both actions can interrupt the diffuser while it commits routines.
-        trace(`write refused by the OS for 0x${fn.toString(16)}: ${reason}`);
-        throw new Error(
-          `Bluetooth link lost while sending command 0x${fn.toString(16)} (${reason}).\nDouble tap the diffuser button, reconnect, and try again.`,
-        );
+        // The operating system refused the bytes because the link is gone. The
+        // command never reached the diffuser, so reopening the session and
+        // sending it once more cannot duplicate a routine.
+        trace(`write refused by the OS for 0x${fn.toString(16)}: ${reason} — reconnecting once`);
+        onLog?.("Bluetooth link dropped — reconnecting");
+        const recovered = await reopenLink(deviceId);
+        link = (deviceId ? links.get(deviceId) : undefined) ?? link;
+        if (!recovered) {
+          throw new Error(
+            `Bluetooth link lost while sending command 0x${fn.toString(16)} (${reason}).\nDouble tap the diffuser button, reconnect, and try again.`,
+          );
+        }
+        try {
+          markCommandTraffic(deviceId);
+          trace(`retrying 0x${fn.toString(16)} after reconnect`);
+          if (link.routineRepliesExpected === false) {
+            await link.write(frame);
+          } else {
+            response = await link.request(frame, (fn + 0x80) & 0xff);
+          }
+          trace(`retry of 0x${fn.toString(16)} succeeded after reconnect`);
+        } catch (retryError) {
+          const retryReason = retryError instanceof Error ? retryError.message : String(retryError);
+          trace(`retry of 0x${fn.toString(16)} failed: ${retryReason}`);
+          throw new Error(
+            `Bluetooth link lost while sending command 0x${fn.toString(16)} (${retryReason}).\nDouble tap the diffuser button, reconnect, and try again.`,
+          );
+        }
       } else {
         // Some modules acknowledge silently (no notify characteristic).
         trace(`no RX for 0x${fn.toString(16)} after ${Date.now() - begun}ms (${reason})`);
