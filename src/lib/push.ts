@@ -1,7 +1,6 @@
 import {
   beginCommandSequence,
   endCommandSequence,
-  ensureLink,
   isRealLink,
   queryTimers,
   sendFrames,
@@ -63,16 +62,10 @@ export async function pushSettings(opts: {
     // Block screen keepalives and all optional reads for the whole five-slot
     // transaction. The transport write queue still serializes packet chunks.
     beginCommandSequence(opts.deviceId);
-    // Observe the existing link before sending. Never reconnect here: opening a
-    // second native session can close the one the diffuser is already using.
-    if (opts.deviceId) {
-      const ready = await ensureLink(opts.deviceId, log);
-      if (!ready) {
-        throw new Error(
-          "Bluetooth link lost before the settings could be sent.\nThe diffuser goes to sleep to preserve battery — double tap its button, then try again.",
-        );
-      }
-    }
+    // Confirm already had a live connection on the editing screen. Do not run
+    // another native probe here: routine writes must be the only Bluetooth
+    // operations after the user taps Confirm. A dead link is reported by the
+    // first write without reconnecting or replaying a partial save.
 
     // Authoritative save: every one of the 5 hardware slots is written on each
     // save. Slots the user did not define are written as disabled, so routines
