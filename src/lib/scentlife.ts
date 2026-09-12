@@ -201,7 +201,9 @@ export function buildQuery(subType: number) {
 /**
  * Acknowledgment for a spontaneous uplink report (0x21/0x22/0x23 -> 0xA1/0xA2/0xA3).
  * Modules stop reporting when the app never confirms, which is why the battery
- * level would otherwise never appear.
+ * level would otherwise never appear. The transport deliberately suppresses
+ * these acknowledgments during a protected routine save: this firmware cannot
+ * accept a report acknowledgment interleaved with persistent timer writes.
  */
 export function buildReportAck(fn: number) {
   return buildFrame((fn + 0x80) & 0xff, [0x00]);
