@@ -305,6 +305,18 @@ export async function connectNative(
   onNotify?: (value: Uint8Array) => void,
 ): Promise<NativeChar | null> {
   const ble = await client();
+  // A stale iOS connection can still appear in getConnectedDevices while every
+  // write fails with "Not connected to device." Close that CoreBluetooth
+  // session before registering a new disconnect callback and notification
+  // subscription, otherwise every report may be delivered and acknowledged
+  // twice after the reconnect.
+  if (connectedIds.has(deviceId)) {
+    trace("clearing stale native session before reconnect");
+    await ble.disconnect(deviceId).catch(() => undefined);
+    connectedIds.delete(deviceId);
+    connectedServices.delete(deviceId);
+    await wait(250);
+  }
   // Android can reject a GATT connection when it starts in the same radio
   // timeslice as the chooser's scan teardown. Give scanning time to stop, then
   // retry only transient GATT failures after fully closing the stale client.

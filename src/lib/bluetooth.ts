@@ -76,6 +76,7 @@ function serializeWrites(writeNow: (frame: Uint8Array) => Promise<void>) {
 
 const links = new Map<string, Link>();
 const connectionListeners = new Set<(deviceId: string, connected: boolean) => void>();
+const lastStatusFrames = new Map<string, { signature: string; receivedAt: number }>();
 
 function publishConnection(deviceId: string, connected: boolean) {
   if (!connected) links.delete(deviceId);
@@ -100,6 +101,17 @@ function captureBattery(deviceId: string, frame: Uint8Array) {
   // Status reports must be acknowledged, otherwise the module stops sending
   // them and the battery level never refreshes.
   const fn = frame[3] ?? 0;
+  const signature = toHex(frame);
+  const previous = lastStatusFrames.get(deviceId);
+  const receivedAt = Date.now();
+  // A reconnect can briefly leave the previous CoreBluetooth notification
+  // callback alive. Ignore the duplicate delivery so one status report creates
+  // exactly one 0xA1 acknowledgment instead of two back-to-back writes.
+  if (previous?.signature === signature && receivedAt - previous.receivedAt < 300) {
+    trace(`duplicate RX fn=0x${fn.toString(16).padStart(2, "0")} ignored`);
+    return;
+  }
+  lastStatusFrames.set(deviceId, { signature, receivedAt });
   pushDebug().addLog(`RX fn=0x${fn.toString(16).padStart(2, "0")} ${toHex(frame)}`);
   if (isStatusReport(fn)) {
     void links
