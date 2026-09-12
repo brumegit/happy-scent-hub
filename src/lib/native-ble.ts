@@ -412,6 +412,7 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
   // replay the same bytes with another write mode: the first write may already
   // have reached the firmware, and a duplicate can reset its BLE session.
   await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+  lastNativeWriteAt = Date.now();
   trace(`chunk ${chunk.length}B write-no-response ok · ${hex}`);
 }
 
