@@ -709,6 +709,31 @@ export async function queryTimers(
 
 
 /**
+ * Keeps the diffuser awake. The module drops an idle BLE link after roughly ten
+ * seconds to preserve battery, which used to kick the user out of the routine
+ * editor before anything was saved. Sending the harmless read-routines command
+ * (0x08) on a short interval counts as activity: it changes nothing on the
+ * hardware and produces no beep. Returns whether the link is still usable.
+ */
+export async function pingLink(deviceId: string | null): Promise<boolean> {
+  if (!deviceId) return false;
+  const link = links.get(deviceId);
+  if (!link) return false;
+  if (link.simulated) return true;
+  try {
+    await link.request(buildGetTimers(), 0x88);
+    return true;
+  } catch (error) {
+    if (error instanceof BleWriteError) {
+      trace(`keepalive write failed: ${(error as Error).message}`);
+      return false;
+    }
+    // A silent module still accepted the write, so the link is alive.
+    return link.isLive ? await link.isLive().catch(() => false) : true;
+  }
+}
+
+/**
  * Async connection check — on native builds the OS keeps the GATT link, so we
  * ask the platform instead of relying on the in-memory map.
  */

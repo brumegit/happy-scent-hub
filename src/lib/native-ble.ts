@@ -230,7 +230,6 @@ function isNamed(name: string | undefined): name is string {
  */
 export async function requestNativeDevice(choose?: DeviceChooser): Promise<NativeDevice> {
   const ble = await client();
-  if (onNotify) connectedNotify.set(deviceId, onNotify);
 
   const known = await scanForBrume(ble).catch(() => null);
   if (known) return known;
