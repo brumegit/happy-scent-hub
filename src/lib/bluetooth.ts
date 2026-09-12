@@ -615,7 +615,9 @@ export async function sendFrames(
     await wait(200);
   }
 
-  // No liveness probe or other traffic after the final frame.
+  // No liveness probe or other traffic after the final frame, and the keepalive
+  // stays silent for the quiet window so the module can commit to flash.
+  markCommandTraffic();
   return acks;
 }
 
