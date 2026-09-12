@@ -549,7 +549,7 @@ export async function sendFrames(
   frames: Uint8Array[],
   onLog?: (line: string) => void,
 ): Promise<FrameAck[]> {
-  const link = deviceId ? links.get(deviceId) : undefined;
+  let link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) {
     trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
