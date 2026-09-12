@@ -25,7 +25,7 @@ const ROOM_SUGGESTIONS = [
 ];
 
 /** Shared drift pace (px/ms) — both rows move at this speed, opposite ways. */
-const DRIFT_SPEED = 0.00192;
+const DRIFT_SPEED = 0.00064;
 
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
@@ -59,24 +59,31 @@ function Row({
 
     let raf = 0;
     let last = performance.now();
-    // Start the left-drifting row from the middle of the duplicated list.
-    // Deferred into rAF so fonts/layout have settled and scrollWidth is final.
-    if (direction === -1) {
-      raf = requestAnimationFrame(() => {
-        el.scrollLeft = el.scrollWidth / 2;
-      });
-    }
+    // scrollLeft is rounded by the browser, so the sub-pixel drift is kept in a
+    // float here; otherwise a slow row would round back to the same pixel and
+    // appear frozen.
+    let pos = 0;
+    let started = false;
 
     const tick = (now: number) => {
       const dt = now - last;
       last = now;
-      if (!paused.current) {
-        const half = el.scrollWidth / 2;
-        // Both rows drift at the same gentle pace, in opposite directions.
-        let next = el.scrollLeft + direction * (dt * DRIFT_SPEED);
-        if (next >= half) next -= half;
-        if (next <= 0) next += half;
-        el.scrollLeft = next;
+      const half = el.scrollWidth / 2;
+      if (half > 0 && !started) {
+        // The right-drifting row starts from the middle of the duplicated list
+        // so it has room to move backwards.
+        pos = direction === -1 ? half : 0;
+        el.scrollLeft = pos;
+        started = true;
+      }
+      if (started && paused.current) {
+        // Follow the user's own dragging so drift resumes from where they left.
+        pos = el.scrollLeft;
+      } else if (started && half > 0) {
+        pos += direction * (dt * DRIFT_SPEED);
+        if (pos >= half) pos -= half;
+        if (pos <= 0) pos += half;
+        el.scrollLeft = pos;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -90,6 +97,7 @@ function Row({
   const release = () => {
     paused.current = false;
   };
+
 
   return (
     <div
