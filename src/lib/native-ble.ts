@@ -28,6 +28,7 @@ const connectedIds = new Set<string>();
 
 /** Service UUID of the serial channel per device, used to verify liveness. */
 const connectedServices = new Map<string, string>();
+const connectedTargets = new Map<string, NativeChar>();
 const connectionGenerations = new Map<string, number>();
 
 const disconnectListeners = new Set<(deviceId: string) => void>();
@@ -36,6 +37,7 @@ function markDisconnected(deviceId: string) {
   trace(`native disconnect event for ${deviceId}`);
   connectedIds.delete(deviceId);
   connectedServices.delete(deviceId);
+  connectedTargets.delete(deviceId);
   disconnectListeners.forEach((listener) => listener(deviceId));
 }
 
@@ -306,20 +308,13 @@ export async function connectNative(
   onNotify?: (value: Uint8Array) => void,
 ): Promise<NativeChar | null> {
   const ble = await client();
+  const existingTarget = connectedTargets.get(deviceId);
+  if (connectedIds.has(deviceId) && existingTarget) {
+    trace("native connection already live — reusing serial channel");
+    return existingTarget;
+  }
   const generation = (connectionGenerations.get(deviceId) ?? 0) + 1;
   connectionGenerations.set(deviceId, generation);
-  // A stale iOS connection can still appear in getConnectedDevices while every
-  // write fails with "Not connected to device." Close that CoreBluetooth
-  // session before registering a new disconnect callback and notification
-  // subscription, otherwise every report may be delivered and acknowledged
-  // twice after the reconnect.
-  if (connectedIds.has(deviceId)) {
-    trace("clearing stale native session before reconnect");
-    await ble.disconnect(deviceId).catch(() => undefined);
-    connectedIds.delete(deviceId);
-    connectedServices.delete(deviceId);
-    await wait(250);
-  }
   // Android can reject a GATT connection when it starts in the same radio
   // timeslice as the chooser's scan teardown. Give scanning time to stop, then
   // retry only transient GATT failures after fully closing the stale client.
@@ -344,7 +339,6 @@ export async function connectNative(
           error instanceof Error ? error.message : String(error)
         }`,
       );
-      await ble.disconnect(deviceId).catch(() => undefined);
       if (!isTransientGattError(error) || attempt === 2) break;
       await wait(900 * (attempt + 1));
     }
@@ -362,20 +356,6 @@ export async function connectNative(
   let writable: NativeChar | null = null;
   for (const service of services) {
     for (const ch of service.characteristics) {
-      if ((ch.properties.notify || ch.properties.indicate) && onNotify) {
-        try {
-          await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) => {
-            onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
-          });
-          trace(`notifications started on ${service.uuid.slice(0, 8)}/${ch.uuid.slice(0, 8)}`);
-        } catch (error) {
-          trace(
-            `notifications failed on ${ch.uuid.slice(0, 8)}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-        }
-      }
       // Keep the proven iPhone transport behavior: use the first writable
       // characteristic reported by CoreBluetooth. Preferring a later service
       // merely because notifications started there selected the wrong channel
@@ -386,10 +366,31 @@ export async function connectNative(
     }
   }
   if (!writable) {
-    await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
   }
+  // Listen only on the serial service. Subscribing to every notifying service
+  // can feed unrelated reports into the protocol parser and create extra writes
+  // while routines are being saved.
+  if (onNotify) {
+    const serialService = services.find((service) => service.uuid === writable.service);
+    for (const ch of serialService?.characteristics ?? []) {
+      if (!ch.properties.notify && !ch.properties.indicate) continue;
+      try {
+        await ble.startNotifications(deviceId, writable.service, ch.uuid, (v) => {
+          onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+        });
+        trace(`notifications started on ${writable.service.slice(0, 8)}/${ch.uuid.slice(0, 8)}`);
+      } catch (error) {
+        trace(
+          `notifications failed on ${ch.uuid.slice(0, 8)}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+  }
   connectedServices.set(deviceId, writable.service);
+  connectedTargets.set(deviceId, writable);
   trace(
     `serial channel selected ${writable.service.slice(0, 8)}/${writable.characteristic.slice(0, 8)}`,
   );
@@ -429,22 +430,12 @@ export async function isNativeConnected(deviceId: string) {
     const ble = await client();
     const devices = await ble.getConnectedDevices([service]);
     const live = devices.some((device) => device.deviceId === deviceId);
-    if (!live) {
-      trace("liveness check: OS reports the diffuser is no longer connected");
-      markDisconnected(deviceId);
-    }
+    if (!live) trace("liveness check: OS does not currently report the diffuser connected");
     return live;
   } catch {
     // Platform could not answer — trust the disconnect callback instead.
     return connectedIds.has(deviceId);
   }
-}
-
-/** Disconnects the GATT link on a native build. */
-export async function disconnectNative(deviceId: string) {
-  const ble = await client();
-  markDisconnected(deviceId);
-  await ble.disconnect(deviceId);
 }
 
 /**

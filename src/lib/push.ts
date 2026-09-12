@@ -65,21 +65,6 @@ export async function pushSettings(opts: {
       }
     }
 
-    // Best-effort read, only to reuse the timer IDs the hardware already holds:
-    // pushing fresh IDs can make the firmware keep its old working modes next to
-    // ours. This is a read (0x08) — it does not beep, and a failure is harmless
-    // because every slot is rewritten below regardless.
-    const existing = await queryTimers(opts.deviceId, log).catch((error: unknown) => {
-      log(`Step “read current routines (0x08)” failed — ${describeError(error)}`);
-      return null;
-    });
-    if (existing?.length) {
-      for (const slot of slots) {
-        const match = existing.find((s) => s.index === slot.index);
-        if (match?.timerId) slot.timerId = match.timerId;
-      }
-    }
-
     // Authoritative save: every one of the 5 hardware slots is written on each
     // save. Slots the user did not define are written as disabled, so routines
     // removed here (or added by another phone) can never keep running. Disabled
