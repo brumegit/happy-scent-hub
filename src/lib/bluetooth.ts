@@ -147,6 +147,10 @@ export function subscribeBattery(listener: () => void) {
 export async function requestBattery(deviceId: string | null) {
   const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) return;
+  if (isTrafficBlocked(deviceId)) {
+    trace("battery query skipped while command traffic is protected");
+    return;
+  }
   for (const subType of [0x01, 0x02, 0x03]) {
     try {
       pushDebug().addLog(`TX query 0x09 type=0x0${subType}`);
@@ -570,7 +574,7 @@ export async function sendFrames(
   for (const frame of frames) {
     const hex = toHex(frame);
     const fn = frame[3] ?? 0;
-    markCommandTraffic();
+    markCommandTraffic(deviceId);
     trace(`TX 0x${fn.toString(16)} · ${hex}`);
     onLog?.(`TX ${hex}`);
     const begun = Date.now();
@@ -617,7 +621,7 @@ export async function sendFrames(
 
   // No liveness probe or other traffic after the final frame, and the keepalive
   // stays silent for the quiet window so the module can commit to flash.
-  markCommandTraffic();
+  markCommandTraffic(deviceId);
   return acks;
 }
 
@@ -708,6 +712,10 @@ export async function queryTimers(
 ): Promise<TimerSlot[] | null> {
   const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) return null;
+  if (isTrafficBlocked(deviceId)) {
+    trace("read routines skipped while command traffic is protected");
+    return null;
+  }
   try {
     const frame = buildGetTimers();
     trace(`TX 0x08 (read routines) · ${toHex(frame)}`);
@@ -725,16 +733,46 @@ export async function queryTimers(
 
 
 
-/** Timestamp of the last command we sent, used to keep the radio quiet after a save. */
-let lastCommandAt = 0;
-/** Quiet window after a routine save: the module commits to flash and drops the
- * link if we poke it too soon. Observed on iPhone: a keepalive ~1.4s after the
- * final 0x14 killed the connection. */
-const QUIET_AFTER_COMMAND_MS = 12_000;
+type TrafficState = { lastCommandAt: number; saving: boolean };
+const trafficByDevice = new Map<string, TrafficState>();
+/** The module needs a short flash-settle period, but its own idle timeout closes
+ * the link before twelve seconds. Five seconds keeps both constraints satisfied:
+ * no early post-save traffic, then one keepalive before the peripheral sleeps. */
+const QUIET_AFTER_COMMAND_MS = 5_000;
 const pingsInFlight = new Map<string, Promise<boolean>>();
 
-export function markCommandTraffic() {
-  lastCommandAt = Date.now();
+function trafficState(deviceId: string) {
+  const existing = trafficByDevice.get(deviceId);
+  if (existing) return existing;
+  const created = { lastCommandAt: 0, saving: false };
+  trafficByDevice.set(deviceId, created);
+  return created;
+}
+
+function isTrafficBlocked(deviceId: string | null) {
+  if (!deviceId) return false;
+  const state = trafficByDevice.get(deviceId);
+  return !!state && (state.saving || Date.now() - state.lastCommandAt < QUIET_AFTER_COMMAND_MS);
+}
+
+export function beginCommandSequence(deviceId: string | null) {
+  if (!deviceId) return;
+  const state = trafficState(deviceId);
+  state.saving = true;
+  trace("exclusive command sequence started");
+}
+
+export function endCommandSequence(deviceId: string | null) {
+  if (!deviceId) return;
+  const state = trafficState(deviceId);
+  state.lastCommandAt = Date.now();
+  state.saving = false;
+  trace(`exclusive command sequence ended · quiet ${QUIET_AFTER_COMMAND_MS}ms`);
+}
+
+export function markCommandTraffic(deviceId: string | null) {
+  if (!deviceId) return;
+  trafficState(deviceId).lastCommandAt = Date.now();
 }
 
 /**
@@ -749,17 +787,28 @@ export async function pingLink(deviceId: string | null): Promise<boolean> {
   const link = links.get(deviceId);
   if (!link) return false;
   if (link.simulated) return true;
-  // Never send anything while the diffuser is still committing a save.
-  if (Date.now() - lastCommandAt < QUIET_AFTER_COMMAND_MS) return true;
+  // Never send anything while a save is active or the diffuser is committing it.
+  if (isTrafficBlocked(deviceId)) return true;
   const pending = pingsInFlight.get(deviceId);
   if (pending) return pending;
   const run = (async () => {
     try {
+      if (link.isLive && !(await link.isLive().catch(() => false))) {
+        trace("keepalive not sent: operating system already reported the link disconnected");
+        return false;
+      }
+      trace("keepalive TX 0x08");
       await link.request(buildGetTimers(), 0x88);
+      trace("keepalive RX 0x88");
       return true;
     } catch (error) {
       if (error instanceof BleWriteError) {
-        trace(`keepalive write failed: ${(error as Error).message}`);
+        const stillLive = link.isLive ? await link.isLive().catch(() => false) : false;
+        trace(
+          stillLive
+            ? `keepalive write was refused while link still reported live: ${(error as Error).message}`
+            : `keepalive found the diffuser already disconnected: ${(error as Error).message}`,
+        );
         return false;
       }
       // A silent module still accepted the write, so the link is alive.

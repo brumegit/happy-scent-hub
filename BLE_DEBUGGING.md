@@ -77,8 +77,11 @@ header. The log sheet can be scrolled, copied, or shared.
 - Every configured routine is accepted, and the link remains up afterwards.
 - Fresh onboarding *and* Edit settings both work on a physical device.
 
-## Quiet window after a save
+## Protected save and keepalive timing
 
 The diffuser drops the link if anything is sent while it commits routines to flash.
-After any command, the keepalive (0x08) stays silent for 12 seconds, and only one
-keepalive per device can be in flight at a time. Never remove this guard.
+All optional reads and keepalives are blocked throughout the five-slot save and for
+5 seconds after its final command. The first later keepalive runs before the
+diffuser's own idle timeout, and only one keepalive per device can be in flight.
+Never increase this silence beyond the peripheral's idle timeout and never remove
+the save guard.
