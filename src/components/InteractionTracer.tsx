@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 
-import { trace } from "@/lib/ble-log";
+import { installSystemLogCapture, trace } from "@/lib/ble-log";
 import { useDebugMode } from "@/hooks/useDebugMode";
 
 /** Short human label for the element the user touched. */
@@ -51,11 +51,21 @@ export function InteractionTracer() {
       trace(`👆 change ${describe(el)} = "${value}"`);
     };
 
+    // Backgrounding is a common cause of iOS dropping a Bluetooth session, and
+    // it is only visible in Xcode otherwise — record it in the trace too.
+    const onVisibility = () => trace(`📱 app ${document.visibilityState}`);
+    const onPageHide = () => trace("📱 app hidden (pagehide)");
+
+    installSystemLogCapture();
     document.addEventListener("pointerdown", onPointer, true);
     document.addEventListener("change", onChange, true);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
     return () => {
       document.removeEventListener("pointerdown", onPointer, true);
       document.removeEventListener("change", onChange, true);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
     };
   }, [debug]);
 
