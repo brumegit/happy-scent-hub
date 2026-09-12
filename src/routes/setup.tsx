@@ -205,7 +205,10 @@ function Setup() {
         setIntensity(live.intensity);
         if (live.schedule.some((d) => d.active)) setSchedule(live.schedule);
       }
+      // Already read here; the intensity screen must not read a second time.
+      setSettingsRead(true);
       setPhase("paired");
+
       trackEvent("Lead", { content_category: "diffuser_pairing" });
     } catch (err) {
       setPhase("idle");
