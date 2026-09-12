@@ -61,7 +61,7 @@ export const usePushDebugStore = create<PushDebugState>()((set) => ({
   set: (key, status, detail) =>
     set((state) => ({ steps: { ...state.steps, [key]: { status, detail } } })),
   setLinkError: (message) => set({ linkError: message }),
-  addLog: (line) => set((state) => ({ log: [...state.log.slice(-40), line] })),
+  addLog: (line) => set((state) => ({ log: [...state.log.slice(-299), line] })),
   toggle: () => set((state) => ({ visible: !state.visible })),
 }));
 

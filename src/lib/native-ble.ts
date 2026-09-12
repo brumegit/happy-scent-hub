@@ -5,6 +5,8 @@
  * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
  */
 
+import { trace } from "@/lib/ble-log";
+
 export type NativeChar = { service: string; characteristic: string };
 
 export type NativeDevice = {
@@ -30,6 +32,7 @@ const connectedServices = new Map<string, string>();
 const disconnectListeners = new Set<(deviceId: string) => void>();
 
 function markDisconnected(deviceId: string) {
+  trace(`native disconnect event for ${deviceId}`);
   connectedIds.delete(deviceId);
   connectedServices.delete(deviceId);
   disconnectListeners.forEach((listener) => listener(deviceId));
@@ -314,10 +317,16 @@ export async function connectNative(
         skipDescriptorDiscovery: true,
       });
       connectedIds.add(deviceId);
+      trace(`native connect ok (attempt ${attempt + 1})`);
       lastError = undefined;
       break;
     } catch (error) {
       lastError = error;
+      trace(
+        `native connect attempt ${attempt + 1} failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
       await ble.disconnect(deviceId).catch(() => undefined);
       if (!isTransientGattError(error) || attempt === 2) break;
       await wait(900 * (attempt + 1));
@@ -331,6 +340,7 @@ export async function connectNative(
     );
   }
   const services = await ble.getServices(deviceId);
+  trace(`native services discovered: ${services.length}`);
 
   let writable: NativeChar | null = null;
   for (const service of services) {
@@ -340,8 +350,13 @@ export async function connectNative(
           await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) => {
             onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
           });
-        } catch {
-          // optional
+          trace(`notifications started on ${service.uuid.slice(0, 8)}/${ch.uuid.slice(0, 8)}`);
+        } catch (error) {
+          trace(
+            `notifications failed on ${ch.uuid.slice(0, 8)}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
         }
       }
       // Keep the proven iPhone transport behavior: use the first writable
@@ -358,16 +373,29 @@ export async function connectNative(
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
   }
   connectedServices.set(deviceId, writable.service);
+  trace(
+    `serial channel selected ${writable.service.slice(0, 8)}/${writable.characteristic.slice(0, 8)}`,
+  );
   return writable;
 }
 
 export async function writeNative(deviceId: string, target: NativeChar, chunk: Uint8Array) {
   const ble = await client();
   const view = new DataView(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength));
+  const hex = Array.from(chunk)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join(" ");
   try {
     await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-  } catch {
+    trace(`chunk ${chunk.length}B write-no-response ok · ${hex}`);
+  } catch (error) {
+    trace(
+      `chunk ${chunk.length}B write-no-response failed (${
+        error instanceof Error ? error.message : String(error)
+      }) — retrying with response`,
+    );
     await ble.write(deviceId, target.service, target.characteristic, view);
+    trace(`chunk ${chunk.length}B write-with-response ok · ${hex}`);
   }
 }
 
@@ -385,6 +413,7 @@ export async function isNativeConnected(deviceId: string) {
     const devices = await ble.getConnectedDevices([service]);
     const live = devices.some((device) => device.deviceId === deviceId);
     if (!live) {
+      trace("liveness check: OS reports the diffuser is no longer connected");
       markDisconnected(deviceId);
     }
     return live;
