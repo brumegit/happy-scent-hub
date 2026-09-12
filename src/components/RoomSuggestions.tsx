@@ -24,6 +24,9 @@ const ROOM_SUGGESTIONS = [
   "Stairway",
 ];
 
+/** Shared drift pace (px/ms) — both rows move at this speed, opposite ways. */
+const DRIFT_SPEED = 0.00192;
+
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -69,8 +72,8 @@ function Row({
       last = now;
       if (!paused.current) {
         const half = el.scrollWidth / 2;
-        // 0.0096 px/ms — gentle drift, visible but unhurried.
-        let next = el.scrollLeft + direction * (dt * 0.0096);
+        // Both rows drift at the same gentle pace, in opposite directions.
+        let next = el.scrollLeft + direction * (dt * DRIFT_SPEED);
         if (next >= half) next -= half;
         if (next <= 0) next += half;
         el.scrollLeft = next;
