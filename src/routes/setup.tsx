@@ -27,6 +27,7 @@ import {
   sendFrames,
   checkConnection,
   subscribeConnection,
+  pingLink,
 } from "@/lib/bluetooth";
 import { DevicePicker } from "@/components/DevicePicker";
 import {
