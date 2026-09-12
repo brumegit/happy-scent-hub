@@ -31,6 +31,7 @@ import {
   subscribeConnection,
   disconnect,
   pairDiffuser,
+  reconnectDevice,
 } from "@/lib/bluetooth";
 import { pushSettings } from "@/lib/push";
 import {
@@ -211,11 +212,27 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
     setPicker(null);
   }
 
+  /**
+   * True when the diffuser is really reachable. A known diffuser that has gone
+   * to sleep is woken up silently by re-opening the link with its id, so the
+   * user does not have to go through the pairing list again.
+   */
+  async function ensureLive() {
+    if (await checkConnection(diffuser.device_id)) return true;
+    const back = await reconnectDevice(diffuser.device_id);
+    return back ? await checkConnection(diffuser.device_id) : false;
+  }
+
   async function connect() {
     if (!(await bluetoothReady())) return;
     setConnecting(true);
     setError(null);
     try {
+      // A diffuser we already know usually just needs its link re-opened.
+      if (await ensureLive()) {
+        setConnected(true);
+        return;
+      }
       // Named devices only, shown in the app's own list.
       const paired = await pairDiffuser(chooseDevice);
       updateDiffuser(diffuser.id, { device_id: paired.deviceId });
@@ -447,12 +464,14 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                   if (!(await bluetoothReady())) return;
                   // Re-check the link at the moment of the tap: settings can only
                   // be changed while the diffuser is really connected.
-                  const live = await checkConnection(diffuser.device_id);
+                  const live = await ensureLive();
                   setConnected(live);
                   if (live) {
                     void navigate({ to: "/setup", search: { edit: diffuser.id } });
                   } else {
-                    setError("Your diffuser is not connected. Pair it again to change its settings.");
+                    setError(
+                      "Your diffuser is asleep and could not be woken up.\nDouble tap its button, then tap Change routine again.",
+                    );
                   }
                 })();
               }}
