@@ -667,9 +667,15 @@ export async function sendFrames(
     if (link.routineRepliesExpected !== false) await wait(200);
   }
 
-  // No liveness probe or other traffic after the final frame, and the keepalive
-  // stays silent for the quiet window so the module can commit to flash.
-  markCommandTraffic(deviceId);
+  // No liveness probe or other traffic after the final frame. Persistent writes
+  // hold the long quiet window so the module can commit to flash; a light
+  // command (clock sync, status) only needs a short pause.
+  markCommandTraffic(
+    deviceId,
+    frames.some((f) => PERSISTENT_FNS.has(f[3] ?? 0))
+      ? QUIET_AFTER_COMMAND_MS
+      : QUIET_AFTER_LIGHT_COMMAND_MS,
+  );
   return acks;
 }
 
