@@ -107,9 +107,9 @@ export function ScheduleGrid({
             )}
 
             {/* Times first — minute granularity through the device's native picker. */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Starts</span>
+            <div className="mt-4 grid w-full grid-cols-2 gap-3">
+              <label className="flex min-w-0 flex-col gap-2">
+                <span className="text-sm text-muted-foreground">Starts</span>
                 <input
                   type="time"
                   step={60}
@@ -118,11 +118,11 @@ export function ScheduleGrid({
                     const start = timeValueToMinutes(e.target.value);
                     patch(index, { start, end: Math.max(block.end, Math.min(1439, start + 1)) });
                   }}
-                  className="h-11 min-w-0 border border-border bg-background px-2 text-sm text-foreground"
+                  className="h-11 w-full min-w-0 border border-border bg-background px-2 text-sm text-foreground"
                 />
               </label>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Stops</span>
+              <label className="flex min-w-0 flex-col gap-2">
+                <span className="text-sm text-muted-foreground">Stops</span>
                 <input
                   type="time"
                   step={60}
@@ -131,7 +131,7 @@ export function ScheduleGrid({
                     const end = timeValueToMinutes(e.target.value);
                     patch(index, { end, start: Math.min(block.start, Math.max(0, end - 1)) });
                   }}
-                  className="h-11 min-w-0 border border-border bg-background px-2 text-sm text-foreground"
+                  className="h-11 w-full min-w-0 border border-border bg-background px-2 text-sm text-foreground"
                 />
               </label>
             </div>

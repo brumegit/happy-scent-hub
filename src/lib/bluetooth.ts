@@ -23,6 +23,7 @@ import {
   connectNative,
   isBluetoothEnabled as nativeBluetoothEnabled,
   isNativeConnected,
+  isNativeSessionConnected,
   isNativePlatform,
   isNativeSync,
   requestNativeDevice,
@@ -422,11 +423,13 @@ export async function connectPickedDevice(device: {
         return response;
       },
       waitFor: (fn) => responses.waitFor(fn, 4000),
-      isLive: () => isNativeConnected(device.deviceId),
+      // UI checks must remain passive on iPhone. A bridge-level getMtu probe
+      // can collide with the diffuser's serial session during a screen change.
+      isLive: async () => isNativeSessionConnected(device.deviceId),
       reconnect: async () => {
         trace("native reconnect: reopening the diffuser session");
         await connectPickedDevice({ deviceId: device.deviceId, ...(device.name ? { name: device.name } : {}) });
-        return await isNativeConnected(device.deviceId).catch(() => false);
+        return isNativeSessionConnected(device.deviceId);
       },
     });
     publishConnection(device.deviceId, true);
@@ -903,8 +906,10 @@ export async function pingLink(deviceId: string | null): Promise<boolean> {
 export async function checkConnection(deviceId: string | null) {
   if (!deviceId) return false;
   if (await isNativePlatform()) {
-    const live = await isNativeConnected(deviceId).catch(() => false);
-    return live;
+    // The native disconnect callback is authoritative. Do not call getMtu (or
+    // any other GATT operation) from a status poll or CTA transition: this
+    // firmware can drop its serial link when that probe overlaps normal use.
+    return isNativeSessionConnected(deviceId);
   }
   const link = links.get(deviceId);
   if (!link || link.simulated) return false;
