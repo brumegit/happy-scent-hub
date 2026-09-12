@@ -374,6 +374,10 @@ async function attachLink(device: {
         return false;
       }
     },
+    reconnect: async () => {
+      trace("web reconnect: reopening GATT session");
+      return await attachLink(device).catch(() => false);
+    },
   });
   publishConnection(device.id, true);
   return true;
