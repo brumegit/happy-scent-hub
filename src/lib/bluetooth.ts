@@ -841,7 +841,7 @@ const pingsInFlight = new Map<string, Promise<boolean>>();
 function trafficState(deviceId: string) {
   const existing = trafficByDevice.get(deviceId);
   if (existing) return existing;
-  const created = { lastCommandAt: 0, saving: false };
+  const created = { lastCommandAt: 0, saving: false, quietUntil: 0 };
   trafficByDevice.set(deviceId, created);
   return created;
 }
