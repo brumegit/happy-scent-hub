@@ -17,20 +17,15 @@ Symptom "I uploaded a new build and nothing changed" is almost always this.
 ## 1. Turn on in-app debug
 
 Tap the Brume logo **10 times**. This sets `brume-debug` in local storage and
-shows:
-
-- `PushDebugStrip` — every frame sent, per step (modes, intensity, schedule).
-- `ReadDebugStrip` — what the diffuser answered.
-
-These strips are the fastest way to see whether the failure is *before* the
-write (no channel, no link) or *after* it (no response).
+shows floating **Open debug log** and **Exit debug mode** controls below the
+header. The log sheet can be scrolled, copied, or shared.
 
 ## 2. The three failure classes
 
 | Symptom | Likely cause | Where to look |
 | --- | --- | --- |
 | Empty device list / endless scan | Android needs location ON + Nearby-devices permission; unnamed devices are filtered out | `src/hooks/useBluetoothRequirements.ts`, `src/lib/native-ble.ts` |
-| `113 GATT error` / connect fails | Device not in pairing mode (needs a double tap), or too-fast reconnect after a previous session | retry/backoff in `src/lib/bluetooth.ts` |
+| `113 GATT error` / connect fails | Device not in pairing mode (needs a double tap), or another app/phone owns the link | connection trace in the debug log |
 | Connects, then "did not confirm" / drops | Wrong GATT characteristic chosen, or a write that restarts the radio | `src/lib/native-ble.ts` channel selection |
 
 ## 3. Rules learned the hard way — do not undo these
@@ -45,32 +40,32 @@ write (no channel, no link) or *after* it (no response).
    real iPhone, not just "Edit settings".
 3. **Test both entry paths.** Onboarding and "Edit settings" reach the same push
    code through different states; a bug can show in only one of them.
-4. **Never pick "the first writable characteristic".** DFU/OTA channels are
-   writable too, and writing settings there reboots the device.
-5. **One save means one settings write.** Send the full timer list with `0x13`
-   once. Never automatically follow it with per-timer `0x14` writes when a
-   delayed read-back differs: that produces a second short beep and can put the
-   diffuser into an idle/shutdown state. Read-back commands may verify the save,
-   but a successful `0x93` acknowledgment takes precedence over a stale or
-   unavailable read-back. Without an acknowledgment, a failed verification must
-   stop and show an error without another write.
+4. **Never switch to a different service because it is writable.** The native
+   path preserves the proven serial channel and subscribes only to notifications
+   in that service; unrelated OTA/status notifications must not trigger writes.
+5. **Never auto-disconnect, auto-reconnect, or replay.** Polling is observational.
+   A failed write stops immediately with pairing guidance. The app must never
+   call the BLE disconnect API during pairing, editing, saving, or polling.
 6. **Every save writes all 5 slots.** Each save sends five `0x14` commands
    (700 ms apart): the user's routines enabled, the remaining slots disabled.
    This makes the save authoritative even when `0x08` cannot be read (iPhone) or
    another phone changed the diffuser. Disabled slots must carry a valid payload
    (weekday mask `0x7F`, start 0, end 1, current spray timing) — zeroed fields
    are rejected by some firmware revisions and can drop the link.
+7. **Do not read before or after saving.** Saving sends only the five serialized
+   `0x14` writes, 700 ms apart. There is no `0x08` read, final liveness probe, or
+   other Bluetooth traffic after the fifth slot.
 
 
 ## 4. Reproducing quickly
 
 - Chrome (desktop, Web Bluetooth) reproduces most protocol issues and is much
   faster than an Xcode round trip. iOS-only issues are transport-level.
-- Order that must hold on a push: clock sync → working modes → intensity timings
-  → schedule. The diffuser beeps **once** on a successful settings push.
+- A save writes slots 1 through 5 in order. Each enabled routine may produce its
+  own confirmation beep; disabled slots are also explicitly written.
 
 ## 5. Before saying it is fixed
 
-- Debug strip shows every frame plus a device response.
-- One beep, and the link is still up afterwards.
+- Debug log shows every command, chunk write, response, and OS disconnect event.
+- Every configured routine is accepted, and the link remains up afterwards.
 - Fresh onboarding *and* Edit settings both work on a physical device.

@@ -53,30 +53,14 @@ export async function pushSettings(opts: {
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
-    // The diffuser sleeps between edits, so the link registered at pairing time
-    // is often already gone here. Wake it once before sending anything: every
-    // write below would otherwise fail with "Not connected to device".
+    // Observe the existing link before sending. Never reconnect here: opening a
+    // second native session can close the one the diffuser is already using.
     if (opts.deviceId) {
       const ready = await ensureLink(opts.deviceId, log);
       if (!ready) {
         throw new Error(
           "Bluetooth link lost before the settings could be sent.\nThe diffuser goes to sleep to preserve battery — double tap its button, then try again.",
         );
-      }
-    }
-
-    // Best-effort read, only to reuse the timer IDs the hardware already holds:
-    // pushing fresh IDs can make the firmware keep its old working modes next to
-    // ours. This is a read (0x08) — it does not beep, and a failure is harmless
-    // because every slot is rewritten below regardless.
-    const existing = await queryTimers(opts.deviceId, log).catch((error: unknown) => {
-      log(`Step “read current routines (0x08)” failed — ${describeError(error)}`);
-      return null;
-    });
-    if (existing?.length) {
-      for (const slot of slots) {
-        const match = existing.find((s) => s.index === slot.index);
-        if (match?.timerId) slot.timerId = match.timerId;
       }
     }
 

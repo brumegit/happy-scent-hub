@@ -11,7 +11,6 @@ import {
   MoreVertical,
   Pencil,
   Plus,
-  PowerOff,
   Trash2,
 } from "lucide-react";
 
@@ -29,9 +28,7 @@ import { Input } from "@/components/ui/input";
 import {
   checkConnection,
   subscribeConnection,
-  disconnect,
   pairDiffuser,
-  reconnectDevice,
 } from "@/lib/bluetooth";
 import { pushSettings } from "@/lib/push";
 import {
@@ -213,14 +210,11 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
   /**
-   * True when the diffuser is really reachable. A known diffuser that has gone
-   * to sleep is woken up silently by re-opening the link with its id, so the
-   * user does not have to go through the pairing list again.
+   * True when the diffuser is reachable. This check never closes or reopens the
+   * link; only the explicit pairing action may establish a new session.
    */
   async function ensureLive() {
-    if (await checkConnection(diffuser.device_id)) return true;
-    const back = await reconnectDevice(diffuser.device_id);
-    return back ? await checkConnection(diffuser.device_id) : false;
+    return checkConnection(diffuser.device_id);
   }
 
   async function connect() {
@@ -244,14 +238,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       setPicker(null);
       setConnecting(false);
     }
-  }
-
-
-  async function disconnectDevice() {
-    await disconnect(diffuser.device_id);
-    setConnected(false);
-    setMenuOpen(false);
-    setMenuOpen(false);
   }
 
 
@@ -380,17 +366,6 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
                   </div>
                 ) : (
                   <>
-                    {connected && (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => void disconnectDevice()}
-                      >
-                        <PowerOff className="size-4" aria-hidden />
-                        Disconnect
-                      </button>
-                    )}
                     <button
                       type="button"
                       role="menuitem"

@@ -26,8 +26,8 @@ let bleClient: BleClientType | null = null;
  */
 const connectedIds = new Set<string>();
 
-/** Service UUID of the serial channel per device, used to verify liveness. */
-const connectedServices = new Map<string, string>();
+const connectedTargets = new Map<string, NativeChar>();
+const connectedNotify = new Map<string, (value: Uint8Array) => void>();
 const connectionGenerations = new Map<string, number>();
 
 const disconnectListeners = new Set<(deviceId: string) => void>();
@@ -35,7 +35,8 @@ const disconnectListeners = new Set<(deviceId: string) => void>();
 function markDisconnected(deviceId: string) {
   trace(`native disconnect event for ${deviceId}`);
   connectedIds.delete(deviceId);
-  connectedServices.delete(deviceId);
+  connectedTargets.delete(deviceId);
+  connectedNotify.delete(deviceId);
   disconnectListeners.forEach((listener) => listener(deviceId));
 }
 
@@ -229,6 +230,7 @@ function isNamed(name: string | undefined): name is string {
  */
 export async function requestNativeDevice(choose?: DeviceChooser): Promise<NativeDevice> {
   const ble = await client();
+  if (onNotify) connectedNotify.set(deviceId, onNotify);
 
   const known = await scanForBrume(ble).catch(() => null);
   if (known) return known;
@@ -306,20 +308,13 @@ export async function connectNative(
   onNotify?: (value: Uint8Array) => void,
 ): Promise<NativeChar | null> {
   const ble = await client();
+  const existingTarget = connectedTargets.get(deviceId);
+  if (connectedIds.has(deviceId) && existingTarget) {
+    trace("native connection already live — reusing serial channel");
+    return existingTarget;
+  }
   const generation = (connectionGenerations.get(deviceId) ?? 0) + 1;
   connectionGenerations.set(deviceId, generation);
-  // A stale iOS connection can still appear in getConnectedDevices while every
-  // write fails with "Not connected to device." Close that CoreBluetooth
-  // session before registering a new disconnect callback and notification
-  // subscription, otherwise every report may be delivered and acknowledged
-  // twice after the reconnect.
-  if (connectedIds.has(deviceId)) {
-    trace("clearing stale native session before reconnect");
-    await ble.disconnect(deviceId).catch(() => undefined);
-    connectedIds.delete(deviceId);
-    connectedServices.delete(deviceId);
-    await wait(250);
-  }
   // Android can reject a GATT connection when it starts in the same radio
   // timeslice as the chooser's scan teardown. Give scanning time to stop, then
   // retry only transient GATT failures after fully closing the stale client.
@@ -344,7 +339,6 @@ export async function connectNative(
           error instanceof Error ? error.message : String(error)
         }`,
       );
-      await ble.disconnect(deviceId).catch(() => undefined);
       if (!isTransientGattError(error) || attempt === 2) break;
       await wait(900 * (attempt + 1));
     }
@@ -362,20 +356,6 @@ export async function connectNative(
   let writable: NativeChar | null = null;
   for (const service of services) {
     for (const ch of service.characteristics) {
-      if ((ch.properties.notify || ch.properties.indicate) && onNotify) {
-        try {
-          await ble.startNotifications(deviceId, service.uuid, ch.uuid, (v) => {
-            onNotify(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
-          });
-          trace(`notifications started on ${service.uuid.slice(0, 8)}/${ch.uuid.slice(0, 8)}`);
-        } catch (error) {
-          trace(
-            `notifications failed on ${ch.uuid.slice(0, 8)}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-        }
-      }
       // Keep the proven iPhone transport behavior: use the first writable
       // characteristic reported by CoreBluetooth. Preferring a later service
       // merely because notifications started there selected the wrong channel
@@ -386,10 +366,30 @@ export async function connectNative(
     }
   }
   if (!writable) {
-    await ble.disconnect(deviceId).catch(() => undefined);
     throw new Error("The selected Bluetooth device does not expose a compatible diffuser connection.");
   }
-  connectedServices.set(deviceId, writable.service);
+  // Listen only on the serial service. Subscribing to every notifying service
+  // can feed unrelated reports into the protocol parser and create extra writes
+  // while routines are being saved.
+  if (onNotify) {
+    const serialService = services.find((service) => service.uuid === writable.service);
+    for (const ch of serialService?.characteristics ?? []) {
+      if (!ch.properties.notify && !ch.properties.indicate) continue;
+      try {
+        await ble.startNotifications(deviceId, writable.service, ch.uuid, (v) => {
+          connectedNotify.get(deviceId)?.(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+        });
+        trace(`notifications started on ${writable.service.slice(0, 8)}/${ch.uuid.slice(0, 8)}`);
+      } catch (error) {
+        trace(
+          `notifications failed on ${ch.uuid.slice(0, 8)}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+  }
+  connectedTargets.set(deviceId, writable);
   trace(
     `serial channel selected ${writable.service.slice(0, 8)}/${writable.characteristic.slice(0, 8)}`,
   );
@@ -402,49 +402,20 @@ export async function writeNative(deviceId: string, target: NativeChar, chunk: U
   const hex = Array.from(chunk)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join(" ");
-  try {
-    await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
-    trace(`chunk ${chunk.length}B write-no-response ok · ${hex}`);
-  } catch (error) {
-    trace(
-      `chunk ${chunk.length}B write-no-response failed (${
-        error instanceof Error ? error.message : String(error)
-      }) — retrying with response`,
-    );
-    await ble.write(deviceId, target.service, target.characteristic, view);
-    trace(`chunk ${chunk.length}B write-with-response ok · ${hex}`);
-  }
+  // This diffuser's confirmed iPhone path is write-without-response. Never
+  // replay the same bytes with another write mode: the first write may already
+  // have reached the firmware, and a duplicate can reset its BLE session.
+  await ble.writeWithoutResponse(deviceId, target.service, target.characteristic, view);
+  trace(`chunk ${chunk.length}B write-no-response ok · ${hex}`);
 }
 
 /**
- * True only while the OS still holds the GATT link. The plugin's disconnect
- * callback can be missed (app backgrounded, device slept), so we also ask the
- * platform for its currently connected peripherals on the serial service.
+ * True until CoreBluetooth sends its disconnect callback. This callback is the
+ * authoritative iOS signal; polling getConnectedDevices can transiently omit a
+ * live peripheral and must never make the app tear down a working session.
  */
 export async function isNativeConnected(deviceId: string) {
-  if (!connectedIds.has(deviceId)) return false;
-  const service = connectedServices.get(deviceId);
-  if (!service) return true;
-  try {
-    const ble = await client();
-    const devices = await ble.getConnectedDevices([service]);
-    const live = devices.some((device) => device.deviceId === deviceId);
-    if (!live) {
-      trace("liveness check: OS reports the diffuser is no longer connected");
-      markDisconnected(deviceId);
-    }
-    return live;
-  } catch {
-    // Platform could not answer — trust the disconnect callback instead.
-    return connectedIds.has(deviceId);
-  }
-}
-
-/** Disconnects the GATT link on a native build. */
-export async function disconnectNative(deviceId: string) {
-  const ble = await client();
-  markDisconnected(deviceId);
-  await ble.disconnect(deviceId);
+  return connectedIds.has(deviceId);
 }
 
 /**
