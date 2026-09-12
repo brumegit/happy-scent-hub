@@ -476,6 +476,18 @@ export async function pairDiffuser(choose?: DeviceChooser): Promise<PairedDevice
   };
 }
 
+/**
+ * Raised when the bytes could not even leave the phone (the OS refused the
+ * write). This is very different from a missing reply: nothing reached the
+ * diffuser, so the routine was definitely not saved.
+ */
+export class BleWriteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BleWriteError";
+  }
+}
+
 export type FrameAck = {
   /** Function code of the command that was sent. */
   fn: number;
