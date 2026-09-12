@@ -76,3 +76,9 @@ header. The log sheet can be scrolled, copied, or shared.
 - Debug log shows every command, chunk write, response, and OS disconnect event.
 - Every configured routine is accepted, and the link remains up afterwards.
 - Fresh onboarding *and* Edit settings both work on a physical device.
+
+## Quiet window after a save
+
+The diffuser drops the link if anything is sent while it commits routines to flash.
+After any command, the keepalive (0x08) stays silent for 12 seconds, and only one
+keepalive per device can be in flight at a time. Never remove this guard.
