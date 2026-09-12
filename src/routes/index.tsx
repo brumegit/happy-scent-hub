@@ -31,6 +31,7 @@ import {
   subscribeConnection,
   disconnect,
   pairDiffuser,
+  reconnectDevice,
 } from "@/lib/bluetooth";
 import { pushSettings } from "@/lib/push";
 import {
