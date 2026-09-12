@@ -3,11 +3,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { setDebugEnabled, useDebugMode } from "@/hooks/useDebugMode";
 import { usePushDebugStore } from "@/stores/pushDebugStore";
 
-/**
- * Debug-only button pinned above the exit banner. Opens a full-height,
- * scrollable sheet with the complete Bluetooth trace so it can be read,
- * selected and copied (or shared) from a phone.
- */
+/** Opens the full Bluetooth trace from controls floating below the app header. */
 export function DebugLogSheet() {
   const debug = useDebugMode();
   const hydrated = useHydrated();
@@ -47,7 +43,7 @@ export function DebugLogSheet() {
     <>
       <div
         className="fixed left-1/2 z-[59] flex -translate-x-1/2 items-stretch overflow-hidden rounded-[5px] border border-gold bg-background shadow-lg"
-        style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+        style={{ top: "calc(env(safe-area-inset-top) + 4.5rem)" }}
       >
         <button
           type="button"
