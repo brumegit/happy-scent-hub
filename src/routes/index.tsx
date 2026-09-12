@@ -27,7 +27,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   checkConnection,
-  pingLink,
   subscribeConnection,
   pairDiffuser,
 } from "@/lib/bluetooth";
@@ -170,12 +169,10 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
-      // The keepalive both keeps the diffuser from sleeping on us and tells us
-      // whether it is still reachable.
+      // Read the operating system's connection state only. Never send a BLE
+      // command from the diffuser list merely to test the connection.
       void (async () => {
-        const live =
-          (await pingLink(diffuser.device_id).catch(() => false)) ||
-          (await checkConnection(diffuser.device_id).catch(() => false));
+        const live = await checkConnection(diffuser.device_id).catch(() => false);
         if (!cancelled) setConnected(live);
       })();
     };

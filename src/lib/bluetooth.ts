@@ -735,9 +735,8 @@ export async function queryTimers(
 
 type TrafficState = { lastCommandAt: number; saving: boolean };
 const trafficByDevice = new Map<string, TrafficState>();
-/** The module needs a short flash-settle period, but its own idle timeout closes
- * the link before twelve seconds. Five seconds keeps both constraints satisfied:
- * no early post-save traffic, then one keepalive before the peripheral sleeps. */
+/** Optional reads remain blocked briefly after persistent writes. Normal screen
+ * status checks are passive and do not use this command path. */
 const QUIET_AFTER_COMMAND_MS = 5_000;
 const pingsInFlight = new Map<string, Promise<boolean>>();
 
@@ -776,11 +775,8 @@ export function markCommandTraffic(deviceId: string | null) {
 }
 
 /**
- * Keeps the diffuser awake. The module drops an idle BLE link after roughly ten
- * seconds to preserve battery, which used to kick the user out of the routine
- * editor before anything was saved. Sending the harmless read-routines command
- * (0x08) on a short interval counts as activity: it changes nothing on the
- * hardware and produces no beep. Returns whether the link is still usable.
+ * Explicit diagnostic keepalive. Normal UI status polling must use
+ * checkConnection(), which sends no command to the diffuser.
  */
 export async function pingLink(deviceId: string | null): Promise<boolean> {
   if (!deviceId) return false;
