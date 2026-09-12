@@ -51,15 +51,13 @@ export async function pushSettings(opts: {
   );
 
   const slots = buildTimerSlots(opts.schedule, opts.intensity, opts.custom ?? null);
-  const previousSlots = opts.previousSchedule
-    ? buildTimerSlots(opts.previousSchedule, opts.intensity, opts.custom ?? null)
-    : [];
   const routineNames = scheduleToBlocks(opts.schedule).map((block) => routineName(block));
 
   try {
-    // Reuse the timer IDs the hardware already holds: pushing fresh IDs makes
-    // the firmware keep its old working modes (with their old hours) alongside
-    // ours. This is a read (0x08) — it does not make the device beep.
+    // Best-effort read, only to reuse the timer IDs the hardware already holds:
+    // pushing fresh IDs can make the firmware keep its old working modes next to
+    // ours. This is a read (0x08) — it does not beep, and a failure is harmless
+    // because every slot is rewritten below regardless.
     const existing = await queryTimers(opts.deviceId, log).catch((error: unknown) => {
       log(`Step “read current routines (0x08)” failed — ${describeError(error)}`);
       return null;
@@ -71,51 +69,38 @@ export async function pushSettings(opts: {
       }
     }
 
-    // Always write active routines. For disabled slots, only send a persistent
-    // clear when we know that slot exists: either the diffuser reported it as
-    // enabled, or this app successfully saved that slot previously. Sending a
-    // 0x14 clear for a nonexistent slot makes some iPhone-connected firmware
-    // revisions close Bluetooth immediately (usually at slot 4 or 5).
-    const previouslyEnabled = new Set(
-      previousSlots.filter((slot) => slot.enabled).map((slot) => slot.index),
-    );
-    const changed = slots.filter((slot) => {
-      if (slot.enabled) return true;
-      if (existing) return !slotMatches(existing, slot);
-      return previouslyEnabled.has(slot.index);
-    });
-    if (!existing) {
-      const safeClears = changed.filter((slot) => !slot.enabled).map((slot) => slot.index);
-      log(
-        safeClears.length
-          ? `Routine read unavailable · clearing previously saved slot(s): ${safeClears.join(", ")}`
-          : "Routine read unavailable · no previously saved slots need clearing",
-      );
-    }
+    // Authoritative save: every one of the 5 hardware slots is written on each
+    // save. Slots the user did not define are written as disabled, so routines
+    // removed here (or added by another phone) can never keep running. Disabled
+    // slots carry a valid payload (full week, 1-minute window, current spray
+    // timing) instead of zeros, which some firmware revisions reject.
+    const disabledPayload = (slot: TimerSlot): TimerSlot =>
+      slot.enabled
+        ? slot
+        : { ...slot, weekdayMask: 0x7f, startMinute: 0, endMinute: 1 };
+
     log(
-      changed.length
-        ? `Writing timer slots: ${changed.map((slot) => `#${slot.index}`).join(", ")} (${
-            slots.filter((s) => s.enabled).length
-          } active routine(s))`
-        : "No active routine to write and nothing to clear on the diffuser",
+      `Writing all 5 slots · ${slots.filter((s) => s.enabled).length} active routine(s), ${
+        slots.filter((s) => !s.enabled).length
+      } turned off`,
     );
 
     // 0x13 only confirms receipt on this firmware and can leave the persisted
-    // list unchanged. Write each changed slot with the persistent 0x14 command.
-    // The transport serializes the packets; this pause lets flash settle before
-    // the next slot without creating an automatic retry burst.
+    // list unchanged. Write each slot with the persistent 0x14 command. The
+    // transport serializes the packets; the pause lets flash settle before the
+    // next slot without creating an automatic retry burst.
     await wait(500);
     const acks = [];
-    for (const slot of changed) {
+    for (const slot of slots) {
       const label = routineNames[slot.index - 1] ?? `Routine ${slot.index}`;
-      const action = slot.enabled ? `save ${label}` : `clear unused routine slot ${slot.index}`;
+      const action = slot.enabled ? `save ${label}` : `turn off unused routine slot ${slot.index}`;
       log(
         slot.enabled
           ? `Writing slot #${slot.index} (${label}) with persistent command 0x14`
-          : `Clearing unused slot #${slot.index} with persistent command 0x14`,
+          : `Turning off slot #${slot.index} with persistent command 0x14`,
       );
       try {
-        const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(slot)], log);
+        const [ack] = await sendFrames(opts.deviceId, [buildModifyTimer(disabledPayload(slot))], log);
         if (ack) acks.push(ack);
         // A silent reply is normal on this firmware (some modules answer
         // nothing and simply beep). Only a failed write means the routine did
@@ -134,14 +119,14 @@ export async function pushSettings(opts: {
     // Each 0x14 acknowledgment and beep confirms that routine. Do not send a
     // final 0x08 query: on this firmware, traffic immediately after the last
     // persistent write can make the Bluetooth module drop its connection.
-    const activeCount = changed.filter((slot) => slot.enabled).length;
-    const clearedCount = changed.length - activeCount;
+    const activeCount = slots.filter((slot) => slot.enabled).length;
     log(
-      `Save complete · ${activeCount} active routine${activeCount === 1 ? "" : "s"} written${
-        clearedCount ? ` · ${clearedCount} unused slot${clearedCount === 1 ? "" : "s"} cleared` : ""
-      }`,
+      `Save complete · ${activeCount} active routine${
+        activeCount === 1 ? "" : "s"
+      } written · ${5 - activeCount} slot(s) turned off`,
     );
     return acks;
+
   } catch (error) {
     // Always report the failing step plus what happened just before it, so a
     // failure on a phone can be diagnosed without the debug strip.
@@ -170,24 +155,7 @@ function describeError(error: unknown): string {
 }
 
 
-/** True when one persisted working mode already equals the one we want. */
-function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
-  const sameMinute = (a: number, b: number) =>
-    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
-  const d = readback?.find((s) => s.index === wanted.index);
-  // Some firmware omits unused slots from 0x08 instead of returning them as
-  // disabled. That is equivalent to the disabled state we requested.
-  if (!d) return !wanted.enabled;
-  if (!wanted.enabled) return !d.enabled;
-  return (
-    d.enabled &&
-    d.weekdayMask === wanted.weekdayMask &&
-    sameMinute(d.startMinute, wanted.startMinute) &&
-    sameMinute(d.endMinute, wanted.endMinute) &&
-    d.onSeconds === wanted.onSeconds &&
-    d.offSeconds === wanted.offSeconds
-  );
-}
+
 
 /**
  * Reads the diffuser's live configuration (working modes 0x08) right after

@@ -54,10 +54,13 @@ write (no channel, no link) or *after* it (no response).
    but a successful `0x93` acknowledgment takes precedence over a stale or
    unavailable read-back. Without an acknowledgment, a failed verification must
    stop and show an error without another write.
-6. **Never clear unknown timer slots.** When `0x08` is unavailable on iPhone,
-   clear only slots that the app previously saved as active. Some firmware closes
-   Bluetooth when `0x14` tries to disable a slot that does not exist. Active
-   routines are still written every time.
+6. **Every save writes all 5 slots.** Each save sends five `0x14` commands
+   (700 ms apart): the user's routines enabled, the remaining slots disabled.
+   This makes the save authoritative even when `0x08` cannot be read (iPhone) or
+   another phone changed the diffuser. Disabled slots must carry a valid payload
+   (weekday mask `0x7F`, start 0, end 1, current spray timing) — zeroed fields
+   are rejected by some firmware revisions and can drop the link.
+
 
 ## 4. Reproducing quickly
 
