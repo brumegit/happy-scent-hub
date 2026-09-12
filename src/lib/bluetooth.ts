@@ -23,7 +23,6 @@ import {
   connectNative,
   forgetNativeSession,
   isBluetoothEnabled as nativeBluetoothEnabled,
-  isNativeConnected,
   isNativeSessionConnected,
   isNativeSystemConnected,
   isNativePlatform,
