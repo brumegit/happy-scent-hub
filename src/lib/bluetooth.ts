@@ -667,8 +667,39 @@ export async function sendFrames(
 }
 
 /**
- * Observes whether the existing link is usable before any command is sent.
- * It never reconnects, closes, or replaces the native session.
+ * Reopens the diffuser session after the operating system reported the link is
+ * gone. Only ever called once per failure, and never while a link is still up,
+ * so it cannot interrupt a diffuser that is committing routines.
+ */
+let reopening: Promise<boolean> | null = null;
+export async function reopenLink(deviceId: string | null): Promise<boolean> {
+  if (!deviceId) return false;
+  if (reopening) return reopening;
+  const link = links.get(deviceId);
+  if (!link?.reconnect) {
+    trace("auto-reconnect unavailable for this link");
+    return false;
+  }
+  reopening = (async () => {
+    const begun = Date.now();
+    try {
+      const ok = await link.reconnect!();
+      trace(`auto-reconnect ${ok ? "succeeded" : "failed"} after ${Date.now() - begun}ms`);
+      if (ok) publishConnection(deviceId, true);
+      return ok;
+    } catch (error) {
+      trace(`auto-reconnect failed after ${Date.now() - begun}ms · ${describeError(error)}`);
+      return false;
+    } finally {
+      reopening = null;
+    }
+  })();
+  return reopening;
+}
+
+/**
+ * Observes whether the existing link is usable before any command is sent, and
+ * reopens it once when the operating system says it dropped.
  */
 export async function ensureLink(
   deviceId: string | null,
@@ -682,7 +713,13 @@ export async function ensureLink(
     trace("link check before sending: live");
     return true;
   }
-  trace("link check before sending: down — no automatic reconnect attempted");
+  trace("link check before sending: down — attempting one automatic reconnect");
+  onLog?.("Bluetooth link dropped — reconnecting");
+  const recovered = await reopenLink(deviceId);
+  if (recovered) {
+    onLog?.("Reconnected");
+    return true;
+  }
   onLog?.("Bluetooth link is not live");
   return false;
 }
