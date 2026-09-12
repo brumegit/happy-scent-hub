@@ -716,7 +716,13 @@ export async function ensureLink(
   if (!deviceId) return false;
   const link = links.get(deviceId);
   if (link?.simulated) return true;
-  const live = link?.isLive ? await link.isLive().catch(() => false) : !!link;
+  // This is the single real check per save: the passive in-memory flag can
+  // still say "live" seconds after iOS has already discarded the session.
+  const live = isNativeSync()
+    ? await isNativeConnected(deviceId).catch(() => false)
+    : link?.isLive
+      ? await link.isLive().catch(() => false)
+      : !!link;
   if (live) {
     trace("link check before sending: live");
     return true;
