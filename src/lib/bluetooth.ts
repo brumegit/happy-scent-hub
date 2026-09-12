@@ -536,9 +536,11 @@ export async function sendFrames(
 ): Promise<FrameAck[]> {
   const link = deviceId ? links.get(deviceId) : undefined;
   if (!link || link.simulated) {
+    trace("sendFrames aborted: no live link registered for this device");
     throw new Error("Diffuser is not connected. Reconnect over Bluetooth and try again.");
   }
   if (link.isLive && !(await link.isLive())) {
+    trace("sendFrames aborted: liveness check says the link is down");
     if (deviceId) links.delete(deviceId);
     throw new Error("Bluetooth link lost. Reconnect the diffuser and try again.");
   }
@@ -548,16 +550,23 @@ export async function sendFrames(
   const acks: FrameAck[] = [];
   for (const frame of frames) {
     const hex = toHex(frame);
-    console.info("[ScentLife] TX", hex);
-    onLog?.(`TX ${hex}`);
     const fn = frame[3] ?? 0;
+    trace(`TX 0x${fn.toString(16)} · ${hex}`);
+    onLog?.(`TX ${hex}`);
+    const begun = Date.now();
     let response: Uint8Array | null = null;
     try {
       response = await link.request(frame, (fn + 0x80) & 0xff);
+      trace(`RX 0x${fn.toString(16)} after ${Date.now() - begun}ms · ${toHex(response)}`);
       onLog?.(`RX ${toHex(response)}`);
-    } catch {
+    } catch (error) {
       // Some modules acknowledge silently (no notify characteristic).
       response = null;
+      trace(
+        `no RX for 0x${fn.toString(16)} after ${Date.now() - begun}ms (${
+          error instanceof Error ? error.message : String(error)
+        })`,
+      );
       onLog?.(`RX none for 0x${fn.toString(16)}`);
     }
     const code = response && response.length >= 6 ? (response[4] ?? null) : null;
@@ -659,11 +668,14 @@ export async function queryTimers(
   if (!link || link.simulated) return null;
   try {
     const frame = buildGetTimers();
+    trace(`TX 0x08 (read routines) · ${toHex(frame)}`);
     onLog?.(`TX ${toHex(frame)}`);
     const response = await link.request(frame, 0x88);
+    trace(`RX 0x88 · ${toHex(response)}`);
     onLog?.(`RX ${toHex(response)}`);
     return parseTimerListResponse(response);
   } catch (error) {
+    trace(`read routines (0x08) failed: ${(error as Error).message}`);
     onLog?.(`Read-back failed: ${(error as Error).message}`);
     return null;
   }
