@@ -155,24 +155,7 @@ function describeError(error: unknown): string {
 }
 
 
-/** True when one persisted working mode already equals the one we want. */
-function slotMatches(readback: TimerSlot[] | null, wanted: TimerSlot) {
-  const sameMinute = (a: number, b: number) =>
-    a === b || (a >= 1439 && b >= 1439) || Math.abs(a - b) <= 1;
-  const d = readback?.find((s) => s.index === wanted.index);
-  // Some firmware omits unused slots from 0x08 instead of returning them as
-  // disabled. That is equivalent to the disabled state we requested.
-  if (!d) return !wanted.enabled;
-  if (!wanted.enabled) return !d.enabled;
-  return (
-    d.enabled &&
-    d.weekdayMask === wanted.weekdayMask &&
-    sameMinute(d.startMinute, wanted.startMinute) &&
-    sameMinute(d.endMinute, wanted.endMinute) &&
-    d.onSeconds === wanted.onSeconds &&
-    d.offSeconds === wanted.offSeconds
-  );
-}
+
 
 /**
  * Reads the diffuser's live configuration (working modes 0x08) right after
