@@ -322,6 +322,11 @@ export async function connectNative(
       break;
     } catch (error) {
       lastError = error;
+      trace(
+        `native connect attempt ${attempt + 1} failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
       await ble.disconnect(deviceId).catch(() => undefined);
       if (!isTransientGattError(error) || attempt === 2) break;
       await wait(900 * (attempt + 1));
@@ -408,6 +413,7 @@ export async function isNativeConnected(deviceId: string) {
     const devices = await ble.getConnectedDevices([service]);
     const live = devices.some((device) => device.deviceId === deviceId);
     if (!live) {
+      trace("liveness check: OS reports the diffuser is no longer connected");
       markDisconnected(deviceId);
     }
     return live;

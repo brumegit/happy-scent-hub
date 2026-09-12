@@ -18,6 +18,7 @@ import {
   type TimerSlot,
 } from "@/lib/scentlife";
 import { pushDebug } from "@/stores/pushDebugStore";
+import { trace } from "@/lib/ble-log";
 import {
   connectNative,
   isBluetoothEnabled as nativeBluetoothEnabled,
@@ -315,6 +316,8 @@ async function attachLink(device: {
 
 
   const write = serializeWrites(async (frame: Uint8Array) => {
+    const chunks = Math.ceil(frame.length / CHUNK_SIZE);
+    trace(`web write start · ${frame.length}B in ${chunks} chunk(s)`);
     for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
       const chunk = frame.slice(offset, offset + CHUNK_SIZE);
       if (writable.properties?.writeWithoutResponse && writable.writeValueWithoutResponse) {
@@ -326,6 +329,7 @@ async function attachLink(device: {
       }
       await wait(CHUNK_DELAY_MS);
     }
+    trace("web write complete");
   });
   links.set(device.id, {
     simulated: false,
@@ -370,10 +374,23 @@ export async function connectPickedDevice(device: {
   const target = await connectNative(device.deviceId, (value) => responses.receive(value));
   if (target) {
     const write = serializeWrites(async (frame: Uint8Array) => {
+      const chunks = Math.ceil(frame.length / CHUNK_SIZE);
+      trace(`native write start · ${frame.length}B in ${chunks} chunk(s)`);
       for (let offset = 0; offset < frame.length; offset += CHUNK_SIZE) {
-        await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
+        const index = Math.floor(offset / CHUNK_SIZE) + 1;
+        try {
+          await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
+        } catch (error) {
+          trace(
+            `native write FAILED on chunk ${index}/${chunks}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+          throw error;
+        }
         await wait(CHUNK_DELAY_MS);
       }
+      trace("native write complete");
     });
     links.set(device.deviceId, {
       simulated: false,
