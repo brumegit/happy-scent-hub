@@ -36,21 +36,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * and falls back to the proven per-slot 0x14 writes when the firmware did not
  * persist the list. Set to false to revert instantly to per-slot writes only.
  */
-const TRY_BATCH_SAVE = false;
-
-/** A read-back slot matches the requested one when every persisted field agrees. */
-function slotMatches(actual: TimerSlot | undefined, wanted: TimerSlot) {
-  if (!actual) return !wanted.enabled;
-  return (
-    actual.enabled === wanted.enabled &&
-    (!wanted.enabled ||
-      (actual.weekdayMask === wanted.weekdayMask &&
-        actual.startMinute === wanted.startMinute &&
-        actual.endMinute === wanted.endMinute &&
-        actual.onSeconds === wanted.onSeconds &&
-        actual.offSeconds === wanted.offSeconds))
-  );
-}
+const TRY_BATCH_SAVE = true;
 
 
 /**
