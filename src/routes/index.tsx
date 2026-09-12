@@ -218,17 +218,14 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
    * True when the diffuser is reachable. This check never closes or reopens the
    * link; only the explicit pairing action may establish a new session.
    */
-  async function ensureLive() {
-    return checkConnection(diffuser.device_id);
-  }
-
   async function connect() {
     if (!(await bluetoothReady())) return;
     setConnecting(true);
     setError(null);
     try {
-      // A diffuser we already know usually just needs its link re-opened.
-      if (await ensureLive()) {
+      // Trust the passive five-second monitor: tapping Change routine must not
+      // trigger any extra Bluetooth activity on an already-connected diffuser.
+      if (connected) {
         setConnected(true);
         // The tap on Change routine already stated the intent: once the link
         // is live, go straight to editing instead of asking for a second tap.
