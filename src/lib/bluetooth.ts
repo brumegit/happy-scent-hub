@@ -21,6 +21,7 @@ import { pushDebug } from "@/stores/pushDebugStore";
 import { describeError, trace } from "@/lib/ble-log";
 import {
   connectNative,
+  forgetNativeSession,
   isBluetoothEnabled as nativeBluetoothEnabled,
   isNativeConnected,
   isNativeSessionConnected,
