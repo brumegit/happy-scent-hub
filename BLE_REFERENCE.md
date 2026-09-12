@@ -140,3 +140,18 @@ against it before inventing a new mechanism.
 3. On device: fresh onboarding save **and** Edit-settings save, with debug log on.
 4. Confirm: five `0x14` writes, no reads, no probes, no post-save traffic, and the
    diffuser's stored routines match the app exactly.
+
+---
+
+## 8. Grouped 0x13 save — tested, rejected (2026-09-13)
+
+A single `0x13` timer-list frame (one beep) was tried behind `TRY_BATCH_SAVE` in
+`src/lib/push.ts`. Result on hardware: the diffuser ACKs with `0x93`, but
+confirming persistence requires a `0x08` read right after a write — exactly the
+traffic that historically drops the link, and the command-sequence protection
+blocks that read by design. With no safe way to verify, the app fell back to
+per-slot `0x14` writes, producing duplicate writes and 5 beeps anyway.
+
+**Rule: do not re-enable `TRY_BATCH_SAVE` unless the supplier confirms in
+writing that this firmware persists `0x13`.** Per-slot `0x14` with one beep per
+accepted routine is the expected, correct behaviour.
