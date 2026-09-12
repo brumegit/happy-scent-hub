@@ -25,6 +25,31 @@ import {
  * lets the user pick any minute, and the ScentLife timer frames carry
  * startMinute / endMinute straight through, so 07:45 → 20:10 is pushed as is.
  */
+/**
+ * A routine is identified by its start/end window, so two routines sharing the
+ * exact same window collapse into one. New routines therefore start on a window
+ * that is not in use yet — otherwise "Add a routine" appears to do nothing.
+ */
+function nextRoutine(blocks: TimeBlock[]): TimeBlock {
+  const used = new Set(blocks.map((b) => `${b.start}-${b.end}`));
+  const candidates: [number, number][] = [
+    [8 * 60, 20 * 60],
+    [6 * 60, 9 * 60],
+    [12 * 60, 14 * 60],
+    [18 * 60, 22 * 60],
+    [9 * 60, 12 * 60],
+    [14 * 60, 18 * 60],
+    [20 * 60, 23 * 60],
+    [0, 6 * 60],
+  ];
+  for (const [start, end] of candidates) {
+    if (!used.has(`${start}-${end}`)) return { start, end, days: [1, 2, 3, 4, 5] };
+  }
+  let start = 0;
+  while (used.has(`${start}-${start + 60}`) && start < 1379) start += 30;
+  return { start, end: start + 60, days: [1, 2, 3, 4, 5] };
+}
+
 export function ScheduleGrid({
   schedule,
   onChange,
