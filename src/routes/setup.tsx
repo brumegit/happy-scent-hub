@@ -287,10 +287,18 @@ function Setup() {
     void verifyLink();
     // Passive five-second status refresh; no bytes are sent to the diffuser.
     const interval = window.setInterval(() => void verifyLink(), 5000);
+    // The diffuser closes an idle link on its own, which used to drop the user
+    // mid-setup. A harmless read every 15s keeps the session awake; it changes
+    // nothing on the device, makes no sound, and is skipped while saving.
+    const keepalive = window.setInterval(() => {
+      if (cancelled) return;
+      void pingLink(deviceId);
+    }, 15_000);
     return () => {
       cancelled = true;
       unsubscribe();
       window.clearInterval(interval);
+      window.clearInterval(keepalive);
     };
   }, [deviceId, phase]);
 
