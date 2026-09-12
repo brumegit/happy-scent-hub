@@ -450,6 +450,15 @@ export async function isNativeConnected(deviceId: string) {
 }
 
 /**
+ * Passive CoreBluetooth session state. This never calls across the native
+ * bridge, so screen transitions and five-second UI refreshes cannot disturb a
+ * connected diffuser. The native disconnect callback removes the id.
+ */
+export function isNativeSessionConnected(deviceId: string) {
+  return connectedIds.has(deviceId) && connectedTargets.has(deviceId);
+}
+
+/**
  * Reports whether Bluetooth is currently switched on. On native builds this
  * queries the adapter directly (Android) or the CoreBluetooth state (iOS);
  * on the web it falls back to the Web Bluetooth availability promise. It
