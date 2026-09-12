@@ -381,12 +381,9 @@ export async function connectPickedDevice(device: {
         try {
           await writeNative(device.deviceId, target, frame.slice(offset, offset + CHUNK_SIZE));
         } catch (error) {
-          trace(
-            `native write FAILED on chunk ${index}/${chunks}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-          throw error;
+          const reason = error instanceof Error ? error.message : String(error);
+          trace(`native write FAILED on chunk ${index}/${chunks}: ${reason}`);
+          throw new BleWriteError(reason);
         }
         await wait(CHUNK_DELAY_MS);
       }
