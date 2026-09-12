@@ -418,12 +418,25 @@ export async function isNativeConnected(deviceId: string) {
   const target = connectedTargets.get(deviceId);
   if (!target) return false;
   try {
-    // CoreBluetooth's retrieveConnectedPeripherals call is passive: it asks iOS
-    // for its current connection registry and sends no GATT command. This avoids
-    // the stale in-memory "connected" state seen after firmware restarts.
-    const ble = await client();
-    const devices = await ble.getConnectedDevices([target.service]);
-    const connected = devices.some((device) => device.deviceId === deviceId);
+    const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+    let connected: boolean;
+    if (cap?.getPlatform?.() === "ios") {
+      // The plugin's getConnectedDevices() uses
+      // retrieveConnectedPeripherals(withServices:), which can briefly return a
+      // stale peripheral after the firmware has closed the link. This patched
+      // native method reads CBPeripheral.state directly from the exact session
+      // that writes use, without sending any GATT traffic.
+      const mod = await import("@capacitor-community/bluetooth-le");
+      const nativePlugin = mod.BluetoothLe as typeof mod.BluetoothLe & {
+        isDeviceConnected(options: { deviceId: string }): Promise<{ value: boolean }>;
+      };
+      connected = (await nativePlugin.isDeviceConnected({ deviceId })).value;
+      trace(`direct native connection state: ${connected ? "connected" : "disconnected"}`);
+    } else {
+      const ble = await client();
+      const devices = await ble.getConnectedDevices([target.service]);
+      connected = devices.some((device) => device.deviceId === deviceId);
+    }
     if (!connected) markDisconnected(deviceId);
     return connected;
   } catch (error) {
@@ -432,7 +445,10 @@ export async function isNativeConnected(deviceId: string) {
         error instanceof Error ? error.message : String(error)
       }`,
     );
-    return connectedIds.has(deviceId);
+    // A failed native state check must never be interpreted as permission to
+    // write. Refuse the save before its first byte instead of showing a false
+    // success or discovering the stale link during the routine command.
+    return false;
   }
 }
 
