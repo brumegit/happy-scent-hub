@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { WheelPicker } from "@/components/WheelPicker";
-import { ConciergeRequest } from "@/components/ConciergeRequest";
+import { emailDebugLog } from "@/lib/emailLog";
 import { Label } from "@/components/ui/label";
 import {
   pairDiffuser,
@@ -824,7 +824,17 @@ function Setup() {
             {result === "error" && error && (
               <div className="mt-4 space-y-3">
                 <p className="whitespace-pre-line text-sm text-destructive">{error}</p>
-                <ConciergeRequest />
+                <p className="text-sm text-muted-foreground">
+                  Need help? Contact us at{" "}
+                  <button
+                    type="button"
+                    onClick={() => void emailDebugLog()}
+                    className="text-gold underline underline-offset-4"
+                  >
+                    contact@brume.me
+                  </button>
+                  {" "}— your setup log will be attached automatically.
+                </p>
               </div>
             )}
           </section>
