@@ -48,6 +48,7 @@ and config files are archived.
      - `GDRIVE_SERVICE_ACCOUNT_JSON` → full contents of the downloaded `.json` file
      - `GDRIVE_ANDROID_FOLDER_ID` → the ID of your **Android** folder
      - `GDRIVE_IOS_FOLDER_ID` → the ID of your **iOS** folder
+     - `GDRIVE_LOVABLE_FOLDER_ID` → the ID of your **Lovable** folder
 
 Done. The next update will sync automatically, and the run log appears under
 GitHub → Actions.
