@@ -14,6 +14,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as ProductHandleRouteImport } from './routes/product.$handle'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,12 @@ const ProductHandleRoute = ProductHandleRouteImport.update({
   path: '/product/$handle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +54,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
   '/product/$handle': typeof ProductHandleRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +62,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
   '/product/$handle': typeof ProductHandleRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +71,33 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
   '/product/$handle': typeof ProductHandleRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/privacy' | '/setup' | '/shop' | '/product/$handle'
+  fullPaths:
+    | '/'
+    | '/privacy'
+    | '/setup'
+    | '/shop'
+    | '/product/$handle'
+    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/privacy' | '/setup' | '/shop' | '/product/$handle'
-  id: '__root__' | '/' | '/privacy' | '/setup' | '/shop' | '/product/$handle'
+  to:
+    | '/'
+    | '/privacy'
+    | '/setup'
+    | '/shop'
+    | '/product/$handle'
+    | '/lovable/email/transactional/preview'
+  id:
+    | '__root__'
+    | '/'
+    | '/privacy'
+    | '/setup'
+    | '/shop'
+    | '/product/$handle'
+    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +106,7 @@ export interface RootRouteChildren {
   SetupRoute: typeof SetupRoute
   ShopRoute: typeof ShopRoute
   ProductHandleRoute: typeof ProductHandleRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductHandleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +162,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetupRoute: SetupRoute,
   ShopRoute: ShopRoute,
   ProductHandleRoute: ProductHandleRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
