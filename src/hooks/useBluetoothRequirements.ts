@@ -4,6 +4,7 @@ import { isBluetoothOn } from "@/lib/bluetooth";
 import {
   ensureBluetoothPermission,
   isBluetoothPermissionDenied,
+  isLocationRequiredForScan,
   isLocationServiceEnabled,
 } from "@/lib/native-ble";
 
@@ -49,7 +50,8 @@ export function useBluetoothRequirements(active = true) {
       } else {
         const [bluetoothOn, locationOn] = await Promise.all([
           isBluetoothOn(),
-          isLocationServiceEnabled(),
+          // Android 12+ scans with the Bluetooth permission alone.
+          isLocationRequiredForScan() ? isLocationServiceEnabled() : Promise.resolve(true),
         ]);
         next = {
           checking: false,
