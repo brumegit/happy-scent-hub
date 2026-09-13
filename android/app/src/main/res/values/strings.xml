@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Brume</string>
-    <string name="title_activity_main">Brume</string>
+    <string name="app_name">Brume 24/7</string>
+    <string name="title_activity_main">Brume 24/7</string>
     <string name="package_name">me.brume.diffuser</string>
     <string name="custom_url_scheme">me.brume.diffuser</string>
 </resources>
