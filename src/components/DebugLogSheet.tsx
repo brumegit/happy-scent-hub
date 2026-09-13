@@ -116,6 +116,13 @@ export function DebugLogSheet() {
               >
                 Copy
               </button>
+              <button
+                type="button"
+                onClick={() => void emailSupport()}
+                className="rounded-[5px] border border-gold px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] text-gold"
+              >
+                Email log
+              </button>
               {typeof navigator !== "undefined" && "share" in navigator && (
                 <button
                   type="button"
