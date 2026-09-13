@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { WheelPicker } from "@/components/WheelPicker";
-import { emailDebugLog } from "@/lib/emailLog";
+import { ConciergeRequest } from "@/components/ConciergeRequest";
 import { Label } from "@/components/ui/label";
 import {
   pairDiffuser,
