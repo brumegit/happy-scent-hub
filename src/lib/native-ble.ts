@@ -130,7 +130,7 @@ async function client() {
     // Android links BLE discovery to location. Requesting the location
     // permission alongside Nearby devices is what makes the scan actually
     // return results on real phones, so keep this aligned with the manifest.
-    await mod.BleClient.initialize({ androidNeverForLocation: false });
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
     permissionDenied = false;
   } catch (error) {
     permissionDenied = true;
@@ -194,7 +194,7 @@ export async function ensureBluetoothPermission(): Promise<boolean> {
   if (permissionInitialized) return !permissionDenied;
   try {
     const mod = await import("@capacitor-community/bluetooth-le");
-    await mod.BleClient.initialize({ androidNeverForLocation: false });
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
     permissionInitialized = true;
     permissionDenied = false;
     void requestNotificationPermission();
@@ -213,6 +213,22 @@ export async function openAppSettings() {
     await mod.BleClient.openAppSettings();
   } catch {
     // ignore
+  }
+}
+
+/**
+ * The app declares "neverForLocation": Android 12+ scans with Bluetooth
+ * permission alone, so Location is only required on Android 11 and older.
+ */
+export function isLocationRequiredForScan(): boolean {
+  if (!isNativeSync()) return false;
+  try {
+    const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+    if (cap?.getPlatform?.() !== "android") return false;
+    const match = navigator.userAgent.match(/Android (\d+)/);
+    return match ? Number(match[1]) < 12 : true;
+  } catch {
+    return true;
   }
 }
 
@@ -245,7 +261,7 @@ export async function openLocationSettings() {
 }
 
 export const PERMISSION_ERROR =
-  "Bluetooth permission was refused. Allow \"Nearby devices\" and \"Location\" for Brume in your phone settings, then try again.";
+  "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.";
 
 /** A caller-supplied chooser: receives live scan results, resolves with a pick. */
 export type DeviceChooser = (
