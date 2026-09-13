@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Bluetooth, CalendarClock, Star } from "lucide-react";
 
-import pairingVideo from "@/assets/bluetooth-pairing.mov.asset.json";
+// H.264 baseline / 8-bit: the original .mov was HEVC 10-bit, which Android's
+// WebView cannot decode (video stayed blank on Android).
+import pairingVideo from "@/assets/bluetooth-pairing.mp4.asset.json";
 import { AppHeader } from "@/components/AppHeader";
 import { RoomSuggestions } from "@/components/RoomSuggestions";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
