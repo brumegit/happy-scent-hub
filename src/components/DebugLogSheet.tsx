@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { useHydrated } from "@/hooks/useHydrated";
 import { setDebugEnabled, useDebugMode } from "@/hooks/useDebugMode";
 import { usePushDebugStore } from "@/stores/pushDebugStore";
