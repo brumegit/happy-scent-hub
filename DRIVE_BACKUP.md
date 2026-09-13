@@ -1,10 +1,23 @@
 # Google Drive backup of the app
 
-Every push to `main` that touches the `android/` or `ios/` folder automatically
-uploads a fresh copy to your Google Drive:
+Every push to `main` that touches the app code, the documentation or the
+configuration automatically uploads a fresh copy to your Google Drive:
 
 - `android/` → Google Drive folder **App/Android**
 - `ios/` → Google Drive folder **App/iOS**
+- documentation and plans → Google Drive folder **App/Lovable**
+
+The **Lovable** folder contains:
+
+- `docs/` — every `.md` guide (release guides, Bluetooth reference and
+  debugging guide, store listings, version notes, README)
+- `plans/` — every approved build plan
+- `config/` — `package.json` and `capacitor.config.ts`
+- `build-notes/` — one dated note per build, with the version and build number,
+  the commit, and the list of changed files (never overwritten, they pile up)
+
+Version notes live in `VERSION_NOTES.md` and are updated for every new version
+or build.
 
 The workflow is `.github/workflows/backup-drive.yml`. You can also run it
 manually from GitHub → Actions → "Backup native folders to Google Drive" →
