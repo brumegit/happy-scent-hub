@@ -130,7 +130,7 @@ async function client() {
     // Android links BLE discovery to location. Requesting the location
     // permission alongside Nearby devices is what makes the scan actually
     // return results on real phones, so keep this aligned with the manifest.
-    await mod.BleClient.initialize({ androidNeverForLocation: false });
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
     permissionDenied = false;
   } catch (error) {
     permissionDenied = true;
@@ -194,7 +194,7 @@ export async function ensureBluetoothPermission(): Promise<boolean> {
   if (permissionInitialized) return !permissionDenied;
   try {
     const mod = await import("@capacitor-community/bluetooth-le");
-    await mod.BleClient.initialize({ androidNeverForLocation: false });
+    await mod.BleClient.initialize({ androidNeverForLocation: true });
     permissionInitialized = true;
     permissionDenied = false;
     void requestNotificationPermission();
