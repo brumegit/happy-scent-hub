@@ -14,17 +14,21 @@ final class BrumeLoadingOverlay: UIView {
     static let champagne = UIColor(red: 1.0, green: 0.894, blue: 0.616, alpha: 1.0)
 
     @discardableResult
-    static func install(on window: UIWindow) -> BrumeLoadingOverlay? {
+    static func install(on host: UIView) -> BrumeLoadingOverlay? {
         if dismissed { return nil }
         if let existing = current, existing.superview != nil {
-            existing.superview?.bringSubviewToFront(existing)
-            return existing
+            if existing.superview === host {
+                host.bringSubviewToFront(existing)
+                return existing
+            }
+            existing.removeFromSuperview()
+            current = nil
         }
-        let overlay = BrumeLoadingOverlay(frame: window.bounds)
+        let overlay = BrumeLoadingOverlay(frame: host.bounds)
         overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         overlay.build()
-        window.addSubview(overlay)
-        window.bringSubviewToFront(overlay)
+        host.addSubview(overlay)
+        host.bringSubviewToFront(overlay)
         current = overlay
         return overlay
     }
@@ -79,9 +83,17 @@ class BrumeBridgeViewController: CAPBridgeViewController {
     private var progressObservation: NSKeyValueObservation?
     private var loadingObservation: NSKeyValueObservation?
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        BrumeLoadingOverlay.install(on: view)
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+        // Cover the bridge view itself: this is the layer the user actually
+        // looks at while the remote app loads, so it can never be missed.
+        BrumeLoadingOverlay.install(on: view)
         observeWebView()
         // Safety net: never trap the user behind the overlay.
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
