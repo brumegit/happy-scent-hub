@@ -217,6 +217,22 @@ export async function openAppSettings() {
 }
 
 /**
+ * The app declares "neverForLocation": Android 12+ scans with Bluetooth
+ * permission alone, so Location is only required on Android 11 and older.
+ */
+export function isLocationRequiredForScan(): boolean {
+  if (!isNativeSync()) return false;
+  try {
+    const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+    if (cap?.getPlatform?.() !== "android") return false;
+    const match = navigator.userAgent.match(/Android (\d+)/);
+    return match ? Number(match[1]) < 12 : true;
+  } catch {
+    return true;
+  }
+}
+
+/**
  * Android only: reports whether the phone's Location service is switched on.
  * Android refuses to return BLE scan results while it is off, which shows up
  * as an empty device list rather than an error, so we detect it up front.
@@ -245,7 +261,7 @@ export async function openLocationSettings() {
 }
 
 export const PERMISSION_ERROR =
-  "Bluetooth permission was refused. Allow \"Nearby devices\" and \"Location\" for Brume in your phone settings, then try again.";
+  "Bluetooth permission was refused. Allow \"Nearby devices\" for Brume in your phone settings, then try again.";
 
 /** A caller-supplied chooser: receives live scan results, resolves with a pick. */
 export type DeviceChooser = (
