@@ -149,3 +149,11 @@ Result: "Everyone"
 - Optional: 7" / 10" tablet
 - App icon: 512×512 PNG (use the generated icon)
 - Feature graphic: 1024×500 PNG (optional)
+
+### Release notes (What's new — 500 char max)
+
+First release. Pair your Brume scent diffuser over Bluetooth, choose a diffusion
+intensity (low, medium or high), and set up to five weekly schedules straight
+from your phone. Settings stay on your device and are sent to your diffuser
+over Bluetooth — no account, no password. Enter the email you ordered with for
+a tailored experience, or continue as a guest.
