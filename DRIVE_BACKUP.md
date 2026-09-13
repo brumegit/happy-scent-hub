@@ -39,11 +39,11 @@ and config files are archived.
 
 2. **Share your Drive folders with it**
    - In Google Drive, right-click the **Android** folder → Share → add the
-     service account email as **Editor**. Do the same for **iOS**.
+     service account email as **Editor**. Do the same for **iOS** and **Lovable**.
    - Open each folder and copy its **folder ID** from the address bar:
      `https://drive.google.com/drive/folders/THIS_PART_IS_THE_ID`
 
-3. **Add 3 secrets to the GitHub repository**
+3. **Add 4 secrets to the GitHub repository**
    - Repo → Settings → Secrets and variables → Actions → New repository secret:
      - `GDRIVE_SERVICE_ACCOUNT_JSON` → full contents of the downloaded `.json` file
      - `GDRIVE_ANDROID_FOLDER_ID` → the ID of your **Android** folder
