@@ -9,6 +9,23 @@ version/build numbers.
 
 ---
 
+## 1.0.11 — build 12 (Android)
+
+Date: 2026-09-13
+
+- Signed `.aab` rebuilt with the latest native code and synced web assets.
+- App name is **Brume 24/7** in the launcher.
+- Capacitor config points to `https://app.brume.me` (live-URL mode).
+- Bluetooth manifest: `BLUETOOTH_SCAN` uses `neverForLocation`, native-ble
+  initializes with `androidNeverForLocation: true`.
+- R8 minification + resource shrinking enabled.
+- Signed with the existing BRUME upload keystore (same key as all prior
+  uploads — Play accepts it as an update).
+- Build output: `/mnt/documents/exports/brume-android-release-v1.0.11.aab`
+- Deobfuscation mapping: `/mnt/documents/exports/mapping-v1.0.11.txt`
+
+---
+
 ## 1.0.10 — build 11 (Android) / 1.0 (iOS)
 
 Date: 2026-09-13
