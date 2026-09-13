@@ -127,11 +127,17 @@ endCommandSequence()             // starts the 5 s quiet period
 - Reconnection is always user-initiated (double tap the diffuser, then the app
   reconnects on "Change routine").
 
-## 6. Known-good baseline
+## 6. Known-good baselines
 
-Transport reference commit: `b12dbe23d17e1eb64781510290205d49af59f992`
-(`native-ble.ts`, `bluetooth.ts`, `push.ts`). If iPhone saving regresses, diff
-against it before inventing a new mechanism.
+- **SAFE VERSION (2026-09-13, confirmed working on physical iPhone):**
+  commit `08c55461d7b30bd9751ecff16cd11fba4e039a48` ("Revenu au mode 1 bip").
+  Full flow verified end to end: pairing, settings read after pairing, five-slot
+  `0x14` save, connection monitoring, setup screens. Only known defect at this
+  checkpoint: the native app loading animation ("Opening Brume 24/7") does not
+  appear during webview load. **Restore this commit if anything regresses.**
+- Transport reference commit: `b12dbe23d17e1eb64781510290205d49af59f992`
+  (`native-ble.ts`, `bluetooth.ts`, `push.ts`). If iPhone saving regresses, diff
+  against it before inventing a new mechanism.
 
 ## 7. Shipping a change
 
