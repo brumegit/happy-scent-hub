@@ -821,7 +821,16 @@ function Setup() {
               />
             </div>
             {result === "error" && error && (
-              <p className="mt-4 whitespace-pre-line text-sm text-destructive">{error}</p>
+              <div className="mt-4 space-y-3">
+                <p className="whitespace-pre-line text-sm text-destructive">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => void emailDebugLog()}
+                  className="text-sm text-gold underline underline-offset-4"
+                >
+                  Need help setting up? Click here to open a concierge request.
+                </button>
+              </div>
             )}
           </section>
         )}
