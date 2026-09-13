@@ -186,13 +186,14 @@ export async function pushSettings(opts: {
       debug.set(key, "fail", full);
     }
     // Everyday, user-fixable cause (diffuser asleep, out of range, Bluetooth
-    // dropped): say how to recover. Anything else: short message pointing to
-    // customer service. Protocol details never leave the opt-in debug log.
+    // dropped): say how to recover. Anything else: short message; the UI shows
+    // a concierge link that emails the debug log. Protocol details never leave
+    // the opt-in debug log.
     const recoverable = /not connected|link lost|disconnect|bluetooth/i.test(message);
     throw new Error(
       recoverable
-        ? "We couldn't reach your diffuser. Make sure it is on and nearby, double tap its button to wake it, then try again. If the problem continues, contact customer service at contact@brume.me."
-        : "We couldn't save your routine. Please contact customer service at contact@brume.me.",
+        ? "We couldn't reach your diffuser. Make sure it is on and nearby, double tap its button to wake it, then try again."
+        : "We couldn't save your routine.",
       { cause: error },
     );
   }
