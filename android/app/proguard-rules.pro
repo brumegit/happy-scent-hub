@@ -34,9 +34,12 @@
 -keep public class * extends com.getcapacitor.Plugin { *; }
 -keep class com.getcapacitor.** { *; }
 -keep class org.apache.cordova.** { *; }
--keep class me.brume.diffuser.** { *; }
 
 # JavaScript interfaces exposed to the WebView
 -keepclassmembers class * {
   @android.webkit.JavascriptInterface <methods>;
 }
+
+# Move all obfuscated classes into the root package (Play "Repackage Classes")
+-repackageclasses ''
+-allowaccessmodification
