@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react'
 
-import { template as conciergeRequestTemplate } from './concierge-request'
 
 export interface TemplateEntry {
   component: ComponentType<any>
@@ -16,5 +15,4 @@ export interface TemplateEntry {
  * Import and register new templates here after creating them in this directory.
  */
 export const TEMPLATES: Record<string, TemplateEntry> = {
-  'concierge-request': conciergeRequestTemplate,
 }
