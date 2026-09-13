@@ -6,6 +6,10 @@ on:
     paths:
       - "android/**"
       - "ios/**"
+      - "**/*.md"
+      - ".lovable/**"
+      - "package.json"
+      - "capacitor.config.ts"
   workflow_dispatch: {}
 
 jobs:
@@ -39,3 +43,38 @@ jobs:
           rclone sync ios/ "gdrive,root_folder_id=${{ secrets.GDRIVE_IOS_FOLDER_ID }}:" \
             --exclude "**/Pods/**" --exclude "**/build/**" --exclude "**/DerivedData/**" \
             --drive-server-side-across-configs --verbose
+
+      - name: Stage Lovable documentation
+        run: |
+          set -e
+          mkdir -p /tmp/lovable/docs /tmp/lovable/plans /tmp/lovable/config /tmp/lovable/build-notes
+          cp ./*.md /tmp/lovable/docs/ 2>/dev/null || true
+          cp -r .lovable/plan/. /tmp/lovable/plans/ 2>/dev/null || true
+          cp package.json capacitor.config.ts /tmp/lovable/config/ 2>/dev/null || true
+
+          VERSION_NAME=$(grep -m1 'versionName' android/app/build.gradle | tr -d '"' | awk '{print $2}')
+          VERSION_CODE=$(grep -m1 'versionCode' android/app/build.gradle | awk '{print $2}')
+          STAMP=$(date -u +'%Y-%m-%d_%H-%M-%SZ')
+          NOTE="/tmp/lovable/build-notes/${STAMP}_v${VERSION_NAME}_build${VERSION_CODE}.md"
+          {
+            echo "# Build ${VERSION_NAME} (build ${VERSION_CODE})"
+            echo
+            echo "- Date (UTC): $(date -u +'%Y-%m-%d %H:%M:%S')"
+            echo "- Commit: ${GITHUB_SHA}"
+            echo "- Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "## Changes in this commit"
+            echo
+            git log -1 --pretty=format:'%s%n%n%b'
+            echo
+            echo "## Files changed"
+            echo
+            git diff-tree --no-commit-id --name-only -r "${GITHUB_SHA}" | sed 's/^/- /'
+          } > "$NOTE"
+
+      - name: Sync Lovable folder
+        run: |
+          rclone sync /tmp/lovable/docs "gdrive,root_folder_id=${{ secrets.GDRIVE_LOVABLE_FOLDER_ID }}:docs" --verbose
+          rclone sync /tmp/lovable/plans "gdrive,root_folder_id=${{ secrets.GDRIVE_LOVABLE_FOLDER_ID }}:plans" --verbose
+          rclone sync /tmp/lovable/config "gdrive,root_folder_id=${{ secrets.GDRIVE_LOVABLE_FOLDER_ID }}:config" --verbose
+          rclone copy /tmp/lovable/build-notes "gdrive,root_folder_id=${{ secrets.GDRIVE_LOVABLE_FOLDER_ID }}:build-notes" --verbose
