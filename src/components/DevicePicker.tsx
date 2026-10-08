@@ -1,12 +1,13 @@
 import { X } from "lucide-react";
 
 import type { NativeDevice } from "@/lib/native-ble";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 /**
- * In-app Bluetooth chooser. Brume diffusers are listed first and are the only
- * selectable devices. A few other named devices nearby (closest signal first)
- * are shown greyed out so the user can see the scan is alive, but they can
- * never be picked, so customers don't pair the wrong device.
+ * In-app Bluetooth chooser, shown as a popup. Brume diffusers are listed first
+ * and are the only selectable devices. A few other named devices nearby
+ * (closest signal first) are shown so the user can see the scan is alive, but
+ * they can never be picked, so customers don't pair the wrong device.
  */
 
 /** How many non-diffuser devices to show, proof of scanning, not a full list. */
@@ -28,74 +29,73 @@ export function DevicePicker({
     .slice(0, MAX_OTHERS);
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-background">
-      <div className="flex items-start justify-between gap-4 px-6 pt-[calc(env(safe-area-inset-top)+2rem)]">
-        <div className="min-w-0">
-          <h2 className="font-display text-2xl leading-tight">Searching</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your diffuser wasn't found yet. Double tap the button on the back of your diffuser to
-            wake it, it appears as "BRUME". Keep your phone close.
-          </p>
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="flex min-h-[56vh] w-[88vw] max-w-[88vw] flex-col border-border bg-background px-[8%] py-10">
+        <div className="flex items-start justify-between gap-4">
+          <DialogTitle className="font-display text-4xl leading-tight">Searching</DialogTitle>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Cancel"
+            className="shrink-0 border border-destructive p-2 text-destructive"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label="Cancel"
-          className="shrink-0 border border-destructive p-2 text-destructive"
-        >
-          <X className="size-4" aria-hidden />
-        </button>
-      </div>
 
-      <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-6">
-        {likely.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Looking for your diffuser…</p>
-        ) : (
-          <ul className="space-y-3">
-            {likely.map((device) => (
-              <li key={device.deviceId}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(device)}
-                  className="w-full truncate border border-border bg-background px-4 py-4 text-left text-sm"
-                >
-                  {device.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <p className="mt-3 text-sm text-foreground">
+          Double tap the button on the back of your diffuser to wake it, it appears as "BRUME". Keep
+          your phone close.
+        </p>
 
-        {others.length > 0 && (
-          <div className="mt-8">
-            <p className="text-xs text-muted-foreground">Nearby devices, closest first</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              These aren't diffusers. Only a device named "BRUME" can connect.
-            </p>
-            <ul className="mt-3 space-y-3">
-              {others.map((device) => (
-                <li
-                  key={device.deviceId}
-                  className="flex items-center justify-between gap-3 border border-border bg-background px-4 py-4 opacity-50"
-                >
-                  <span className="truncate text-sm">{device.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">Not a diffuser</span>
+        <div className="mt-6 min-h-0 flex-1 overflow-y-auto">
+          {likely.length === 0 ? (
+            <p className="text-sm text-foreground">Looking for your diffuser…</p>
+          ) : (
+            <ul className="space-y-3">
+              {likely.map((device) => (
+                <li key={device.deviceId}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(device)}
+                    className="w-full truncate border border-border bg-background px-4 py-4 text-left text-sm text-foreground"
+                  >
+                    {device.name}
+                  </button>
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-      </div>
+          )}
 
-      <div className="px-6 pt-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+          {others.length > 0 && (
+            <div className="mt-8">
+              <p className="text-xs text-foreground">Nearby devices, closest first</p>
+              <p className="mt-2 text-xs text-foreground">
+                These aren't diffusers. Only a device named "BRUME" can connect.
+              </p>
+              <ul className="mt-3 space-y-3">
+                {others.map((device) => (
+                  <li
+                    key={device.deviceId}
+                    className="flex items-center justify-between gap-3 border border-border bg-background px-4 py-4 opacity-50"
+                  >
+                    <span className="truncate text-sm text-foreground">{device.name}</span>
+                    <span className="shrink-0 text-xs text-foreground">Not a diffuser</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
         <button
           type="button"
           onClick={onCancel}
-          className="w-full border border-destructive bg-background px-4 py-4 text-sm tracking-[0.12em] text-destructive"
+          className="mt-6 w-full border border-destructive bg-background px-4 py-4 text-sm tracking-[0.12em] text-destructive"
         >
           CANCEL
         </button>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
