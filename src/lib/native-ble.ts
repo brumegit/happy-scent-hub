@@ -305,12 +305,13 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
         if (!isNamed(name)) return;
         // Brume diffusers are selectable; other named devices are listed (a
         // few, closest first) only so the user can see the scan is alive.
-        found.set(result.device.deviceId, {
+        const entry: NativeDevice = {
           deviceId: result.device.deviceId,
           name,
           likely: looksLikeDiffuser(name, result.uuids),
-          rssi: typeof result.rssi === "number" ? result.rssi : undefined,
-        });
+        };
+        if (typeof result.rssi === "number") entry.rssi = result.rssi;
+        found.set(result.device.deviceId, entry);
         emit();
       })
       .catch(() => undefined);
