@@ -238,7 +238,7 @@ function Setup() {
       pickerResolve.current = resolve;
       setPicker([]);
       subscribe((devices) => {
-        // A diffuser identifying itself as "BRUME" is picked immediately —
+        // A diffuser identifying itself as "BRUME" is picked immediately
         // same auto-connect rule as the pre-picker scan, applied live while
         // the nearby-devices list is open.
         const brume = devices.find((d) => (d.name ?? "").toUpperCase().includes("BRUME"));
@@ -845,7 +845,7 @@ function Setup() {
                   >
                     contact@brume.me
                   </button>
-                  {" "}— your setup log will be attached automatically.
+                  {" "}, your setup log will be attached automatically.
                 </p>
               </div>
             )}
