@@ -32,7 +32,7 @@ import { readDebug } from "@/stores/readDebugStore";
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * EXPERIMENT — single-beep save. When true, the app first tries one grouped
+ * EXPERIMENT, single-beep save. When true, the app first tries one grouped
  * 0x13 timer-list write (one beep), verifies with a single 0x08 read-back,
  * and falls back to the proven per-slot 0x14 writes when the firmware did not
  * persist the list. Set to false to revert instantly to per-slot writes only.
@@ -108,7 +108,7 @@ export async function pushSettings(opts: {
           log("link reopened · retrying the grouped write");
           return sendFrames(opts.deviceId, [buildTimerList(payload)], log);
         });
-      if (ack && !ack.acked) log("0x13 answered silently — treated as written");
+      if (ack && !ack.acked) log("0x13 answered silently, treated as written");
       const activeCount = slots.filter((slot) => slot.enabled).length;
       log(
         `Grouped save sent · ${activeCount} active routine(s) · ${Date.now() - batchStartedAt}ms · persistence NOT verified`,
@@ -160,11 +160,11 @@ export async function pushSettings(opts: {
         // A silent reply is normal on this firmware (some modules answer
         // nothing and simply beep). Only a failed write means the routine did
         // not reach the diffuser.
-        if (!ack?.acked) log(`Slot #${slot.index} answered silently — treated as written`);
+        if (!ack?.acked) log(`Slot #${slot.index} answered silently, treated as written`);
         log(`Slot #${slot.index} finished in ${Date.now() - slotStartedAt}ms`);
       } catch (error) {
         throw new Error(
-          `Step “${action} with command 0x14” failed — ${describeError(
+          `Step “${action} with command 0x14” failed, ${describeError(
             error,
           )} Make sure the diffuser is still paired, then try again.`,
         );

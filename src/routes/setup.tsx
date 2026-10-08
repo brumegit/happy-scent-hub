@@ -183,7 +183,7 @@ function Setup() {
   } = useBluetoothRequirements(phase === "idle");
   // Pairing step only: while the radio is off, quietly re-check every 5 s so
   // the pairing CTA appears as soon as the user turns Bluetooth back on.
-  // isBluetoothOn() is a passive adapter query — it never prompts or touches
+  // isBluetoothOn() is a passive adapter query, it never prompts or touches
   // the diffuser link.
   useEffect(() => {
     if (phase !== "idle" || !btOff) return;
@@ -218,7 +218,7 @@ function Setup() {
   async function afterPaired(device: { deviceId: string; suggestedName: string }) {
     setDeviceId(device.deviceId);
     try {
-      // Only sync the clock on pairing — settings are pushed at each step.
+      // Only sync the clock on pairing, settings are pushed at each step.
       await sendFrames(device.deviceId, [buildSyncTimestamp()]);
       // The stored routines are read once when the intensity screen opens, so
       // the link stays quiet here. Reading right after pairing was unreliable.
@@ -303,7 +303,7 @@ function Setup() {
   // One-shot read of the diffuser's stored routines when the intensity screen
   // opens, so the selectors start from the hardware's real state. This is not a
   // keepalive: it runs once, never between routine writes, and never after a
-  // save. A failure is silent — the app keeps its own last saved values.
+  // save. A failure is silent, the app keeps its own last saved values.
   useEffect(() => {
     if (phase !== "intensity" || !deviceId || settingsRead || savingRef.current) return;
     let cancelled = false;
@@ -396,7 +396,7 @@ function Setup() {
       // can interrupt this firmware while it commits the saved settings.
       setResult("success");
       trace(
-        `✔ save succeeded — success shown (${editing ? "edit settings" : "first setup"}, ${
+        `✔ save succeeded, success shown (${editing ? "edit settings" : "first setup"}, ${
           scheduleToBlocks(schedule).length
         } routine(s))`,
       );
@@ -409,7 +409,7 @@ function Setup() {
     } catch (err) {
       const message = (err as Error).message || "Could not reach the diffuser.";
       setError(message);
-      trace(`✖ save failed — user sees: "${message}"`);
+      trace(`✖ save failed, user sees: "${message}"`);
       setResult("error");
       setTimeout(() => {
         setResult("idle");
@@ -419,7 +419,7 @@ function Setup() {
     }
   }
 
-  // Names live in the app only — nothing is ever written to the hardware.
+  // Names live in the app only, nothing is ever written to the hardware.
   const roomError = room.trim().length === 0 ? "Enter a room name." : null;
 
 
@@ -662,7 +662,7 @@ function Setup() {
                 placeholder="Living room"
                 onChange={(e) => setRoom(e.target.value)}
               />
-              {/* Only surfaced once the user tries to continue — never up front. */}
+              {/* Only surfaced once the user tries to continue, never up front. */}
               {roomTouched && roomError && (
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
@@ -763,7 +763,7 @@ function Setup() {
             </p>
 
 
-            {/* Nothing is written to the hardware yet — everything is pushed
+            {/* Nothing is written to the hardware yet, everything is pushed
                 once the schedule is confirmed. */}
             <StatusButton state="idle" icon={false} label="Next" onClick={() => setPhase("schedule")} />
 
@@ -823,7 +823,7 @@ function Setup() {
           <section className="mt-4 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
              <p className="mt-3 text-sm text-foreground">
-              Keep the diffuser nearby. It will beep a few times — one short
+              Keep the diffuser nearby. It will beep a few times, one short
               beep when the clock syncs, then one for each routine you saved.
             </p>
             <div className="mt-7">

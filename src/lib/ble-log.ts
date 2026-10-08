@@ -27,7 +27,7 @@ export function trace(line: string) {
   try {
     pushDebug().addLog(entry);
   } catch {
-    // Store may not exist yet (module init) — the console line is enough.
+    // Store may not exist yet (module init), the console line is enough.
   }
 }
 
@@ -115,7 +115,7 @@ export async function traced<T>(label: string, fn: () => Promise<T>): Promise<T>
     return result;
   } catch (error) {
     const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-    trace(`✖ ${label} (${Date.now() - begun}ms) — ${reason}`);
+    trace(`✖ ${label} (${Date.now() - begun}ms), ${reason}`);
     throw error;
   }
 }

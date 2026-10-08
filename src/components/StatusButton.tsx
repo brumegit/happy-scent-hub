@@ -4,7 +4,7 @@ export type CircleState = "idle" | "pairing" | "success" | "error";
 
 /**
  * Full-width CTA bar used through onboarding. Same state machine as the old
- * status circle — label changes, colour changes, and a champagne "dripple"
+ * status circle, label changes, colour changes, and a champagne "dripple"
  * ripple runs underneath while pairing / sending.
  */
 export function StatusButton({

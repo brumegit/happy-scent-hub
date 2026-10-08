@@ -67,7 +67,7 @@ export function PushDebugStrip() {
           {KEYS.map((key) => (
             <p key={key}>
               <span className={textClass[steps[key].status]}>{PUSH_STEP_LABELS[key]}</span>{" "}
-              — {steps[key].status}
+             , {steps[key].status}
               {steps[key].detail ? `: ${steps[key].detail}` : ""}
             </p>
           ))}

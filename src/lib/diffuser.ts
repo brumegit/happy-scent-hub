@@ -159,7 +159,7 @@ export function dayRanges(day: DaySchedule): [number, number][] {
 }
 
 export function defaultHours() {
-  // Always on — every hour of the day.
+  // Always on, every hour of the day.
   return Array.from({ length: 24 }, (_, i) => i);
 }
 
@@ -323,8 +323,8 @@ export function formatBlock(block: TimeBlock) {
 
 /**
  * A routine never gets a numbered label ("Time block 1"). Its name is derived
- * from what it actually is — the days it runs on and the part of the day it
- * covers — so it reads back naturally the next time the user opens it. Names
+ * from what it actually is, the days it runs on and the part of the day it
+ * covers, so it reads back naturally the next time the user opens it. Names
  * describe time only, never a place. Anything we can't characterise falls back
  * to "My routine".
  */
@@ -364,7 +364,7 @@ function routineTimeWord(start: number, end: number) {
 /** The descriptive part of a routine name stays short enough for one line. */
 const MAX_ROUTINE_NAME = 25;
 
-/** Routine names describe days and part of the day — never clock times. */
+/** Routine names describe days and part of the day, never clock times. */
 export function routineName(block: TimeBlock) {
   const day = routineDayWord(block.days);
   const time = routineTimeWord(block.start, block.end);

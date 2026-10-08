@@ -1,5 +1,5 @@
 /**
- * ScentLife serial protocol V1.x — frame builders.
+ * ScentLife serial protocol V1.x, frame builders.
  *
  * Frame: 0x55 0xAA | length (fn + content) | fn | content | checksum | 0x5A
  * Checksum = 256 - (sum(header..content) % 256), multi-byte fields little-endian.
@@ -65,7 +65,7 @@ export function timerBytes(slot: TimerSlot) {
   ];
 }
 
-/** 0x08 — asks the device for its persisted working modes and real timer IDs. */
+/** 0x08, asks the device for its persisted working modes and real timer IDs. */
 export function buildGetTimers() {
   return buildFrame(FN_GET_TIMERS);
 }
@@ -95,12 +95,12 @@ export function parseTimerListResponse(frame: Uint8Array): TimerSlot[] {
   });
 }
 
-/** 0x14 — add / modify a single timer. */
+/** 0x14, add / modify a single timer. */
 export function buildModifyTimer(slot: TimerSlot) {
   return buildFrame(FN_MODIFY_TIMER, timerBytes(slot));
 }
 
-/** 0x13 — push the full timer list in one frame. */
+/** 0x13, push the full timer list in one frame. */
 export function buildTimerList(slots: TimerSlot[]) {
   return buildFrame(FN_SYNC_TIMER_LIST, [
     ...u16(slots.length),
@@ -156,7 +156,7 @@ export function validateBroadcastName(name: string): string | null {
   const trimmed = name.trim();
   if (!trimmed) return "Enter a name.";
   if (!BROADCAST_NAME_PATTERN.test(trimmed))
-    return "Use letters, numbers, spaces, apostrophes, dots, hyphens or underscores only — no accents.";
+    return "Use letters, numbers, spaces, apostrophes, dots, hyphens or underscores only, no accents.";
   if (trimmed.length > MAX_BROADCAST_NAME_BYTES)
     return `The diffuser only stores ${MAX_BROADCAST_NAME_BYTES} characters (currently ${trimmed.length}).`;
   return null;
@@ -164,7 +164,7 @@ export function validateBroadcastName(name: string): string | null {
 
 
 /**
- * 0x52 — set module info, including the BLE advertising (device) name.
+ * 0x52, set module info, including the BLE advertising (device) name.
  * This is the only command in the protocol that renames the hardware.
  */
 export function buildSetBroadcastName(name: string, moduleType: string = "A") {
@@ -182,7 +182,7 @@ export function buildSetBroadcastName(name: string, moduleType: string = "A") {
 export const FN_STATUS_REPORT = 0x21;
 export const FN_BATTERY_STATUS = 0x22;
 export const FN_STATUS_REPORT_2 = 0x23;
-/** 0x09 — query command; type 0x01 asks the module for its device info. */
+/** 0x09, query command; type 0x01 asks the module for its device info. */
 export const FN_QUERY = 0x09;
 
 /**

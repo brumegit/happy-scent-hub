@@ -113,7 +113,7 @@
   /* Success uses the Brume champagne accent. */
   --success: var(--gold);
 
-  /* Pairing state — deeper blue with strong contrast against pure black. */
+  /* Pairing state, deeper blue with strong contrast against pure black. */
   --pairing: oklch(0.7 0.17 245);
 
   --gradient-warm: linear-gradient(140deg, oklch(0.08 0 0), oklch(0 0 0));

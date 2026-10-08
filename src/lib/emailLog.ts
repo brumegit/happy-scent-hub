@@ -43,7 +43,7 @@ export async function emailDebugLog(): Promise<void> {
       });
     } else {
       await navigator.clipboard.writeText(text).catch(() => {});
-      const hint = `${body}\n\n(The debug log was copied to your clipboard — paste it here.)`;
+      const hint = `${body}\n\n(The debug log was copied to your clipboard, paste it here.)`;
       window.location.href = `mailto:contact@brume.me?subject=${encodeURIComponent(
         subject,
       )}&body=${encodeURIComponent(hint)}`;
