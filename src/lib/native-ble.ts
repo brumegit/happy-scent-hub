@@ -14,6 +14,8 @@ export type NativeDevice = {
   name?: string;
   /** True when the name or advertised serial service looks like a Brume diffuser. */
   likely?: boolean;
+  /** Signal strength in dBm (closer devices are closer to 0). */
+  rssi?: number;
 };
 
 /** Brume diffusers advertise "BRUME…" and/or the ffe0 serial service. */
@@ -301,13 +303,15 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
       .requestLEScan({ allowDuplicates: false }, (result) => {
         const name = result.localName ?? result.device?.name;
         if (!isNamed(name)) return;
-        // Safeguard: never offer non-Brume devices (TVs, headphones…).
-        if (!looksLikeDiffuser(name, result.uuids)) return;
-        found.set(result.device.deviceId, {
+        // Brume diffusers are selectable; other named devices are listed (a
+        // few, closest first) only so the user can see the scan is alive.
+        const entry: NativeDevice = {
           deviceId: result.device.deviceId,
           name,
           likely: looksLikeDiffuser(name, result.uuids),
-        });
+        };
+        if (typeof result.rssi === "number") entry.rssi = result.rssi;
+        found.set(result.device.deviceId, entry);
         emit();
       })
       .catch(() => undefined);
