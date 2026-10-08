@@ -1,13 +1,17 @@
-import { useState } from "react";
 import { X } from "lucide-react";
 
 import type { NativeDevice } from "@/lib/native-ble";
 
 /**
- * In-app Bluetooth chooser. Likely Brume diffusers are listed first; unrelated
- * nearby devices (TVs, headphones…) stay hidden unless the user asks for them,
- * so customers don't pair the wrong device.
+ * In-app Bluetooth chooser. Brume diffusers are listed first and are the only
+ * selectable devices. A few other named devices nearby (closest signal first)
+ * are shown greyed out so the user can see the scan is alive — but they can
+ * never be picked, so customers don't pair the wrong device.
  */
+
+/** How many non-diffuser devices to show — proof of scanning, not a full list. */
+const MAX_OTHERS = 5;
+
 export function DevicePicker({
   devices,
   onSelect,
@@ -17,21 +21,11 @@ export function DevicePicker({
   onSelect: (device: NativeDevice) => void;
   onCancel: () => void;
 }) {
-  const [showOthers, setShowOthers] = useState(false);
   const likely = devices.filter((d) => d.likely);
-  const others = devices.filter((d) => !d.likely);
-
-  const row = (device: NativeDevice) => (
-    <li key={device.deviceId}>
-      <button
-        type="button"
-        onClick={() => onSelect(device)}
-        className="w-full truncate border border-border bg-background px-4 py-4 text-left text-sm"
-      >
-        {device.name}
-      </button>
-    </li>
-  );
+  const others = devices
+    .filter((d) => !d.likely)
+    .sort((a, b) => (b.rssi ?? -100) - (a.rssi ?? -100))
+    .slice(0, MAX_OTHERS);
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background">
@@ -57,26 +51,40 @@ export function DevicePicker({
         {likely.length === 0 ? (
           <p className="text-sm text-muted-foreground">Looking for your diffuser…</p>
         ) : (
-          <ul className="space-y-3">{likely.map(row)}</ul>
+          <ul className="space-y-3">
+            {likely.map((device) => (
+              <li key={device.deviceId}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(device)}
+                  className="w-full truncate border border-border bg-background px-4 py-4 text-left text-sm"
+                >
+                  {device.name}
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
 
         {others.length > 0 && (
           <div className="mt-8">
-            <button
-              type="button"
-              onClick={() => setShowOthers((v) => !v)}
-              className="text-xs text-muted-foreground underline"
-            >
-              {showOthers ? "Hide other devices" : `Other nearby devices (${others.length})`}
-            </button>
-            {showOthers && (
-              <>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  These are usually not diffusers. Only pick one if you're sure.
-                </p>
-                <ul className="mt-3 space-y-3 opacity-70">{others.map(row)}</ul>
-              </>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Nearby devices — closest first ({others.length} of {others.length < MAX_OTHERS ? others.length : "many"})
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              These aren't diffusers. Only a device named "BRUME" can connect.
+            </p>
+            <ul className="mt-3 space-y-3">
+              {others.map((device) => (
+                <li
+                  key={device.deviceId}
+                  className="flex items-center justify-between gap-3 border border-border bg-background px-4 py-4 opacity-50"
+                >
+                  <span className="truncate text-sm">{device.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">Not a diffuser</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
