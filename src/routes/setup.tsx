@@ -986,7 +986,7 @@ function Setup() {
               Did you hear a few beeps?
             </DialogTitle>
             <DialogDescription className="text-center text-sm text-gold">
-              Two beeps confirm your diffuser got your routines.
+              Beeping is how your diffuser confirms it received your updated routines.
             </DialogDescription>
           </DialogHeader>
           <p className="my-4 text-center text-sm text-foreground">
