@@ -981,10 +981,12 @@ function Setup() {
       )}
       <Dialog open={beepDialogOpen} onOpenChange={(o) => !o && finishBeepCheck()}>
         <DialogContent className="w-[80vw] max-w-[80vw] border-border bg-background px-[10%]">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Did you hear a few beeps?</DialogTitle>
-            <DialogDescription className="text-sm text-gold">
-              A double beep is your diffuser confirming it received your updated routines.
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-center font-display text-2xl">
+              Did you hear a few beeps?
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-gold">
+              Two beeps confirm your diffuser got your routines.
             </DialogDescription>
           </DialogHeader>
           <p className="my-4 text-center text-sm text-foreground">
