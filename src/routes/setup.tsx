@@ -982,7 +982,7 @@ function Setup() {
       <Dialog open={beepDialogOpen} onOpenChange={(o) => !o && finishBeepCheck()}>
         <DialogContent className="flex min-h-[56vh] w-[88vw] max-w-[88vw] flex-col justify-center border-border bg-background px-[10%] py-10">
           <DialogHeader className="text-center">
-            <DialogTitle className="whitespace-nowrap text-center text-sm font-medium leading-none">
+            <DialogTitle className="whitespace-nowrap text-center font-display text-3xl leading-tight">
               Did you hear a few beeps?
             </DialogTitle>
             <DialogDescription className="text-center text-sm text-gold">
