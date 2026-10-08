@@ -983,26 +983,26 @@ function Setup() {
         <DialogContent className="w-[80vw] max-w-[80vw] border-border bg-background px-[10%]">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">Did you hear a few beeps?</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              A double beep is your diffuser’s way of saying it received your updated routines.
+            <DialogDescription className="text-sm text-gold">
+              A double beep is your diffuser confirming it received your updated routines.
             </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            If your new routine starts or pauses diffusion right now, you may also
-            hear its usual on or off sound. That’s normal, so the number of beeps can vary.
-          </p>
           <Button
             type="button"
             onClick={finishBeepCheck}
             variant="outline"
-            className="mt-2 h-12 w-full rounded-md text-sm normal-case tracking-normal"
+            className="mt-1 h-12 w-full rounded-md text-sm normal-case tracking-normal"
           >
             Yes, all good
           </Button>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-center text-sm text-foreground">
+            You just changed your routine. If it starts or pauses diffusion right now,
+            your diffuser may also play its usual on or off sound.
+          </p>
+          <p className="text-center text-sm text-muted-foreground">
             No beeps?{" "}
-            <a href="sms:+18882132088" className="text-muted-foreground underline underline-offset-4">
-              Text us for help: +1 888-213-2088
+            <a href="sms:+18882132088" className="text-muted-foreground underline-offset-4">
+              Text us for help: <span className="underline">+1 888-213-2088</span>
             </a>
           </p>
         </DialogContent>
