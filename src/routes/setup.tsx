@@ -534,7 +534,7 @@ function Setup() {
                   routine you saved.
                 </p>
                 <p className="mt-2 text-center text-sm text-muted-foreground">
-                  Heard nothing? Text us:{" "}
+                  No beeps? Text us:{" "}
                   <a
                     href="sms:+18882132088"
                     className="text-gold underline underline-offset-4"
