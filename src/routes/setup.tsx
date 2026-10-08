@@ -162,6 +162,9 @@ function Setup() {
   const [explainAdvanced, setExplainAdvanced] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
+  // Beeps the diffuser should have played on the last save: one for the clock,
+  // one per active routine. Shown on the success screen as a sound check.
+  const [savedBeepCount, setSavedBeepCount] = useState(0);
   const [connectionLost, setConnectionLost] = useState(false);
   // React effect cleanup runs after a click handler returns. This ref closes
   // that gap synchronously so an interval already due cannot start (or act on)
@@ -395,6 +398,7 @@ function Setup() {
       // Stop all Bluetooth traffic after the last routine. Automatic reconnects
       // can interrupt this firmware while it commits the saved settings.
       setResult("success");
+      setSavedBeepCount(scheduleToBlocks(schedule).length);
       trace(
         `✔ save succeeded, success shown (${editing ? "edit settings" : "first setup"}, ${
           scheduleToBlocks(schedule).length
@@ -523,6 +527,20 @@ function Setup() {
                 </div>
                 <p className="success-pop text-center text-sm text-gold">
                   Diffuser paired successfully
+                </p>
+                <p className="mt-4 text-center text-sm text-muted-foreground">
+                  You should have heard {1 + savedBeepCount}{" "}
+                  {savedBeepCount === 1 ? "beep" : "beeps"}: one for the clock, one for each
+                  routine you saved.
+                </p>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Heard nothing? Text us:{" "}
+                  <a
+                    href="sms:+18882132088"
+                    className="text-gold underline underline-offset-4"
+                  >
+                    +1 888-213-2088
+                  </a>
                 </p>
               </div>
             </div>
@@ -837,15 +855,22 @@ function Setup() {
               <div className="mt-4 space-y-3">
                 <p className="whitespace-pre-line text-sm text-destructive">{error}</p>
                 <p className="text-sm text-muted-foreground">
-                  Need help? Contact us at{" "}
+                  Need help? Email{" "}
                   <button
                     type="button"
                     onClick={() => void emailDebugLog()}
                     className="text-gold underline underline-offset-4"
                   >
                     contact@brume.me
-                  </button>
-                  {" "}, your setup log will be attached automatically.
+                  </button>{" "}
+                  (your setup log attaches automatically), or text us:{" "}
+                  <a
+                    href="sms:+18882132088"
+                    className="text-gold underline underline-offset-4"
+                  >
+                    +1 888-213-2088
+                  </a>
+                  .
                 </p>
               </div>
             )}
