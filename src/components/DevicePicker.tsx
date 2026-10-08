@@ -5,11 +5,11 @@ import type { NativeDevice } from "@/lib/native-ble";
 /**
  * In-app Bluetooth chooser. Brume diffusers are listed first and are the only
  * selectable devices. A few other named devices nearby (closest signal first)
- * are shown greyed out so the user can see the scan is alive — but they can
+ * are shown greyed out so the user can see the scan is alive, but they can
  * never be picked, so customers don't pair the wrong device.
  */
 
-/** How many non-diffuser devices to show — proof of scanning, not a full list. */
+/** How many non-diffuser devices to show, proof of scanning, not a full list. */
 const MAX_OTHERS = 5;
 
 export function DevicePicker({
@@ -34,7 +34,7 @@ export function DevicePicker({
           <h2 className="font-display text-2xl leading-tight">Searching</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Your diffuser wasn't found yet. Double tap the button on the back of your diffuser to
-            wake it — it appears as "BRUME". Keep your phone close.
+            wake it, it appears as "BRUME". Keep your phone close.
           </p>
         </div>
         <button
@@ -68,7 +68,7 @@ export function DevicePicker({
 
         {others.length > 0 && (
           <div className="mt-8">
-            <p className="text-xs text-muted-foreground">Nearby devices — closest first</p>
+            <p className="text-xs text-muted-foreground">Nearby devices, closest first</p>
             <p className="mt-2 text-xs text-muted-foreground">
               These aren't diffusers. Only a device named "BRUME" can connect.
             </p>

@@ -18,7 +18,7 @@ export function setDebugEnabled(enabled: boolean) {
     if (enabled) window.localStorage.setItem(KEY, "1");
     else window.localStorage.removeItem(KEY);
   } catch {
-    // Storage unavailable — debug mode simply stays off.
+    // Storage unavailable, debug mode simply stays off.
   }
   window.dispatchEvent(new CustomEvent(EVENT));
 }

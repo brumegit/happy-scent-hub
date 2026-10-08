@@ -2,7 +2,7 @@
  * Web Bluetooth transport for the ScentLife serial protocol.
  *
  * The diffuser exposes the protocol over a transparent serial GATT service.
- * Frames are written in 20-byte chunks (default BLE MTU) — larger single writes
+ * Frames are written in 20-byte chunks (default BLE MTU), larger single writes
  * are silently dropped by these serial modules, which is why the device never
  * beeps when a whole timer-list frame is written at once.
  */
@@ -157,7 +157,7 @@ export function subscribeBattery(listener: () => void) {
 
 /**
  * Polls the module so it emits a runtime status report (which carries the
- * battery percentage). The query command is silent — the diffuser does not beep.
+ * battery percentage). The query command is silent, the diffuser does not beep.
  * Different firmware revisions answer different query sub-types, so we probe
  * the documented ones in sequence and keep whichever replies.
  */
@@ -174,7 +174,7 @@ export async function requestBattery(deviceId: string | null) {
       await link.write(buildQuery(subType));
       await wait(250);
     } catch {
-      // Link dropped — the connection poll will surface it.
+      // Link dropped, the connection poll will surface it.
       return;
     }
   }
@@ -228,7 +228,7 @@ function createResponseChannel(onFrame?: (frame: Uint8Array) => void) {
 }
 
 export function isBluetoothSupported() {
-  // The native shell has no Web Bluetooth API — it pairs through the Capacitor
+  // The native shell has no Web Bluetooth API, it pairs through the Capacitor
   // BLE plugin instead, so it must still report as supported.
   if (isNativeSync()) return true;
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
@@ -333,14 +333,14 @@ async function attachLink(device: {
       (c) => c.properties?.writeWithoutResponse || c.properties?.write,
     );
     // Prefer the write characteristic that lives in the same service as the
-    // notify one — that pair is the transparent serial channel.
+    // notify one, that pair is the transparent serial channel.
     if (notify && write) writableWithNotify = writableWithNotify ?? write;
     writable = writable ?? write;
   }
 
   writable = writableWithNotify ?? writable;
   if (!writable) {
-    log("No writable characteristic found — cannot send commands");
+    log("No writable characteristic found, cannot send commands");
     return false;
   }
   log("Serial channel ready");
@@ -443,7 +443,7 @@ export async function connectPickedDevice(device: {
       reconnect: async () => {
         trace("native reconnect: reopening the diffuser session");
         // The cached CoreBluetooth channel is what just failed, so discard it
-        // first — otherwise the connect call short-circuits as "already live"
+        // first, otherwise the connect call short-circuits as "already live"
         // and the retry writes into the same dead session.
         forgetNativeSession(device.deviceId);
         await connectPickedDevice({ deviceId: device.deviceId, ...(device.name ? { name: device.name } : {}) });
@@ -493,7 +493,7 @@ export async function pairDiffuser(choose?: DeviceChooser): Promise<PairedDevice
 
       const suggested = device.name || "The 24/7 Room Diffuser";
       if (!attached) {
-        // Without a writable serial channel nothing can be pushed — say so now
+        // Without a writable serial channel nothing can be pushed, say so now
         // instead of failing silently at the schedule step.
         throw new Error(
           "Connected, but this device did not expose its settings channel. Turn the diffuser off and on, then pair again.",
@@ -502,7 +502,7 @@ export async function pairDiffuser(choose?: DeviceChooser): Promise<PairedDevice
       return { deviceId: device.id, suggestedName: suggested };
     } catch (error) {
       const err = error as Error;
-      pushDebug().addLog(`Pairing error: ${err.name ?? "Error"} — ${err.message}`);
+      pushDebug().addLog(`Pairing error: ${err.name ?? "Error"}, ${err.message}`);
       if (err?.name === "NotFoundError") {
         throw new Error("No device selected.\nDouble-tap the button and try again.");
       }
@@ -606,8 +606,8 @@ export async function sendFrames(
   // protected command sequence. Do not repeat native bridge checks between
   // routine slots while that sequence is active.
   if (!isTrafficBlocked(deviceId) && !link.simulated && link.isLive && !(await link.isLive().catch(() => false))) {
-    trace("sendFrames: link down before sending — attempting one automatic reconnect");
-    onLog?.("Bluetooth link dropped — reconnecting");
+    trace("sendFrames: link down before sending, attempting one automatic reconnect");
+    onLog?.("Bluetooth link dropped, reconnecting");
     const recovered = await reopenLink(deviceId);
     if (!recovered) {
       throw new Error("Bluetooth link lost. Double tap the diffuser button, reconnect, and try again.");
@@ -743,8 +743,8 @@ export async function ensureLink(
     trace("link check before sending: live");
     return true;
   }
-  trace("link check before sending: down — attempting one automatic reconnect");
-  onLog?.("Bluetooth link dropped — reconnecting");
+  trace("link check before sending: down, attempting one automatic reconnect");
+  onLog?.("Bluetooth link dropped, reconnecting");
   const recovered = await reopenLink(deviceId);
   if (recovered) {
     onLog?.("Reconnected");
@@ -811,7 +811,7 @@ export async function sendBatch(
 }
 
 /**
- * Reads the timers (working modes) persisted on the device — used to verify a
+ * Reads the timers (working modes) persisted on the device, used to verify a
  * push actually landed instead of trusting the acknowledgment alone.
  */
 export async function queryTimers(
@@ -847,7 +847,7 @@ const trafficByDevice = new Map<string, TrafficState>();
  * status checks are passive and do not use this command path. */
 const QUIET_AFTER_COMMAND_MS = 5_000;
 /** A non-persistent command (clock sync, status query) only needs the module a
- * moment to answer — blocking reads for five seconds after pairing would hide
+ * moment to answer, blocking reads for five seconds after pairing would hide
  * the diffuser's stored settings from the setup screens. */
 const QUIET_AFTER_LIGHT_COMMAND_MS = 600;
 /** Commands that write to flash and need the long quiet window. */

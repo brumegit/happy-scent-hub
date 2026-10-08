@@ -95,14 +95,14 @@ export function bluetoothRequirementPrompt(req: {
 }) {
   const { bluetoothOff, permissionDenied, locationOff } = req;
   // Case 2: the app has not been granted Bluetooth/Location permission.
-  // This is distinct from the radio being off — send the user to the app's
+  // This is distinct from the radio being off, send the user to the app's
   // permission settings so they can allow Brume to use Bluetooth.
   if (permissionDenied) {
     return {
       message: locationOff
         ? "Brume is not allowed to use Bluetooth on this phone, and Location is off. Allow Nearby devices and Location for Brume, then turn Location on."
         : "Brume is not allowed to use Bluetooth on this phone. Allow access so the app can find your diffuser.",
-      // Ask the OS again first — that shows the native "Allow" popup. Only if
+      // Ask the OS again first, that shows the native "Allow" popup. Only if
       // the system refuses again does the caller fall back to app settings.
       cta: "Allow Bluetooth" as const,
       target: "permission" as const,
@@ -111,7 +111,7 @@ export function bluetoothRequirementPrompt(req: {
   }
   // Case 1: the phone's Bluetooth radio is switched off, but Brume already
   // has permission. The fix is on the phone itself, so just tell the user to
-  // turn Bluetooth on — no settings page to open.
+  // turn Bluetooth on, no settings page to open.
   if (bluetoothOff) {
     return {
       message: locationOff

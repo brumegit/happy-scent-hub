@@ -74,7 +74,7 @@ function Home() {
 
   const empty = hydrated && diffusers.length === 0;
 
-  // With no diffuser there is no home to show — setup is the whole app.
+  // With no diffuser there is no home to show, setup is the whole app.
   useEffect(() => {
     if (empty) void navigate({ to: "/setup", search: { start: false }, replace: true });
   }, [empty, navigate]);
@@ -164,7 +164,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   }
 
 
-  // Names are stored in the app only — nothing is written to the hardware.
+  // Names are stored in the app only, nothing is written to the hardware.
   const roomDraftError = roomDraft.trim() ? null : "Enter a room name.";
 
 
@@ -206,7 +206,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
       pickerResolve.current = resolve;
       setPicker([]);
       subscribe((devices) => {
-        // A diffuser identifying itself as "BRUME" is picked immediately —
+        // A diffuser identifying itself as "BRUME" is picked immediately
         // same auto-connect rule as the pre-picker scan, applied live while
         // the nearby-devices list is open.
         const brume = devices.find((d) => (d.name ?? "").toUpperCase().includes("BRUME"));
@@ -229,7 +229,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
    * link; only the explicit pairing action may establish a new session.
    */
   async function connect() {
-    // Already live: navigate with zero Bluetooth work — no adapter query, no
+    // Already live: navigate with zero Bluetooth work, no adapter query, no
     // permission refresh, no plugin call of any kind.
     if (connected) {
       void navigate({ to: "/setup", search: { edit: diffuser.id } });
@@ -449,7 +449,7 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
               onClick={() => {
                 // The card only shows this button while the five-second monitor
                 // reports a live link. Tapping it must not send any Bluetooth
-                // action — an extra probe or scan here is what dropped the
+                // action, an extra probe or scan here is what dropped the
                 // already-paired diffuser. Setup keeps monitoring the link and
                 // shows the reconnect popup if it really goes away.
                 trace("change routine tapped on a live link · navigating without any BLE action");

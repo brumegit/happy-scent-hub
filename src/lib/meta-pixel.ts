@@ -1,5 +1,5 @@
 // Client-side Meta Pixel loader and helpers.
-// The Pixel runs inside the Capacitor webview exactly like on a website —
+// The Pixel runs inside the Capacitor webview exactly like on a website
 // no native SDK needed. All functions are SSR-safe (guarded by typeof window).
 
 const PIXEL_ID = import.meta.env["VITE_META_PIXEL_ID"] as string | undefined;
@@ -21,7 +21,7 @@ declare global {
 
 /**
  * Loads the Meta Pixel base script and fires the initial PageView.
- * Safe to call multiple times — only loads once.
+ * Safe to call multiple times, only loads once.
  */
 export function initPixel(): void {
   if (typeof window === "undefined" || initialized || !PIXEL_ID) return;
@@ -91,7 +91,7 @@ export function getFbc(): string | undefined {
 
 /**
  * Generate a fallback fbp value if the Pixel hasn't set the cookie yet.
- * Format: fb.1.{timestamp}.{random} — matches Meta's _fbp cookie format.
+ * Format: fb.1.{timestamp}.{random}, matches Meta's _fbp cookie format.
  */
 export function generateFbp(): string {
   const ts = Date.now();

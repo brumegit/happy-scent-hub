@@ -2,7 +2,7 @@
  * Native (iOS / Android) Bluetooth transport via Capacitor.
  *
  * On a native build this uses the operating system's Bluetooth device chooser.
- * On the web this module is inert — bluetooth.ts falls back to Web Bluetooth.
+ * On the web this module is inert, bluetooth.ts falls back to Web Bluetooth.
  */
 
 import { describeError, trace } from "@/lib/ble-log";
@@ -156,7 +156,7 @@ async function client() {
     }
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Bluetooth is off")) throw error;
-    // isEnabled/requestEnable are unavailable on some platforms — keep going.
+    // isEnabled/requestEnable are unavailable on some platforms, keep going.
   }
   bleClient = mod.BleClient;
   void requestNotificationPermission();
@@ -197,7 +197,7 @@ let permissionInitialized = false;
 
 export async function ensureBluetoothPermission(): Promise<boolean> {
   if (!isNativeSync()) return true;
-  // initialize() only needs to run once per session — calling it again on iOS
+  // initialize() only needs to run once per session, calling it again on iOS
   // when the radio is off triggers the system "Turn on Bluetooth" dialog with a
   // Settings button. After the first call, isEnabled() detects the radio state
   // silently.
@@ -278,7 +278,7 @@ export type DeviceChooser = (
   subscribe: (listener: (devices: NativeDevice[]) => void) => void,
 ) => Promise<NativeDevice | null>;
 
-/** Nameless peripherals are noise — the user recognises their diffuser by name. */
+/** Nameless peripherals are noise, the user recognises their diffuser by name. */
 function isNamed(name: string | undefined): name is string {
   const n = (name ?? "").trim();
   return n.length > 0 && n.toLowerCase() !== "unknown";
@@ -379,7 +379,7 @@ export async function connectNative(
   const ble = await client();
   const existingTarget = connectedTargets.get(deviceId);
   if (connectedIds.has(deviceId) && existingTarget) {
-    trace("native connection already live — reusing serial channel");
+    trace("native connection already live, reusing serial channel");
     return existingTarget;
   }
   const generation = (connectionGenerations.get(deviceId) ?? 0) + 1;

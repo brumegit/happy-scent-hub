@@ -7,7 +7,7 @@ import { useDebugMode } from "@/hooks/useDebugMode";
 /** Short human label for the element the user touched. */
 function describe(el: Element): string {
   // Many app controls (day chips, hour cells, tiles) are plain divs with an
-  // onClick — climb up to 4 ancestors to find the meaningful tap target.
+  // onClick, climb up to 4 ancestors to find the meaningful tap target.
   let target = el.closest(
     "button, a, [role=button], input, select, textarea, label, summary, [data-trace]",
   ) as HTMLElement | null;
@@ -67,7 +67,7 @@ export function InteractionTracer() {
     };
 
     // Backgrounding is a common cause of iOS dropping a Bluetooth session, and
-    // it is only visible in Xcode otherwise — record it in the trace too.
+    // it is only visible in Xcode otherwise, record it in the trace too.
     const onVisibility = () => trace(`📱 app ${document.visibilityState}`);
     const onPageHide = () => trace("📱 app hidden (pagehide)");
 

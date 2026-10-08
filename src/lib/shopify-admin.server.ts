@@ -74,7 +74,7 @@ export async function lookupShopifyCustomer(email: string): Promise<CustomerLook
 
   const normalized = email.trim().toLowerCase();
 
-  // 1) Any order ever placed with this email — refunded or cancelled included.
+  // 1) Any order ever placed with this email, refunded or cancelled included.
   const orders = await adminRequest<{
     orders?: { edges: Array<{ node: { customer?: { firstName: string | null } | null } }> };
   }>(token, ORDERS_QUERY, { query: `email:${normalized}` });
@@ -102,7 +102,7 @@ export async function lookupShopifyCustomer(email: string): Promise<CustomerLook
     return empty;
   }
 
-  // Both reads were blocked by Shopify — we genuinely cannot tell.
+  // Both reads were blocked by Shopify, we genuinely cannot tell.
   if (orders.denied && customers.denied) return { ...empty, unavailable: true };
   return empty;
 }

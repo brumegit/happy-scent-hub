@@ -27,7 +27,7 @@ export function DebugLogSheet() {
       await navigator.clipboard.writeText(text);
       setCopied("Copied");
     } catch {
-      setCopied("Copy failed — select the text manually");
+      setCopied("Copy failed, select the text manually");
     }
     setTimeout(() => setCopied(null), 2500);
   };

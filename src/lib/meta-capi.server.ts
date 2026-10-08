@@ -16,7 +16,7 @@ interface CapiEventInput {
   eventSourceUrl: string | undefined;
 }
 
-/** SHA-256 hash a string and return hex — for PII hashing before sending to Meta. */
+/** SHA-256 hash a string and return hex, for PII hashing before sending to Meta. */
 async function sha256Hex(value: string): Promise<string> {
   const encoded = new TextEncoder().encode(value);
   const hash = await crypto.subtle.digest("SHA-256", encoded);
@@ -39,7 +39,7 @@ function getClientIp(request: Request | null): string {
 
 /**
  * Send a single event to Meta via the Conversions API.
- * Failures are logged but never thrown — tracking must not break the app.
+ * Failures are logged but never thrown, tracking must not break the app.
  */
 export async function sendCapiEvent(input: CapiEventInput): Promise<void> {
   // The access token is the only server-only secret. The Pixel ID is public

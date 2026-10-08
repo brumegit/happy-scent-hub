@@ -162,6 +162,9 @@ function Setup() {
   const [explainAdvanced, setExplainAdvanced] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
+  // Beeps the diffuser should have played on the last save: one for the clock,
+  // one per active routine. Shown on the success screen as a sound check.
+  const [savedBeepCount, setSavedBeepCount] = useState(0);
   const [connectionLost, setConnectionLost] = useState(false);
   // React effect cleanup runs after a click handler returns. This ref closes
   // that gap synchronously so an interval already due cannot start (or act on)
@@ -183,7 +186,7 @@ function Setup() {
   } = useBluetoothRequirements(phase === "idle");
   // Pairing step only: while the radio is off, quietly re-check every 5 s so
   // the pairing CTA appears as soon as the user turns Bluetooth back on.
-  // isBluetoothOn() is a passive adapter query — it never prompts or touches
+  // isBluetoothOn() is a passive adapter query, it never prompts or touches
   // the diffuser link.
   useEffect(() => {
     if (phase !== "idle" || !btOff) return;
@@ -218,7 +221,7 @@ function Setup() {
   async function afterPaired(device: { deviceId: string; suggestedName: string }) {
     setDeviceId(device.deviceId);
     try {
-      // Only sync the clock on pairing — settings are pushed at each step.
+      // Only sync the clock on pairing, settings are pushed at each step.
       await sendFrames(device.deviceId, [buildSyncTimestamp()]);
       // The stored routines are read once when the intensity screen opens, so
       // the link stays quiet here. Reading right after pairing was unreliable.
@@ -238,7 +241,7 @@ function Setup() {
       pickerResolve.current = resolve;
       setPicker([]);
       subscribe((devices) => {
-        // A diffuser identifying itself as "BRUME" is picked immediately —
+        // A diffuser identifying itself as "BRUME" is picked immediately
         // same auto-connect rule as the pre-picker scan, applied live while
         // the nearby-devices list is open.
         const brume = devices.find((d) => (d.name ?? "").toUpperCase().includes("BRUME"));
@@ -303,7 +306,7 @@ function Setup() {
   // One-shot read of the diffuser's stored routines when the intensity screen
   // opens, so the selectors start from the hardware's real state. This is not a
   // keepalive: it runs once, never between routine writes, and never after a
-  // save. A failure is silent — the app keeps its own last saved values.
+  // save. A failure is silent, the app keeps its own last saved values.
   useEffect(() => {
     if (phase !== "intensity" || !deviceId || settingsRead || savingRef.current) return;
     let cancelled = false;
@@ -395,8 +398,9 @@ function Setup() {
       // Stop all Bluetooth traffic after the last routine. Automatic reconnects
       // can interrupt this firmware while it commits the saved settings.
       setResult("success");
+      setSavedBeepCount(scheduleToBlocks(schedule).length);
       trace(
-        `✔ save succeeded — success shown (${editing ? "edit settings" : "first setup"}, ${
+        `✔ save succeeded, success shown (${editing ? "edit settings" : "first setup"}, ${
           scheduleToBlocks(schedule).length
         } routine(s))`,
       );
@@ -409,7 +413,7 @@ function Setup() {
     } catch (err) {
       const message = (err as Error).message || "Could not reach the diffuser.";
       setError(message);
-      trace(`✖ save failed — user sees: "${message}"`);
+      trace(`✖ save failed, user sees: "${message}"`);
       setResult("error");
       setTimeout(() => {
         setResult("idle");
@@ -419,7 +423,7 @@ function Setup() {
     }
   }
 
-  // Names live in the app only — nothing is ever written to the hardware.
+  // Names live in the app only, nothing is ever written to the hardware.
   const roomError = room.trim().length === 0 ? "Enter a room name." : null;
 
 
@@ -523,6 +527,20 @@ function Setup() {
                 </div>
                 <p className="success-pop text-center text-sm text-gold">
                   Diffuser paired successfully
+                </p>
+                <p className="mt-4 text-center text-sm text-muted-foreground">
+                  You should have heard {1 + savedBeepCount}{" "}
+                  {savedBeepCount === 1 ? "beep" : "beeps"}: one for the clock, one for each
+                  routine you saved.
+                </p>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Heard nothing? Text us:{" "}
+                  <a
+                    href="sms:+18882132088"
+                    className="text-gold underline underline-offset-4"
+                  >
+                    +1 888-213-2088
+                  </a>
                 </p>
               </div>
             </div>
@@ -662,7 +680,7 @@ function Setup() {
                 placeholder="Living room"
                 onChange={(e) => setRoom(e.target.value)}
               />
-              {/* Only surfaced once the user tries to continue — never up front. */}
+              {/* Only surfaced once the user tries to continue, never up front. */}
               {roomTouched && roomError && (
                 <p className="text-xs text-destructive">{roomError}</p>
               )}
@@ -763,7 +781,7 @@ function Setup() {
             </p>
 
 
-            {/* Nothing is written to the hardware yet — everything is pushed
+            {/* Nothing is written to the hardware yet, everything is pushed
                 once the schedule is confirmed. */}
             <StatusButton state="idle" icon={false} label="Next" onClick={() => setPhase("schedule")} />
 
@@ -823,7 +841,7 @@ function Setup() {
           <section className="mt-4 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
              <p className="mt-3 text-sm text-foreground">
-              Keep the diffuser nearby. It will beep a few times — one short
+              Keep the diffuser nearby. It will beep a few times, one short
               beep when the clock syncs, then one for each routine you saved.
             </p>
             <div className="mt-7">
@@ -837,15 +855,22 @@ function Setup() {
               <div className="mt-4 space-y-3">
                 <p className="whitespace-pre-line text-sm text-destructive">{error}</p>
                 <p className="text-sm text-muted-foreground">
-                  Need help? Contact us at{" "}
+                  Need help? Email{" "}
                   <button
                     type="button"
                     onClick={() => void emailDebugLog()}
                     className="text-gold underline underline-offset-4"
                   >
                     contact@brume.me
-                  </button>
-                  {" "}— your setup log will be attached automatically.
+                  </button>{" "}
+                  (your setup log attaches automatically), or text us:{" "}
+                  <a
+                    href="sms:+18882132088"
+                    className="text-gold underline underline-offset-4"
+                  >
+                    +1 888-213-2088
+                  </a>
+                  .
                 </p>
               </div>
             )}

@@ -15,7 +15,7 @@ import {
 /**
  * Routine editor: the schedule is a list of routines, and one routine is
  * exactly one hardware working mode. The device stores 5, so the editor caps
- * the list at 5 — the limit is a design constraint, never a validation error.
+ * the list at 5, the limit is a design constraint, never a validation error.
  *
  * Routines are never numbered. Once a configuration is confirmed, each routine
  * is named from what it is (days + part of the day) so it reads back naturally
@@ -28,7 +28,7 @@ import {
 /**
  * A routine is identified by its start/end window, so two routines sharing the
  * exact same window collapse into one. New routines therefore start on a window
- * that is not in use yet — otherwise "Add a routine" appears to do nothing.
+ * that is not in use yet, otherwise "Add a routine" appears to do nothing.
  */
 function nextRoutine(blocks: TimeBlock[]): TimeBlock {
   const used = new Set(blocks.map((b) => `${b.start}-${b.end}`));
@@ -106,7 +106,7 @@ export function ScheduleGrid({
               </>
             )}
 
-            {/* Times first — minute granularity through the device's native picker. */}
+            {/* Times first, minute granularity through the device's native picker. */}
             <div className="mt-4 grid w-full grid-cols-2 gap-3">
               <label className="flex min-w-0 flex-col gap-2">
                 <span className="text-sm text-muted-foreground">Starts</span>
@@ -170,7 +170,7 @@ export function ScheduleGrid({
         </button>
       ) : (
         <p className="text-center text-xs text-muted-foreground">
-          Your diffuser stores {MAX_TIMERS} routines — the maximum is reached.
+          Your diffuser stores {MAX_TIMERS} routines, the maximum is reached.
         </p>
       )}
 

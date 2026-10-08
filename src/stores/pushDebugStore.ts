@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 /**
  * Development-only report of what the diffuser actually confirmed on the last
- * settings push. Not persisted — it reflects the current session only.
+ * settings push. Not persisted, it reflects the current session only.
  */
 export type PushStepKey = "name" | "modes" | "intensity" | "schedule";
 
