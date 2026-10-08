@@ -27,6 +27,7 @@ export function DevicePicker({
     .slice(0, MAX_OTHERS);
 
   return (
+    <Dialog open onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="flex min-h-[56vh] w-[88vw] max-w-[88vw] flex-col border-border bg-background px-[8%] py-10">
         <DialogTitle className="font-display text-4xl leading-tight">Searching</DialogTitle>
 
