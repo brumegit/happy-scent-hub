@@ -165,6 +165,8 @@ function Setup() {
   // Beeps the diffuser should have played on the last save: one for the clock,
   // one per active routine. Shown on the success screen as a sound check.
   const [savedBeepCount, setSavedBeepCount] = useState(0);
+  const [beepDialogOpen, setBeepDialogOpen] = useState(false);
+  const beepContinueRef = useRef<(() => void) | null>(null);
   const [connectionLost, setConnectionLost] = useState(false);
   // React effect cleanup runs after a click handler returns. This ref closes
   // that gap synchronously so an interval already due cannot start (or act on)
@@ -404,12 +406,15 @@ function Setup() {
           scheduleToBlocks(schedule).length
         } routine(s))`,
       );
-      setTimeout(() => {
+      // Keep the success screen, then ask for the sound check in a popup.
+      // Setup only continues once the user taps Done.
+      beepContinueRef.current = () => {
         setResult("idle");
         savingRef.current = false;
         setPhase(next);
         onDone?.();
-      }, 1400);
+      };
+      setTimeout(() => setBeepDialogOpen(true), 1400);
     } catch (err) {
       const message = (err as Error).message || "Could not reach the diffuser.";
       setError(message);
@@ -433,7 +438,13 @@ function Setup() {
   // Sound check strip: stays pinned to the bottom from the moment a save
   // succeeds until setup is closed, so the beep count and text line never
   // flash away with the success screen.
-  const beepBarVisible = savedBeepCount > 0 && phase !== "pushing";
+  const beepBarVisible = savedBeepCount > 0 && phase !== "pushing" && !beepDialogOpen;
+  const finishBeepCheck = () => {
+    setBeepDialogOpen(false);
+    const go = beepContinueRef.current;
+    beepContinueRef.current = null;
+    go?.();
+  };
 
   return (
     <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
@@ -971,6 +982,27 @@ function Setup() {
           onCancel={() => settlePicker(null)}
         />
       )}
+      <Dialog open={beepDialogOpen} onOpenChange={(o) => !o && finishBeepCheck()}>
+        <DialogContent className="w-[80vw] max-w-[80vw] border-border bg-background px-[10%]">
+          <p className="font-display text-2xl">Did you hear {1 + savedBeepCount} beeps?</p>
+          <p className="text-sm text-muted-foreground">
+            One for the clock, one for each routine you saved.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            No beeps?{" "}
+            <a href="sms:+18882132088" className="text-gold underline underline-offset-4">
+              Text us: +1 888-213-2088
+            </a>
+          </p>
+          <button
+            type="button"
+            onClick={finishBeepCheck}
+            className="mt-2 h-12 w-full rounded-md border border-gold bg-background text-sm text-gold"
+          >
+            Yes, all good
+          </button>
+        </DialogContent>
+      </Dialog>
       <Dialog open={connectionLost} onOpenChange={setConnectionLost}>
         <DialogContent className="w-[80vw] max-w-[80vw] border-border bg-background">
           <DialogHeader>
