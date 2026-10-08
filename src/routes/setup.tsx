@@ -989,10 +989,6 @@ function Setup() {
               Beeping is how your diffuser confirms it received your routines.
             </DialogDescription>
           </DialogHeader>
-          <p className="my-4 text-center text-sm text-foreground">
-            You just changed your routine. If it starts or pauses diffusion right now,
-            you may also hear its usual on or off sound.
-          </p>
           <Button
             type="button"
             onClick={finishBeepCheck}
