@@ -1,5 +1,3 @@
-import { X } from "lucide-react";
-
 import type { NativeDevice } from "@/lib/native-ble";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -31,17 +29,7 @@ export function DevicePicker({
   return (
     <Dialog open onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="flex min-h-[56vh] w-[88vw] max-w-[88vw] flex-col border-border bg-background px-[8%] py-10">
-        <div className="flex items-start justify-between gap-4">
-          <DialogTitle className="font-display text-4xl leading-tight">Searching</DialogTitle>
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Cancel"
-            className="shrink-0 border border-destructive p-2 text-destructive"
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-        </div>
+        <DialogTitle className="font-display text-4xl leading-tight">Searching</DialogTitle>
 
         <p className="mt-3 text-sm text-foreground">
           Double tap the button on the back of your diffuser to wake it, it appears as "BRUME". Keep
@@ -68,32 +56,32 @@ export function DevicePicker({
           )}
 
           {others.length > 0 && (
-            <div className="mt-8">
-              <p className="text-xs text-foreground">Nearby devices, closest first</p>
-              <p className="mt-2 text-xs text-foreground">
-                These aren't diffusers. Only a device named "BRUME" can connect.
-              </p>
-              <ul className="mt-3 space-y-3">
-                {others.map((device) => (
-                  <li
-                    key={device.deviceId}
-                    className="flex items-center justify-between gap-3 border border-border bg-background px-4 py-4 opacity-50"
-                  >
-                    <span className="truncate text-sm text-foreground">{device.name}</span>
-                    <span className="shrink-0 text-xs text-foreground">Not a diffuser</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ul className="mt-3 space-y-3">
+              {others.map((device) => (
+                <li
+                  key={device.deviceId}
+                  className="flex items-center justify-between gap-3 border border-border bg-background px-4 py-4 opacity-50"
+                >
+                  <span className="truncate text-sm text-foreground">{device.name}</span>
+                  <span className="shrink-0 text-xs text-foreground">Not a diffuser</span>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
+
+        {likely.length === 0 && (
+          <p className="mt-6 text-sm text-foreground">
+            No diffuser found yet. Make sure your diffuser's LED is blinking in blue.
+          </p>
+        )}
 
         <button
           type="button"
           onClick={onCancel}
-          className="mt-6 w-full border border-destructive bg-background px-4 py-4 text-sm tracking-[0.12em] text-destructive"
+          className="mt-4 w-full bg-foreground px-4 py-4 text-sm uppercase tracking-[0.22em] text-background"
         >
-          CANCEL
+          Go back
         </button>
       </DialogContent>
     </Dialog>
