@@ -982,7 +982,7 @@ function Setup() {
       <Dialog open={beepDialogOpen} onOpenChange={(o) => !o && finishBeepCheck()}>
         <DialogContent className="flex min-h-[56vh] w-[88vw] max-w-[88vw] flex-col justify-center border-border bg-background px-[10%] py-10">
           <DialogHeader className="text-center">
-            <DialogTitle className="whitespace-nowrap text-center font-display text-xl">
+            <DialogTitle className="whitespace-nowrap text-center text-sm font-medium leading-none">
               Did you hear a few beeps?
             </DialogTitle>
             <DialogDescription className="text-center text-sm text-gold">
@@ -993,7 +993,7 @@ function Setup() {
             type="button"
             onClick={finishBeepCheck}
             variant="outline"
-            className="h-12 w-full rounded-md text-sm normal-case tracking-normal"
+            className="h-12 w-full rounded-md text-sm uppercase tracking-[0.22em]"
           >
             Yes, all good
           </Button>
