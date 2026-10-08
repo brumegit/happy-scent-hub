@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { WheelPicker } from "@/components/WheelPicker";
+import { trace } from "@/lib/ble-log";
 import { emailDebugLog } from "@/lib/emailLog";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,6 +56,7 @@ import {
   defaultSchedule,
   formatSeconds,
   intensityPreset,
+  scheduleToBlocks,
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
@@ -393,6 +395,11 @@ function Setup() {
       // Stop all Bluetooth traffic after the last routine. Automatic reconnects
       // can interrupt this firmware while it commits the saved settings.
       setResult("success");
+      trace(
+        `✔ save succeeded — success shown (${editing ? "edit settings" : "first setup"}, ${
+          scheduleToBlocks(schedule).length
+        } routine(s))`,
+      );
       setTimeout(() => {
         setResult("idle");
         savingRef.current = false;
@@ -400,7 +407,9 @@ function Setup() {
         onDone?.();
       }, 1400);
     } catch (err) {
-      setError((err as Error).message || "Could not reach the diffuser.");
+      const message = (err as Error).message || "Could not reach the diffuser.";
+      setError(message);
+      trace(`✖ save failed — user sees: "${message}"`);
       setResult("error");
       setTimeout(() => {
         setResult("idle");
@@ -814,7 +823,8 @@ function Setup() {
           <section className="mt-4 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
              <p className="mt-3 text-sm text-foreground">
-              Keep the diffuser nearby. You'll hear it beep to confirm new settings.
+              Keep the diffuser nearby. It will beep a few times — one short
+              beep when the clock syncs, then one for each routine you saved.
             </p>
             <div className="mt-7">
               <StatusButton
