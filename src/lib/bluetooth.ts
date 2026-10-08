@@ -32,6 +32,7 @@ import {
   subscribeNativeDisconnect,
   writeNative,
   type DeviceChooser,
+  looksLikeDiffuser,
 } from "@/lib/native-ble";
 
 
