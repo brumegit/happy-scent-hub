@@ -32,6 +32,7 @@ import {
   subscribeNativeDisconnect,
   writeNative,
   type DeviceChooser,
+  looksLikeDiffuser,
 } from "@/lib/native-ble";
 
 
@@ -463,6 +464,12 @@ export async function pairDiffuser(choose?: DeviceChooser): Promise<PairedDevice
         ? error
         : new Error("Bluetooth scan failed. Check that Bluetooth is on and try again.");
     });
+    // Safeguard: refuse to connect to anything that isn't a Brume diffuser.
+    if (!found.likely && !looksLikeDiffuser(found.name)) {
+      throw new Error(
+        'This device isn\'t a Brume diffuser.\nDouble tap the button on the back of your diffuser and look for "BRUME".',
+      );
+    }
     return connectPickedDevice(found);
   }
 
@@ -472,7 +479,8 @@ export async function pairDiffuser(choose?: DeviceChooser): Promise<PairedDevice
     const nav = navigator as unknown as { bluetooth: BluetoothLike };
     try {
       const device = await nav.bluetooth.requestDevice({
-        acceptAllDevices: true,
+        // Safeguard: Chrome's chooser only lists Brume diffusers.
+        filters: [{ namePrefix: "BRUME" }, { namePrefix: "Brume" }, { services: [0xffe0] }],
         optionalServices: SERVICE_UUIDS,
       });
 

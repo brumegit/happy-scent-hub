@@ -10,6 +10,7 @@ import {
   buildModifyTimer,
   buildTimerList,
   type TimerSlot,
+  buildSyncTimestamp,
 } from "@/lib/scentlife";
 
 
@@ -119,6 +120,18 @@ export async function pushSettings(opts: {
     // Write each slot with the persistent 0x14 command. The
     // transport serializes the packets. Start the first write immediately while
     // the checked link is still active; only later slots need flash-settle time.
+    // Safeguard: set the diffuser clock from this phone before the routines,
+    // so battery loss, daylight saving or a foreign factory clock can never
+    // shift routine times. 0x06 is not stored in flash; 600 ms settle is enough.
+    log("Clock sync 0x06 from this phone before saving routines");
+    await sendFrames(opts.deviceId, [buildSyncTimestamp(new Date())], log).catch(async (error) => {
+      log("clock sync refused on a stale session · reopening the link once");
+      const reopened = await reopenLink(opts.deviceId);
+      if (!reopened) throw error;
+      return sendFrames(opts.deviceId, [buildSyncTimestamp(new Date())], log);
+    });
+    await wait(600);
+
     const acks = [];
     const saveStartedAt = Date.now();
     for (const [position, slot] of slots.entries()) {
