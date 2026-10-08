@@ -68,9 +68,7 @@ export function DevicePicker({
 
         {others.length > 0 && (
           <div className="mt-8">
-            <p className="text-xs text-muted-foreground">
-              Nearby devices — closest first ({others.length} of {others.length < MAX_OTHERS ? others.length : "many"})
-            </p>
+            <p className="text-xs text-muted-foreground">Nearby devices — closest first</p>
             <p className="mt-2 text-xs text-muted-foreground">
               These aren't diffusers. Only a device named "BRUME" can connect.
             </p>
