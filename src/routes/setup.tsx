@@ -56,6 +56,7 @@ import {
   defaultSchedule,
   formatSeconds,
   intensityPreset,
+  scheduleToBlocks,
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
