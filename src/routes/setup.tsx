@@ -430,10 +430,20 @@ function Setup() {
 
   const preset = intensityPreset(intensity);
   const simulated = deviceId !== null && !isRealLink(deviceId);
+  // Sound check strip: stays pinned to the bottom from the moment a save
+  // succeeds until setup is closed, so the beep count and text line never
+  // flash away with the success screen.
+  const beepBarVisible = savedBeepCount > 0 && phase !== "pushing";
 
   return (
     <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
-      <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+      <div
+        className={`mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 ${
+          beepBarVisible
+            ? "pb-[calc(env(safe-area-inset-bottom)+7.5rem)]"
+            : "pb-[calc(env(safe-area-inset-bottom)+2rem)]"
+        }`}
+      >
         <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
           {editing ? (
@@ -528,20 +538,7 @@ function Setup() {
                 <p className="success-pop text-center text-sm text-gold">
                   Diffuser paired successfully
                 </p>
-                <p className="mt-4 text-center text-sm text-muted-foreground">
-                  You should have heard {1 + savedBeepCount}{" "}
-                  {savedBeepCount === 1 ? "beep" : "beeps"}: one for the clock, one for each
-                  routine you saved.
-                </p>
-                <p className="mt-2 text-center text-sm text-muted-foreground">
-                  No beeps? Text us:{" "}
-                  <a
-                    href="sms:+18882132088"
-                    className="text-gold underline underline-offset-4"
-                  >
-                    +1 888-213-2088
-                  </a>
-                </p>
+
               </div>
             </div>
           </section>
@@ -947,6 +944,26 @@ function Setup() {
         )}
         </div>
       </div>
+      {beepBarVisible && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background">
+          <div className="mx-auto w-full max-w-2xl px-11 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+            <p className="text-sm text-muted-foreground">
+              You should have heard {1 + savedBeepCount}{" "}
+              {savedBeepCount === 1 ? "beep" : "beeps"}: one for the clock, one for each routine
+              you saved.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              No beeps?{" "}
+              <a
+                href="sms:+18882132088"
+                className="text-gold underline underline-offset-4"
+              >
+                Text us: +1 888-213-2088
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
       {picker && (
         <DevicePicker
           devices={picker}
