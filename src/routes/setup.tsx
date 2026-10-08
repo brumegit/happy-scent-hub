@@ -987,18 +987,18 @@ function Setup() {
               A double beep is your diffuser confirming it received your updated routines.
             </DialogDescription>
           </DialogHeader>
+          <p className="my-4 text-center text-sm text-foreground">
+            You just changed your routine. If it starts or pauses diffusion right now,
+            your diffuser may also play its usual on or off sound.
+          </p>
           <Button
             type="button"
             onClick={finishBeepCheck}
             variant="outline"
-            className="mt-1 h-12 w-full rounded-md text-sm normal-case tracking-normal"
+            className="h-12 w-full rounded-md text-sm normal-case tracking-normal"
           >
             Yes, all good
           </Button>
-          <p className="text-center text-sm text-foreground">
-            You just changed your routine. If it starts or pauses diffusion right now,
-            your diffuser may also play its usual on or off sound.
-          </p>
           <p className="text-center text-sm text-muted-foreground">
             No beeps?{" "}
             <a href="sms:+18882132088" className="text-muted-foreground underline-offset-4">
