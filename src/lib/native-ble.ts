@@ -309,7 +309,7 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
           deviceId: result.device.deviceId,
           name,
           likely: looksLikeDiffuser(name, result.uuids),
-          rssi: result.rssi,
+          rssi: typeof result.rssi === "number" ? result.rssi : undefined,
         });
         emit();
       })
