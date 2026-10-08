@@ -301,6 +301,8 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
       .requestLEScan({ allowDuplicates: false }, (result) => {
         const name = result.localName ?? result.device?.name;
         if (!isNamed(name)) return;
+        // Safeguard: never offer non-Brume devices (TVs, headphones…).
+        if (!looksLikeDiffuser(name, result.uuids)) return;
         found.set(result.device.deviceId, {
           deviceId: result.device.deviceId,
           name,
@@ -323,7 +325,7 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
   }
 
   try {
-    return await ble.requestDevice({});
+    return await ble.requestDevice({ namePrefix: "BRUME" });
   } catch (error) {
     const message = error instanceof Error ? error.message.toLowerCase() : "";
     if (message.includes("cancel") || message.includes("dismiss")) {
