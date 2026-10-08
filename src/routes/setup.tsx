@@ -162,9 +162,8 @@ function Setup() {
   const [explainAdvanced, setExplainAdvanced] = useState(false);
   const [result, setResult] = useState<CircleState>("idle");
   const [error, setError] = useState<string | null>(null);
-  // Beeps the diffuser should have played on the last save: one for the clock,
-  // one per active routine. Shown on the success screen as a sound check.
-  const [savedBeepCount, setSavedBeepCount] = useState(0);
+  // Keep the sound check visible after a save without predicting a beep count.
+  const [hasSavedSettings, setHasSavedSettings] = useState(false);
   const [beepDialogOpen, setBeepDialogOpen] = useState(false);
   const beepContinueRef = useRef<(() => void) | null>(null);
   const [connectionLost, setConnectionLost] = useState(false);
@@ -400,7 +399,7 @@ function Setup() {
       // Stop all Bluetooth traffic after the last routine. Automatic reconnects
       // can interrupt this firmware while it commits the saved settings.
       setResult("success");
-      setSavedBeepCount(scheduleToBlocks(schedule).length);
+      setHasSavedSettings(true);
       trace(
         `✔ save succeeded, success shown (${editing ? "edit settings" : "first setup"}, ${
           scheduleToBlocks(schedule).length
@@ -436,9 +435,9 @@ function Setup() {
   const preset = intensityPreset(intensity);
   const simulated = deviceId !== null && !isRealLink(deviceId);
   // Sound check strip: stays pinned to the bottom from the moment a save
-  // succeeds until setup is closed, so the beep count and text line never
+  // succeeds until setup is closed, so the sound check and text line never
   // flash away with the success screen.
-  const beepBarVisible = savedBeepCount > 0 && phase !== "pushing" && !beepDialogOpen;
+  const beepBarVisible = hasSavedSettings && phase !== "pushing" && !beepDialogOpen;
   const finishBeepCheck = () => {
     setBeepDialogOpen(false);
     const go = beepContinueRef.current;
@@ -849,8 +848,8 @@ function Setup() {
           <section className="mt-4 border border-border p-7">
             <h1 className="font-display text-4xl">Sending to your diffuser</h1>
              <p className="mt-3 text-sm text-foreground">
-              Keep the diffuser nearby. It will beep a few times, one short
-              beep when the clock syncs, then one for each routine you saved.
+              Keep the diffuser nearby. It will beep a few times as your routines
+              find their rhythm.
             </p>
             <div className="mt-7">
               <StatusButton
@@ -959,17 +958,15 @@ function Setup() {
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background">
           <div className="mx-auto w-full max-w-2xl px-11 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <p className="text-sm text-muted-foreground">
-              You should have heard {1 + savedBeepCount}{" "}
-              {savedBeepCount === 1 ? "beep" : "beeps"}: one for the clock, one for each routine
-              you saved.
+              A double beep confirms your diffuser received your updated routines.
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               No beeps?{" "}
               <a
                 href="sms:+18882132088"
-                className="text-gold underline underline-offset-4"
+                className="text-muted-foreground underline underline-offset-4"
               >
-                Text us: +1 888-213-2088
+                Text us for help: +1 888-213-2088
               </a>
             </p>
           </div>
@@ -984,23 +981,30 @@ function Setup() {
       )}
       <Dialog open={beepDialogOpen} onOpenChange={(o) => !o && finishBeepCheck()}>
         <DialogContent className="w-[80vw] max-w-[80vw] border-border bg-background px-[10%]">
-          <p className="font-display text-2xl">Did you hear {1 + savedBeepCount} beeps?</p>
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">Did you hear a few beeps?</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              A double beep is your diffuser’s way of saying it received your updated routines.
+            </DialogDescription>
+          </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            One for the clock, one for each routine you saved.
+            If your new routine starts or pauses diffusion right now, you may also
+            hear its usual on or off sound. That’s normal, so the number of beeps can vary.
           </p>
-          <p className="text-sm text-muted-foreground">
-            No beeps?{" "}
-            <a href="sms:+18882132088" className="text-gold underline underline-offset-4">
-              Text us: +1 888-213-2088
-            </a>
-          </p>
-          <button
+          <Button
             type="button"
             onClick={finishBeepCheck}
-            className="mt-2 h-12 w-full rounded-md border border-gold bg-background text-sm text-gold"
+            variant="outline"
+            className="mt-2 h-12 w-full rounded-md text-sm normal-case tracking-normal"
           >
             Yes, all good
-          </button>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            No beeps?{" "}
+            <a href="sms:+18882132088" className="text-muted-foreground underline underline-offset-4">
+              Text us for help: +1 888-213-2088
+            </a>
+          </p>
         </DialogContent>
       </Dialog>
       <Dialog open={connectionLost} onOpenChange={setConnectionLost}>
