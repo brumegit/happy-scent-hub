@@ -38,7 +38,7 @@ export function DevicePicker({
 
         <div className="mt-6 min-h-0 flex-1 overflow-y-auto">
           {likely.length === 0 ? (
-            <p className="text-sm text-foreground">Looking for your diffuser…</p>
+            <p className="text-sm text-gold">Looking for your diffuser…</p>
           ) : (
             <ul className="space-y-3">
               {likely.map((device) => (
@@ -79,7 +79,7 @@ export function DevicePicker({
         <button
           type="button"
           onClick={onCancel}
-          className="mt-4 w-full bg-foreground px-4 py-4 text-sm uppercase tracking-[0.22em] text-background"
+          className="w-full border border-foreground bg-transparent px-4 py-4 text-sm uppercase tracking-[0.22em] text-foreground outline-none focus-visible:outline-none focus-visible:ring-0"
         >
           Go back
         </button>
