@@ -980,7 +980,7 @@ function Setup() {
         />
       )}
       <Dialog open={beepDialogOpen} onOpenChange={(o) => !o && finishBeepCheck()}>
-        <DialogContent className="w-[80vw] max-w-[80vw] border-border bg-background px-[10%]">
+        <DialogContent className="flex min-h-[45vh] w-[88vw] max-w-[88vw] flex-col justify-center border-border bg-background px-[10%] py-10">
           <DialogHeader className="text-center">
             <DialogTitle className="text-center font-display text-2xl">
               Did you hear a few beeps?
@@ -997,8 +997,9 @@ function Setup() {
           >
             Yes, all good
           </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            No beeps?{" "}
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            No beeps?
+            <br />
             <a href="sms:+18882132088" className="text-muted-foreground underline-offset-4">
               Text us for help: <span className="underline">+1 888-213-2088</span>
             </a>
