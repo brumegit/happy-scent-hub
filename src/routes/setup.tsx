@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { WheelPicker } from "@/components/WheelPicker";
+import { trace } from "@/lib/ble-log";
 import { emailDebugLog } from "@/lib/emailLog";
 import { Label } from "@/components/ui/label";
 import {
