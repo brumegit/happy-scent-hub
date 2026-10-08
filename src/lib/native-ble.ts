@@ -12,7 +12,15 @@ export type NativeChar = { service: string; characteristic: string };
 export type NativeDevice = {
   deviceId: string;
   name?: string;
+  /** True when the name or advertised serial service looks like a Brume diffuser. */
+  likely?: boolean;
 };
+
+/** Brume diffusers advertise "BRUME…" and/or the ffe0 serial service. */
+export function looksLikeDiffuser(name: string | undefined, uuids?: string[]) {
+  if ((name ?? "").toUpperCase().includes("BRUME")) return true;
+  return (uuids ?? []).some((u) => u.toLowerCase().startsWith("0000ffe0"));
+}
 
 type BleClientType = typeof import("@capacitor-community/bluetooth-le")["BleClient"];
 
@@ -293,7 +301,11 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
       .requestLEScan({ allowDuplicates: false }, (result) => {
         const name = result.localName ?? result.device?.name;
         if (!isNamed(name)) return;
-        found.set(result.device.deviceId, { deviceId: result.device.deviceId, name });
+        found.set(result.device.deviceId, {
+          deviceId: result.device.deviceId,
+          name,
+          likely: looksLikeDiffuser(name, result.uuids),
+        });
         emit();
       })
       .catch(() => undefined);
@@ -339,12 +351,13 @@ async function scanForBrume(
       clearTimeout(timer);
       resolve(device);
     };
-    const timer = setTimeout(() => finish(null), 5000);
+    // Long enough for a user to wake the diffuser after tapping "Start".
+    const timer = setTimeout(() => finish(null), 15000);
     void ble
       .requestLEScan({ allowDuplicates: false }, (result) => {
         const name = result.localName ?? result.device?.name ?? "";
-        if (name.toUpperCase().includes("BRUME")) {
-          finish({ deviceId: result.device.deviceId, name });
+        if (looksLikeDiffuser(name, result.uuids)) {
+          finish({ deviceId: result.device.deviceId, name: name || "Brume diffuser", likely: true });
         }
       })
       .catch(() => finish(null));

@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { X } from "lucide-react";
 
 import type { NativeDevice } from "@/lib/native-ble";
 
 /**
- * In-app Bluetooth chooser. Replaces the system dialog, which lists every
- * nameless peripheral around and overlaps its own rows on iOS.
+ * In-app Bluetooth chooser. Likely Brume diffusers are listed first; unrelated
+ * nearby devices (TVs, headphones…) stay hidden unless the user asks for them,
+ * so customers don't pair the wrong device.
  */
 export function DevicePicker({
   devices,
@@ -15,13 +17,30 @@ export function DevicePicker({
   onSelect: (device: NativeDevice) => void;
   onCancel: () => void;
 }) {
+  const [showOthers, setShowOthers] = useState(false);
+  const likely = devices.filter((d) => d.likely);
+  const others = devices.filter((d) => !d.likely);
+
+  const row = (device: NativeDevice) => (
+    <li key={device.deviceId}>
+      <button
+        type="button"
+        onClick={() => onSelect(device)}
+        className="w-full truncate border border-border bg-background px-4 py-4 text-left text-sm"
+      >
+        {device.name}
+      </button>
+    </li>
+  );
+
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background">
       <div className="flex items-start justify-between gap-4 px-6 pt-[calc(env(safe-area-inset-top)+2rem)]">
         <div className="min-w-0">
           <h2 className="font-display text-2xl leading-tight">Searching</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Double tap your diffuser button to enter pairing mode and edit settings.
+            Your diffuser wasn't found yet. Double tap the button on the back of your diffuser to
+            wake it — it appears as "BRUME". Keep your phone close.
           </p>
         </div>
         <button
@@ -35,22 +54,30 @@ export function DevicePicker({
       </div>
 
       <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-6">
-        {devices.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Looking for nearby diffusers…</p>
+        {likely.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Looking for your diffuser…</p>
         ) : (
-          <ul className="space-y-3">
-            {devices.map((device) => (
-              <li key={device.deviceId}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(device)}
-                  className="w-full truncate border border-border bg-background px-4 py-4 text-left text-sm"
-                >
-                  {device.name}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ul className="space-y-3">{likely.map(row)}</ul>
+        )}
+
+        {others.length > 0 && (
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={() => setShowOthers((v) => !v)}
+              className="text-xs text-muted-foreground underline"
+            >
+              {showOthers ? "Hide other devices" : `Other nearby devices (${others.length})`}
+            </button>
+            {showOthers && (
+              <>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  These are usually not diffusers. Only pick one if you're sure.
+                </p>
+                <ul className="mt-3 space-y-3 opacity-70">{others.map(row)}</ul>
+              </>
+            )}
+          </div>
         )}
       </div>
 
