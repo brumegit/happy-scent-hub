@@ -296,16 +296,24 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
   if (choose) {
     const found = new Map<string, NativeDevice>();
     let notify: ((devices: NativeDevice[]) => void) | null = null;
+    let autoPick: ((device: NativeDevice) => void) | null = null;
     const emit = () => notify?.([...found.values()]);
     await ble
       .requestLEScan({ allowDuplicates: false }, (result) => {
         const name = result.localName ?? result.device?.name;
         if (!isNamed(name)) return;
-        found.set(result.device.deviceId, {
+        const device: NativeDevice = {
           deviceId: result.device.deviceId,
           name,
           likely: looksLikeDiffuser(name, result.uuids),
-        });
+        };
+        found.set(result.device.deviceId, device);
+        // A diffuser showing up while the list is open connects on its own,
+        // exactly like the first-connection flow — no tap needed.
+        if (device.likely) {
+          autoPick?.(device);
+          return;
+        }
         emit();
       })
       .catch(() => undefined);
@@ -313,10 +321,15 @@ export async function requestNativeDevice(choose?: DeviceChooser): Promise<Nativ
       const picked = await choose((listener) => {
         notify = listener;
         emit();
+        return (device: NativeDevice) => {
+          notify = null;
+          listener([device]);
+        };
       });
       if (!picked) throw new Error("No device selected.\nDouble-tap the button and try again.");
       return picked;
     } finally {
+      autoPick = null;
       notify = null;
       await ble.stopLEScan().catch(() => undefined);
     }
