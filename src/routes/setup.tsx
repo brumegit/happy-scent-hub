@@ -424,6 +424,20 @@ function Setup() {
       // can interrupt this firmware while it commits the saved settings.
       setResult("success");
       setHasSavedSettings(true);
+      {
+        const blocks = scheduleToBlocks(schedule);
+        track("AppRoutinePushed", {
+          meta: { routine_count: blocks.length, intensity },
+          bird: {
+            context: editing ? "edit" : "first_setup",
+            room: room.trim() || undefined,
+            diffuserId: deviceId ?? undefined,
+            intensity,
+            routineCount: blocks.length,
+            routines: blocks.map((b) => JSON.stringify(b)).join(" | ").slice(0, 2000),
+          },
+        });
+      }
       trace(
         `✔ save succeeded, success shown (${editing ? "edit settings" : "first setup"}, ${
           scheduleToBlocks(schedule).length

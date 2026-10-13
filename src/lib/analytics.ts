@@ -25,6 +25,45 @@ function appPlatform(): string {
   return cap?.getPlatform?.() ?? "web";
 }
 
+// Google Analytics 4 (Firebase-linked) web stream. Empty = GA disabled.
+export const GA_MEASUREMENT_ID = "";
+
+type GtagWindow = { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
+
+export function initGoogleAnalytics(): void {
+  if (typeof window === "undefined" || !GA_MEASUREMENT_ID) return;
+  const w = window as unknown as GtagWindow;
+  if (w.gtag) return;
+  const s = document.createElement("script");
+  s.async = true;
+  s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+  document.head.appendChild(s);
+  w.dataLayer = w.dataLayer || [];
+  w.gtag = function () {
+    // eslint-disable-next-line prefer-rest-params
+    w.dataLayer!.push(arguments);
+  };
+  w.gtag("js", new Date());
+  w.gtag("config", GA_MEASUREMENT_ID, { app_platform: appPlatform() });
+}
+
+function gaTrack(name: string, props: Record<string, unknown>): void {
+  const w = window as unknown as GtagWindow;
+  if (!GA_MEASUREMENT_ID || !w.gtag) return;
+  // GA params must be short scalars; drop long logs and the raw email.
+  const clean: Record<string, string | number | boolean> = {};
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "emailaddress" || k === "log") continue;
+    if (typeof v === "number" || typeof v === "boolean") clean[k] = v;
+    else if (typeof v === "string") clean[k] = v.slice(0, 100);
+  }
+  try {
+    w.gtag("event", name, clean);
+  } catch {
+    // ignore
+  }
+}
+
 const DECLARED_KEY = "brume-email-declared-sent";
 
 function withBird(fn: (bird: BirdLike) => void, attempt = 0): void {
@@ -76,13 +115,15 @@ export function track(
   } catch {
     // ignore
   }
-  birdTrack(name, {
+  const birdProps = {
     ...(email ? { emailaddress: email } : {}),
     page: window.location.pathname,
     app_platform: appPlatform(),
     at: new Date().toISOString(),
     ...opts.bird,
-  });
+  };
+  birdTrack(name, birdProps);
+  gaTrack(name, birdProps);
 }
 
 /** Re-attach a known email on app open so returning users stay enriched. */
