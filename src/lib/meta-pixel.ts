@@ -23,7 +23,7 @@ declare global {
  * Loads the Meta Pixel base script and fires the initial PageView.
  * Safe to call multiple times, only loads once.
  */
-export function initPixel(): void {
+export function initPixel(email?: string | null): void {
   if (typeof window === "undefined" || initialized || !PIXEL_ID) return;
   initialized = true;
 
@@ -49,7 +49,7 @@ export function initPixel(): void {
   })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  window.fbq?.("init", PIXEL_ID);
+  window.fbq?.("init", PIXEL_ID, email ? { em: email } : {});
   window.fbq?.("track", "PageView");
 }
 
@@ -97,4 +97,10 @@ export function generateFbp(): string {
   const ts = Date.now();
   const rand = Math.floor(Math.random() * 1_000_000_000);
   return `fb.1.${ts}.${rand}`;
+}
+
+/** Re-init with advanced matching so later events carry the email. */
+export function setPixelUserEmail(email: string): void {
+  if (typeof window === "undefined" || !window.fbq || !PIXEL_ID) return;
+  window.fbq("init", PIXEL_ID, { em: email.trim().toLowerCase() });
 }

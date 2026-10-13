@@ -46,7 +46,7 @@ import {
   type NativeDevice,
 } from "@/lib/native-ble";
 
-import { trackEvent } from "@/lib/meta";
+import { track } from "@/lib/analytics";
 import { notifySlackAlert } from "@/lib/slack-alerts";
 import { pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp } from "@/lib/scentlife";
@@ -237,7 +237,7 @@ function Setup() {
       setPhase("paired");
 
 
-      trackEvent("Lead", { content_category: "diffuser_pairing" });
+      track("AppPairingStarted", { bird: { deviceId: device.deviceId, deviceName: device.suggestedName } });
     } catch (err) {
       setPhase("idle");
       notifySlackAlert({
@@ -966,9 +966,9 @@ function Setup() {
                     navigate({ to: "/", replace: true });
                     return;
                   }
-                  trackEvent("CompleteRegistration", {
-                    content_name: name.trim() || DEFAULT_NAME,
-                    content_category: "diffuser_setup",
+                  track("AppPairingCompleted", {
+                    meta: { content_name: name.trim() || DEFAULT_NAME },
+                    bird: { diffuserName: name.trim() || DEFAULT_NAME, room: room.trim(), deviceId },
                   });
                   addDiffuser({
                     name: name.trim() || DEFAULT_NAME,

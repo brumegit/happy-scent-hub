@@ -9,6 +9,7 @@
 //   trackEvent("AppOpen", { source: "webview" }, true); // true = custom event
 
 import { trackMetaEvent } from "./meta.functions";
+import { getContactEmail } from "./customer-identity";
 import {
   initPixel,
   pixelTrack,
@@ -16,6 +17,7 @@ import {
   getFbp,
   getFbc,
   generateFbp,
+  setPixelUserEmail,
 } from "./meta-pixel";
 
 let pixelReady = false;
@@ -24,7 +26,13 @@ let pixelReady = false;
 function ensurePixelInit(): void {
   if (pixelReady) return;
   pixelReady = true;
-  initPixel();
+  initPixel(getContactEmail());
+}
+
+/** Attach a declared email to the Pixel (advanced matching, hashed by Meta). */
+export function setMetaUserEmail(email: string): void {
+  ensurePixelInit();
+  setPixelUserEmail(email);
 }
 
 /**
@@ -65,7 +73,7 @@ export function trackEvent(
       eventName,
       eventId,
       customData: data,
-      email: undefined,
+      email: getContactEmail() ?? undefined,
       fbp,
       fbc,
       eventSourceUrl,

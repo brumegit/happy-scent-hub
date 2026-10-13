@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getContactEmail, saveContactEmail } from "@/lib/customer-identity";
 import { identifyHotjar } from "@/lib/hotjar";
+import { declareEmail } from "@/lib/analytics";
 
 export function EmailStep({ onContinue }: { onContinue: () => void }) {
   const [email, setEmail] = useState("");
@@ -25,6 +26,7 @@ export function EmailStep({ onContinue }: { onContinue: () => void }) {
           return;
         }
         identifyHotjar(getContactEmail());
+        declareEmail("email_step");
         onContinue();
       }} noValidate>
         <Input ref={inputRef} id="setup-email" type="email" aria-label="Email address" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="you@example.com" value={email} onChange={(event) => { setEmail(event.target.value); setError(""); }} aria-invalid={Boolean(error)} aria-describedby={error ? "setup-email-error" : undefined} className="mt-3 h-12 text-base" />
