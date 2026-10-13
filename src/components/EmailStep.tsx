@@ -30,7 +30,7 @@ export function EmailStep({ onContinue }: { onContinue: () => void }) {
         <Input ref={inputRef} id="setup-email" type="email" aria-label="Email address" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="you@example.com" value={email} onChange={(event) => { setEmail(event.target.value); setError(""); }} aria-invalid={Boolean(error)} aria-describedby={error ? "setup-email-error" : undefined} className="mt-3 h-12 text-base" />
         {error && <p id="setup-email-error" role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
         <Button type="submit" variant="outline" className="mt-8 h-12 w-full">Continue</Button>
-        <Button type="button" variant="ghost" className="mt-3 h-12 w-full text-muted-foreground" onClick={() => setSkipOpen(true)}>Skip</Button>
+        <Button type="button" variant="ghost" className="mt-2 h-8 w-full text-sm text-muted-foreground" onClick={() => setSkipOpen(true)}>Skip</Button>
       </form>
       <Dialog open={skipOpen} onOpenChange={setSkipOpen}>
         <DialogContent className="w-[88vw] max-w-md border-border bg-background px-8 py-10" onCloseAutoFocus={(event) => {
