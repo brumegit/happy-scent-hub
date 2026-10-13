@@ -10,4 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Keep self-reported onboarding email in the browser-only customer-identity module; use it for support attribution, never to authorize Shopify account or order access.
-- Keep optional email collection in EmailStep before all new-pairing entry points; existing diffuser edits bypass it so settings access stays uninterrupted.
+- Show EmailStep only before a customer's first pairing; customers with saved diffusers and diffuser edits skip it and rely on the guest banner, so returning users are never re-prompted.
+- Route customer-facing error alerts through notifySlackAlert, which also fans out to Bird (full debug trace) and Meta (bare AppError), so every error destination stays in sync.
