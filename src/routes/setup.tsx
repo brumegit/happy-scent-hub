@@ -234,6 +234,10 @@ function Setup() {
       trackEvent("Lead", { content_category: "diffuser_pairing" });
     } catch (err) {
       setPhase("idle");
+      notifySlackAlert({
+        kind: "pairing_failed",
+        message: (err as Error).message || "Pairing failed",
+      });
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
     }
   }
