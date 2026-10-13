@@ -26,7 +26,7 @@ function appPlatform(): string {
 }
 
 // Google Analytics 4 (Firebase-linked) web stream. Empty = GA disabled.
-export const GA_MEASUREMENT_ID = "";
+export const GA_MEASUREMENT_ID = "G-TV4WC1BP9F";
 
 type GtagWindow = { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void };
 
