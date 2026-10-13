@@ -46,7 +46,7 @@ import {
   type NativeDevice,
 } from "@/lib/native-ble";
 
-import { trackEvent } from "@/lib/meta";
+import { track } from "@/lib/analytics";
 import { notifySlackAlert } from "@/lib/slack-alerts";
 import { pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp } from "@/lib/scentlife";
@@ -237,7 +237,7 @@ function Setup() {
       setPhase("paired");
 
 
-      track("AppPairingStarted", { bird: { deviceId: device.deviceId, deviceName: device.name ?? null } });
+      track("AppPairingStarted", { bird: { deviceId: device.deviceId, deviceName: device.suggestedName } });
     } catch (err) {
       setPhase("idle");
       notifySlackAlert({
