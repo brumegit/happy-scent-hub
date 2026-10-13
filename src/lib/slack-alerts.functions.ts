@@ -30,6 +30,8 @@ const payloadSchema = z.object({
   message: z.string().max(2000),
   room: z.string().max(60).optional(),
   context: z.string().max(600).optional(),
+  email: z.string().email().max(200).optional(),
+  hotjarUserId: z.string().max(100).optional(),
 });
 
 export const sendSlackAlert = createServerFn({ method: "POST" })
@@ -40,6 +42,8 @@ export const sendSlackAlert = createServerFn({ method: "POST" })
       `${KIND_LABEL[data.kind] ?? data.kind}`,
       data.message.trim() || "(no detail)",
     ];
+    lines.push(`Customer: ${data.email ?? "unknown (not signed in)"}`);
+    if (data.hotjarUserId) lines.push(`Hotjar user ID: ${data.hotjarUserId}`);
     if (data.room) lines.push(`Room: ${data.room}`);
     if (data.context) lines.push(data.context.trim());
     lines.push(`When: ${new Date().toISOString()} UTC`);
