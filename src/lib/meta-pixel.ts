@@ -49,6 +49,7 @@ export function initPixel(email?: string | null): void {
   })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
+  if (email) matchedEmail = email.trim().toLowerCase();
   window.fbq?.("init", PIXEL_ID, email ? { em: email } : {});
   window.fbq?.("track", "PageView");
 }
@@ -99,8 +100,17 @@ export function generateFbp(): string {
   return `fb.1.${ts}.${rand}`;
 }
 
-/** Re-init with advanced matching so later events carry the email. */
+let matchedEmail: string | null = null;
+
+/**
+ * Advanced matching for the browser pixel. Re-calling fbq("init") with the
+ * same pixel ID triggers Meta's "Duplicate Pixel ID" warning, so we only do
+ * it once per distinct email. Server-side events always carry the email.
+ */
 export function setPixelUserEmail(email: string): void {
   if (typeof window === "undefined" || !window.fbq || !PIXEL_ID) return;
-  window.fbq("init", PIXEL_ID, { em: email.trim().toLowerCase() });
+  const em = email.trim().toLowerCase();
+  if (!em || em === matchedEmail) return;
+  matchedEmail = em;
+  window.fbq("init", PIXEL_ID, { em });
 }
