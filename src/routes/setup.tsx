@@ -1013,8 +1013,8 @@ function Setup() {
           </div>
         </div>
       )}
-      {!editing && phase !== "email" && (
-        <EmailReminderBanner stacked={beepBarVisible} />
+      {bannerVisible && (
+        <EmailReminderBanner stacked={beepBarVisible} onEmailSaved={() => setHasContactEmail(true)} />
       )}
       {picker && (
         <DevicePicker
