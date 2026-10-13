@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as AuthShopifyCallbackRouteImport } from './routes/auth/shopify-callback'
 import { Route as ProductHandleRouteImport } from './routes/product.$handle'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
@@ -36,6 +37,11 @@ const ShopRoute = ShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthShopifyCallbackRoute = AuthShopifyCallbackRouteImport.update({
+  id: '/auth/shopify-callback',
+  path: '/auth/shopify-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductHandleRoute = ProductHandleRouteImport.update({
   id: '/product/$handle',
   path: '/product/$handle',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
+  '/auth/shopify-callback': typeof AuthShopifyCallbackRoute
   '/product/$handle': typeof ProductHandleRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
+  '/auth/shopify-callback': typeof AuthShopifyCallbackRoute
   '/product/$handle': typeof ProductHandleRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/shop': typeof ShopRoute
+  '/auth/shopify-callback': typeof AuthShopifyCallbackRoute
   '/product/$handle': typeof ProductHandleRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/setup'
     | '/shop'
+    | '/auth/shopify-callback'
     | '/product/$handle'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/setup'
     | '/shop'
+    | '/auth/shopify-callback'
     | '/product/$handle'
     | '/lovable/email/transactional/preview'
   id:
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/setup'
     | '/shop'
+    | '/auth/shopify-callback'
     | '/product/$handle'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SetupRoute: typeof SetupRoute
   ShopRoute: typeof ShopRoute
+  AuthShopifyCallbackRoute: typeof AuthShopifyCallbackRoute
   ProductHandleRoute: typeof ProductHandleRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
@@ -139,6 +152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/shopify-callback': {
+      id: '/auth/shopify-callback'
+      path: '/auth/shopify-callback'
+      fullPath: '/auth/shopify-callback'
+      preLoaderRoute: typeof AuthShopifyCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$handle': {
       id: '/product/$handle'
       path: '/product/$handle'
@@ -161,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SetupRoute: SetupRoute,
   ShopRoute: ShopRoute,
+  AuthShopifyCallbackRoute: AuthShopifyCallbackRoute,
   ProductHandleRoute: ProductHandleRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
