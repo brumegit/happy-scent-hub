@@ -17,7 +17,7 @@ import { DebugLogSheet } from "@/components/DebugLogSheet";
 import { InteractionTracer } from "@/components/InteractionTracer";
 import { useCartSync } from "@/hooks/useCartSync";
 import { initMetaPixel } from "@/lib/meta";
-import { track, identifyKnownUser } from "@/lib/analytics";
+import { track, identifyKnownUser, initGoogleAnalytics } from "@/lib/analytics";
 import { initHotjar, identifyHotjar } from "@/lib/hotjar";
 import { getContactEmail } from "@/lib/customer-identity";
 
@@ -145,6 +145,7 @@ function RootComponent() {
     // Initialise the Meta Pixel (loads base code + fires initial PageView).
     initMetaPixel();
     initHotjar();
+    initGoogleAnalytics();
     identifyHotjar(getContactEmail());
     identifyKnownUser();
     // Fire AppOpen once per browser session for retargeting and install attribution.
