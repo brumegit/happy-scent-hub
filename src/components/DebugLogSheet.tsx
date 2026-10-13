@@ -3,6 +3,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { emailDebugLog } from "@/lib/emailLog";
 import { setDebugEnabled, useDebugMode } from "@/hooks/useDebugMode";
 import { usePushDebugStore } from "@/stores/pushDebugStore";
+import { reportErrorEvent } from "@/lib/error-events";
 
 /** Opens the full Bluetooth trace from controls floating below the app header. */
 export function DebugLogSheet() {
@@ -41,6 +42,16 @@ export function DebugLogSheet() {
   };
 
   const emailSupport = () => emailDebugLog();
+
+  const sendTestError = () => {
+    reportErrorEvent({
+      kind: "test_error",
+      message: "Test error triggered from the debug log sheet.",
+      context: "debug_log_sheet",
+    });
+    setCopied("Test error sent");
+    setTimeout(() => setCopied(null), 2500);
+  };
 
   return (
     <>
@@ -87,6 +98,13 @@ export function DebugLogSheet() {
                 className="rounded-[5px] border border-gold px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] text-gold"
               >
                 Email log
+              </button>
+              <button
+                type="button"
+                onClick={sendTestError}
+                className="rounded-[5px] border border-destructive px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] text-destructive"
+              >
+                Test error
               </button>
               {typeof navigator !== "undefined" && "share" in navigator && (
                 <button
