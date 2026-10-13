@@ -111,10 +111,37 @@ function PrivacyPage() {
 
         {body && (
           <article
-            className="policy-body mt-8 pb-16 text-sm leading-relaxed text-muted-foreground"
+            className="policy-body mt-8 text-sm leading-relaxed text-muted-foreground"
             dangerouslySetInnerHTML={{ __html: body }}
           />
         )}
+
+        <section className="mt-10 pb-16 text-sm leading-relaxed text-muted-foreground">
+          <h2 className="font-display text-xl text-foreground">
+            Analytics &amp; session recording
+          </h2>
+          <p className="mt-3">
+            The Brume app uses Hotjar to understand how the app is used and to
+            fix problems faster. Hotjar may record your interactions with the
+            app (taps, scrolling and pages visited) and technical details such
+            as device type and screen size. Sensitive fields are masked and
+            never recorded. Recordings are linked to your email address only
+            when you are signed in, so our team can find your session when you
+            report an issue.
+          </p>
+          <p className="mt-3">
+            You can opt out of Hotjar recording at any time:{" "}
+            <a
+              href="https://www.hotjar.com/legal/compliance/opt-out"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline underline-offset-4"
+            >
+              hotjar.com/legal/compliance/opt-out
+            </a>
+            .
+          </p>
+        </section>
       </div>
     </div>
   );

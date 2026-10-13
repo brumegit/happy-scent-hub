@@ -2,7 +2,7 @@
 // The Hotjar user id is attached to Slack alerts so the team can find the
 // matching recording.
 
-export const HOTJAR_SITE_ID = ""; // e.g. "1234567"
+export const HOTJAR_SITE_ID = "6794730";
 
 type HjFn = ((...args: unknown[]) => void) & {
   q?: unknown[];
