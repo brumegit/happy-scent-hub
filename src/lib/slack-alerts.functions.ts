@@ -9,7 +9,8 @@ export type SlackAlertKind =
   | "pairing_failed"
   | "connection_lost"
   | "bluetooth_unavailable"
-  | "support_request";
+  | "support_request"
+  | "test_error";
 
 const KIND_LABEL: Record<SlackAlertKind, string> = {
   push_failed: "Settings push failed",
@@ -17,6 +18,7 @@ const KIND_LABEL: Record<SlackAlertKind, string> = {
   connection_lost: "Bluetooth connection lost",
   bluetooth_unavailable: "Bluetooth unavailable",
   support_request: "Customer asked for help",
+  test_error: "Test error (debug mode)",
 };
 
 const payloadSchema = z.object({
@@ -26,6 +28,7 @@ const payloadSchema = z.object({
     "connection_lost",
     "bluetooth_unavailable",
     "support_request",
+    "test_error",
   ]),
   message: z.string().max(2000),
   room: z.string().max(60).optional(),
