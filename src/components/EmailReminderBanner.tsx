@@ -8,7 +8,7 @@ import { identifyHotjar } from "@/lib/hotjar";
 // Persistent nudge for customers who skipped the email step. Stays pinned to
 // the bottom of setup until they add an email (red, hard to ignore, easy to
 // act on by reopening the email entry sheet).
-export function EmailReminderBanner({ stacked }: { stacked: boolean }) {
+export function EmailReminderBanner({ stacked, onEmailSaved }: { stacked: boolean; onEmailSaved?: () => void }) {
   const [hasEmail, setHasEmail] = useState(true);
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -29,10 +29,10 @@ export function EmailReminderBanner({ stacked }: { stacked: boolean }) {
           <p className="text-sm text-white">You’re in guest mode.</p>
           <Button
             variant="outline"
-            className="h-10 shrink-0 border-white bg-transparent px-4 text-sm text-white hover:bg-transparent"
+            className="h-10 shrink-0 border-white bg-transparent px-4 text-sm text-white hover:bg-transparent hover:text-white"
             onClick={() => { setEmail(getContactEmail() ?? ""); setOpen(true); }}
           >
-            Connect
+            Add email
           </Button>
         </div>
       </div>
@@ -52,6 +52,7 @@ export function EmailReminderBanner({ stacked }: { stacked: boolean }) {
             identifyHotjar(getContactEmail());
             setHasEmail(true);
             setOpen(false);
+            onEmailSaved?.();
           }} noValidate>
             <Input ref={inputRef} type="email" aria-label="Email address" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="you@example.com" value={email} onChange={(event) => { setEmail(event.target.value); setError(""); }} aria-invalid={Boolean(error)} aria-describedby={error ? "banner-email-error" : undefined} className="mt-3 h-12 text-base" />
             {error && <p id="banner-email-error" role="alert" className="mt-3 text-sm text-destructive">{error}</p>}

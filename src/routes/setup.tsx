@@ -50,6 +50,7 @@ import { trackEvent } from "@/lib/meta";
 import { notifySlackAlert } from "@/lib/slack-alerts";
 import { pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp } from "@/lib/scentlife";
+import { getContactEmail } from "@/lib/customer-identity";
 import {
   INTENSITIES,
   PAUSE_SECONDS,
@@ -168,6 +169,10 @@ function Setup() {
   // Keep the sound check visible after a save without predicting a beep count.
   const [hasSavedSettings, setHasSavedSettings] = useState(false);
   const [beepDialogOpen, setBeepDialogOpen] = useState(false);
+  // Tracks the self-reported contact email so the guest banner can reserve
+  // space (and hide) as soon as an email exists.
+  const [hasContactEmail, setHasContactEmail] = useState(true);
+  useEffect(() => { setHasContactEmail(Boolean(getContactEmail())); }, [phase]);
   const beepContinueRef = useRef<(() => void) | null>(null);
   const [connectionLost, setConnectionLost] = useState(false);
   // React effect cleanup runs after a click handler returns. This ref closes
@@ -468,14 +473,15 @@ function Setup() {
     go?.();
   };
 
+  const bannerVisible = !editing && phase !== "email" && !hasContactEmail;
+  // Reserves room for the guest banner (about 5rem) and the beep bar (about
+  // 5.5rem) so the red banner never covers a button.
+  const bottomReserve = 2 + (bannerVisible ? 5 : 0) + (beepBarVisible ? 5.5 : 0);
+
   return (
     <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
       <div
-        className={`mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 ${
-          beepBarVisible
-            ? "pb-[calc(env(safe-area-inset-bottom)+7.5rem)]"
-            : "pb-[calc(env(safe-area-inset-bottom)+2rem)]"
-        }`}
+        className={`mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+${bottomReserve}rem)]`}
       >
         <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
@@ -1007,8 +1013,8 @@ function Setup() {
           </div>
         </div>
       )}
-      {!editing && phase !== "email" && (
-        <EmailReminderBanner stacked={beepBarVisible} />
+      {bannerVisible && (
+        <EmailReminderBanner stacked={beepBarVisible} onEmailSaved={() => setHasContactEmail(true)} />
       )}
       {picker && (
         <DevicePicker
