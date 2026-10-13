@@ -362,12 +362,24 @@ function Setup() {
       const live = await checkConnection(deviceId).catch(() => false);
       checking = false;
       if (cancelled || savingRef.current || readingRef.current || live) return;
+      notifySlackAlert({
+        kind: "connection_lost",
+        message: "Diffuser link dropped while the customer was editing settings",
+        room: room.trim() || undefined,
+        context: editing ? "Edit settings" : "First setup",
+      });
       setConnectionLost(true);
       setDeviceId(null);
       setPhase("idle");
     };
     const unsubscribe = subscribeConnection((changedId, live) => {
       if (changedId !== deviceId || live || cancelled || savingRef.current) return;
+      notifySlackAlert({
+        kind: "connection_lost",
+        message: "Diffuser link dropped while the customer was editing settings",
+        room: room.trim() || undefined,
+        context: editing ? "Edit settings" : "First setup",
+      });
       setConnectionLost(true);
       setDeviceId(null);
       setPhase("idle");
