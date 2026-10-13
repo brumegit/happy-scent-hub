@@ -9,8 +9,8 @@ import type { SlackAlertKind } from "./slack-alerts.functions";
 type AlertPayload = {
   kind: SlackAlertKind;
   message: string;
-  room?: string;
-  context?: string;
+  room?: string | undefined;
+  context?: string | undefined;
 };
 
 const DEDUPE_MS = 60_000;
