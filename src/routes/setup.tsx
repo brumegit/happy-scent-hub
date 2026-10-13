@@ -995,6 +995,14 @@ function Setup() {
               <a
                 href="sms:+18882132088"
                 className="text-muted-foreground underline underline-offset-4"
+                onClick={() =>
+                  notifySlackAlert({
+                    kind: "support_request",
+                    message: "Customer tapped Text us for help (no beeps after saving)",
+                    room: room.trim() || undefined,
+                    context: editing ? "Edit settings" : "First setup",
+                  })
+                }
               >
                 Text us for help: +1 888-213-2088
               </a>
