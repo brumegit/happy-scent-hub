@@ -1038,7 +1038,18 @@ function Setup() {
           <p className="mt-5 text-center text-sm text-muted-foreground">
             No beeps?
             <br />
-            <a href="sms:+18882132088" className="text-muted-foreground underline-offset-4">
+            <a
+              href="sms:+18882132088"
+              className="text-muted-foreground underline-offset-4"
+              onClick={() =>
+                notifySlackAlert({
+                  kind: "support_request",
+                  message: "Customer tapped Text us for help (no beeps after saving)",
+                  room: room.trim() || undefined,
+                  context: editing ? "Edit settings" : "First setup",
+                })
+              }
+            >
               Text us for help: <span className="underline">+1 888-213-2088</span>
             </a>
           </p>
