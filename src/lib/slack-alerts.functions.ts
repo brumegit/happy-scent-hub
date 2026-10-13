@@ -42,7 +42,7 @@ export const sendSlackAlert = createServerFn({ method: "POST" })
     ];
     if (data.room) lines.push(`Room: ${data.room}`);
     if (data.context) lines.push(data.context.trim());
-    lines.push(`Page: ${new Date().toISOString()} UTC`);
+    lines.push(`When: ${new Date().toISOString()} UTC`);
     await postSlackAlert(lines.join("\n"));
     return { ok: true };
   });
