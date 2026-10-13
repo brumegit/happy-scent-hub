@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { normalizeContactEmail } from "./customer-identity";
 
 describe("optional contact email", () => {

@@ -5,7 +5,7 @@
 
 import { sendSlackAlert } from "./slack-alerts.functions";
 import type { SlackAlertKind } from "./slack-alerts.functions";
-import { getShopifySession } from "./shopify-auth";
+import { getContactEmail } from "./customer-identity";
 import { getHotjarUserId } from "./hotjar";
 
 type AlertPayload = {
@@ -30,7 +30,7 @@ export function notifySlackAlert(payload: AlertPayload): void {
       if (now - t > DEDUPE_MS) recent.delete(k);
     }
   }
-  const email = getShopifySession()?.email ?? undefined;
+  const email = getContactEmail() ?? undefined;
   const hotjarUserId = getHotjarUserId() ?? undefined;
   void sendSlackAlert({ data: { ...payload, email, hotjarUserId } }).catch(() => {
     // Silent: alerting must never interrupt the customer's flow.

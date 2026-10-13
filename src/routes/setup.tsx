@@ -7,6 +7,7 @@ import { ArrowLeft, Bluetooth, CalendarClock, Star } from "lucide-react";
 // WebView cannot decode (video stayed blank on Android).
 import pairingVideo from "@/assets/bluetooth-pairing.mp4.asset.json";
 import { AppHeader } from "@/components/AppHeader";
+import { EmailStep } from "@/components/EmailStep";
 import { RoomSuggestions } from "@/components/RoomSuggestions";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
@@ -87,7 +88,7 @@ export const Route = createFileRoute("/setup")({
 const DEFAULT_NAME = "The 24/7 Room Diffuser";
 
 
-type Phase = "intro" | "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
+type Phase = "email" | "intro" | "idle" | "pairing" | "paired" | "name" | "intensity" | "pushing" | "schedule";
 
 const STEPS = ["Connect", "Intensity", "Routine"] as const;
 
@@ -150,7 +151,7 @@ function Setup() {
   // Editing an existing diffuser: skip pairing and naming, start on intensity.
   const editing = useDiffuserStore((s) => s.diffusers.find((d) => d.id === edit) ?? null);
 
-  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "intro");
+  const [phase, setPhase] = useState<Phase>(editing ? "intensity" : "email");
   const [fading, setFading] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(editing?.device_id ?? null);
   // The app-side device name is fixed; only the room is user provided.
@@ -200,7 +201,6 @@ function Setup() {
     return () => clearInterval(timer);
   }, [phase, btOff, refreshRequirements]);
 
-  const autostarted = useRef(false);
   // In-app Bluetooth chooser (named devices only).
   const [picker, setPicker] = useState<NativeDevice[] | null>(null);
   const pickerResolve = useRef<((device: NativeDevice | null) => void) | null>(null);
@@ -289,15 +289,7 @@ function Setup() {
   }
 
 
-  // Arriving with ?start=true skips the onboarding and lands straight on the
-  // pairing screen. Pairing itself is always started by the user.
-  useEffect(() => {
-    if (start && !autostarted.current) {
-      autostarted.current = true;
-      setPhase("intro" === phase ? "idle" : phase);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start]);
+  // Email always precedes new pairing, including the quick-start entry point.
 
 
   // Champagne "OK" holds, then fades over 3 seconds before naming.
@@ -488,7 +480,7 @@ function Setup() {
           <AppHeader />
           {editing ? (
             <h1 className="mt-6 font-display text-3xl">{editing.room}'s settings</h1>
-          ) : phase === "intro" ? null : (
+          ) : phase === "intro" || phase === "email" ? null : (
             <Steps phase={phase} />
           )}
         </div>
@@ -509,6 +501,10 @@ function Setup() {
           }`}
         >
 
+
+        {phase === "email" && (
+          <EmailStep onContinue={() => setPhase(start ? "idle" : "intro")} />
+        )}
 
         {phase === "intro" && (
           <section className="flex flex-1 flex-col justify-center">
