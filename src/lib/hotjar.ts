@@ -41,7 +41,16 @@ export function identifyHotjar(email: string | null): void {
 export function getHotjarUserId(): string | null {
   try {
     const id = window.hj?.globals?.get("userId");
-    return typeof id === "string" && id ? id : null;
+    if (typeof id === "string" && id) return id;
+  } catch {
+    /* fall through to cookie */
+  }
+  // Hotjar stores the visitor id in _hjSessionUser_<siteId> (base64 JSON with "id").
+  try {
+    const m = document.cookie.match(new RegExp(`_hjSessionUser_${HOTJAR_SITE_ID}=([^;]+)`));
+    if (!m?.[1]) return null;
+    const parsed = JSON.parse(atob(decodeURIComponent(m[1]))) as { id?: unknown };
+    return typeof parsed.id === "string" && parsed.id ? parsed.id : null;
   } catch {
     return null;
   }

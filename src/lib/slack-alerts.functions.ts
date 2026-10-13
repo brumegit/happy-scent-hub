@@ -35,6 +35,7 @@ const payloadSchema = z.object({
   context: z.string().max(600).optional(),
   email: z.string().email().max(200).optional(),
   hotjarUserId: z.string().max(100).optional(),
+  log: z.string().max(3000).optional(),
 });
 
 export const sendSlackAlert = createServerFn({ method: "POST" })
@@ -46,10 +47,11 @@ export const sendSlackAlert = createServerFn({ method: "POST" })
       data.message.trim() || "(no detail)",
     ];
     lines.push(`Customer: ${data.email ?? "unknown (not signed in)"}`);
-    if (data.hotjarUserId) lines.push(`Hotjar user ID: ${data.hotjarUserId}`);
+    lines.push(`Hotjar user ID: ${data.hotjarUserId ?? "not available"}`);
     if (data.room) lines.push(`Room: ${data.room}`);
     if (data.context) lines.push(data.context.trim());
     lines.push(`When: ${new Date().toISOString()} UTC`);
+    if (data.log) lines.push("Last log lines:\n```" + data.log.replace(/```/g, "'''") + "```");
     await postSlackAlert(lines.join("\n"));
     return { ok: true };
   });

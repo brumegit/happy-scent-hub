@@ -8,6 +8,7 @@ import type { SlackAlertKind } from "./slack-alerts.functions";
 import { getContactEmail } from "./customer-identity";
 import { getHotjarUserId } from "./hotjar";
 import { reportErrorEvent } from "./error-events";
+import { fullTrace } from "./ble-log";
 
 type AlertPayload = {
   kind: SlackAlertKind;
@@ -34,7 +35,8 @@ export function notifySlackAlert(payload: AlertPayload): void {
   }
   const email = getContactEmail() ?? undefined;
   const hotjarUserId = getHotjarUserId() ?? undefined;
-  void sendSlackAlert({ data: { ...payload, email, hotjarUserId } }).catch(() => {
+  const log = fullTrace().slice(-25).join("\n").slice(-2500) || undefined;
+  void sendSlackAlert({ data: { ...payload, email, hotjarUserId, log } }).catch(() => {
     // Silent: alerting must never interrupt the customer's flow.
   });
 }
