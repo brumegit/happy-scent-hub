@@ -19,6 +19,12 @@ type BirdLike = {
   };
 };
 
+/** "ios" | "android" in the store apps, "web" in a browser. */
+function appPlatform(): string {
+  const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+  return cap?.getPlatform?.() ?? "web";
+}
+
 const DECLARED_KEY = "brume-email-declared-sent";
 
 function withBird(fn: (bird: BirdLike) => void, attempt = 0): void {
@@ -66,13 +72,14 @@ export function track(
   if (typeof window === "undefined") return;
   const email = getContactEmail();
   try {
-    trackEvent(name, opts.meta, true);
+    trackEvent(name, { app_platform: appPlatform(), ...opts.meta }, true);
   } catch {
     // ignore
   }
   birdTrack(name, {
     ...(email ? { emailaddress: email } : {}),
     page: window.location.pathname,
+    app_platform: appPlatform(),
     at: new Date().toISOString(),
     ...opts.bird,
   });
@@ -88,20 +95,23 @@ export function identifyKnownUser(): void {
 
 /**
  * Call right after an email is saved. Identifies the user on both platforms,
- * then fires AppEmailDeclared once per user (per device storage).
+ * then fires AppEmailDeclared every time so Bird keeps the latest email.
+ * `first_declaration` is true only the first time on this device, for the declared rate.
  */
 export function declareEmail(source: string): void {
   const email = getContactEmail();
   if (!email) return;
   setMetaUserEmail(email);
   birdIdentify(email);
-  let alreadySent = false;
+  let first = true;
   try {
-    alreadySent = localStorage.getItem(DECLARED_KEY) === email;
+    first = !localStorage.getItem(DECLARED_KEY);
     localStorage.setItem(DECLARED_KEY, email);
   } catch {
     // ignore
   }
-  if (alreadySent) return;
-  track("AppEmailDeclared", { bird: { source } });
+  track("AppEmailDeclared", {
+    meta: { first_declaration: first },
+    bird: { source, first_declaration: first },
+  });
 }
