@@ -45,6 +45,7 @@ import {
 } from "@/lib/native-ble";
 
 import { trackEvent } from "@/lib/meta";
+import { notifySlackAlert } from "@/lib/slack-alerts";
 import { pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp } from "@/lib/scentlife";
 import {
