@@ -33,6 +33,7 @@ import {
   pairDiffuser,
 } from "@/lib/bluetooth";
 import { pushSettings } from "@/lib/push";
+import { notifySlackAlert } from "@/lib/slack-alerts";
 import {
   INTENSITIES,
   blocksFromSchedule,
@@ -156,7 +157,18 @@ function DiffuserCard({ diffuser }: { diffuser: Diffuser }) {
   async function bluetoothReady() {
     const req = await refreshBluetooth();
     if (req.bluetoothOff || req.permissionDenied || req.locationOff) {
-      setError(bluetoothRequirementPrompt(req).message);
+      const prompt = bluetoothRequirementPrompt(req);
+      setError(prompt.message);
+      notifySlackAlert({
+        kind: "bluetooth_unavailable",
+        message: prompt.message,
+        room: roomDraft.trim() || undefined,
+        context: req.bluetoothOff
+          ? "Bluetooth radio off"
+          : req.permissionDenied
+            ? "Bluetooth permission denied"
+            : "Location services off",
+      });
       return false;
     }
     setError(null);

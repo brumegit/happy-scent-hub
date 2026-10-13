@@ -45,6 +45,7 @@ import {
 } from "@/lib/native-ble";
 
 import { trackEvent } from "@/lib/meta";
+import { notifySlackAlert } from "@/lib/slack-alerts";
 import { pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp } from "@/lib/scentlife";
 import {
@@ -233,6 +234,10 @@ function Setup() {
       trackEvent("Lead", { content_category: "diffuser_pairing" });
     } catch (err) {
       setPhase("idle");
+      notifySlackAlert({
+        kind: "pairing_failed",
+        message: (err as Error).message || "Pairing failed",
+      });
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
     }
   }
@@ -271,6 +276,11 @@ function Setup() {
       await afterPaired(device);
     } catch (err) {
       setPhase("idle");
+      notifySlackAlert({
+        kind: "pairing_failed",
+        message: (err as Error).message || "Pairing failed",
+        room: room.trim() || undefined,
+      });
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
     } finally {
       pickerResolve.current = null;
@@ -352,12 +362,24 @@ function Setup() {
       const live = await checkConnection(deviceId).catch(() => false);
       checking = false;
       if (cancelled || savingRef.current || readingRef.current || live) return;
+      notifySlackAlert({
+        kind: "connection_lost",
+        message: "Diffuser link dropped while the customer was editing settings",
+        room: room.trim() || undefined,
+        context: editing ? "Edit settings" : "First setup",
+      });
       setConnectionLost(true);
       setDeviceId(null);
       setPhase("idle");
     };
     const unsubscribe = subscribeConnection((changedId, live) => {
       if (changedId !== deviceId || live || cancelled || savingRef.current) return;
+      notifySlackAlert({
+        kind: "connection_lost",
+        message: "Diffuser link dropped while the customer was editing settings",
+        room: room.trim() || undefined,
+        context: editing ? "Edit settings" : "First setup",
+      });
       setConnectionLost(true);
       setDeviceId(null);
       setPhase("idle");
@@ -417,6 +439,14 @@ function Setup() {
     } catch (err) {
       const message = (err as Error).message || "Could not reach the diffuser.";
       setError(message);
+      notifySlackAlert({
+        kind: "push_failed",
+        message,
+        room: room.trim() || undefined,
+        context: editing
+          ? "Edit settings"
+          : "First setup",
+      });
       trace(`✖ save failed, user sees: "${message}"`);
       setResult("error");
       setTimeout(() => {
@@ -965,6 +995,14 @@ function Setup() {
               <a
                 href="sms:+18882132088"
                 className="text-muted-foreground underline underline-offset-4"
+                onClick={() =>
+                  notifySlackAlert({
+                    kind: "support_request",
+                    message: "Customer tapped Text us for help (no beeps after saving)",
+                    room: room.trim() || undefined,
+                    context: editing ? "Edit settings" : "First setup",
+                  })
+                }
               >
                 Text us for help: +1 888-213-2088
               </a>
@@ -1000,7 +1038,18 @@ function Setup() {
           <p className="mt-5 text-center text-sm text-muted-foreground">
             No beeps?
             <br />
-            <a href="sms:+18882132088" className="text-muted-foreground underline-offset-4">
+            <a
+              href="sms:+18882132088"
+              className="text-muted-foreground underline-offset-4"
+              onClick={() =>
+                notifySlackAlert({
+                  kind: "support_request",
+                  message: "Customer tapped Text us for help (no beeps after saving)",
+                  room: room.trim() || undefined,
+                  context: editing ? "Edit settings" : "First setup",
+                })
+              }
+            >
               Text us for help: <span className="underline">+1 888-213-2088</span>
             </a>
           </p>
