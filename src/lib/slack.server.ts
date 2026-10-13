@@ -6,7 +6,9 @@ export const SLACK_ALERT_CHANNEL = "C0C0JDP07TR"; // #app
 
 export async function postSlackAlert(text: string): Promise<boolean> {
   const lovableApiKey = process.env["LOVABLE_API_KEY"];
-  const slackApiKey = process.env["SLACK_API_KEY"];
+  // Prefer the bot connection (SLACK_API_KEY_1) so alerts post as the app,
+  // not as the workspace user who linked the personal connection.
+  const slackApiKey = process.env["SLACK_API_KEY_1"] ?? process.env["SLACK_API_KEY"];
   if (!lovableApiKey || !slackApiKey) {
     console.error("[Slack alerts] missing connector credentials, alert not sent");
     return false;
