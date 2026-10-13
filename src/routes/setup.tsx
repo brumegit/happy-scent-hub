@@ -439,6 +439,14 @@ function Setup() {
     } catch (err) {
       const message = (err as Error).message || "Could not reach the diffuser.";
       setError(message);
+      notifySlackAlert({
+        kind: "push_failed",
+        message,
+        room: room.trim() || undefined,
+        context: editing
+          ? "Edit settings"
+          : "First setup",
+      });
       trace(`✖ save failed, user sees: "${message}"`);
       setResult("error");
       setTimeout(() => {
