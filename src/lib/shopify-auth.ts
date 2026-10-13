@@ -102,6 +102,7 @@ export async function signInWithShopify(): Promise<void> {
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const part = token.split(".")[1];
+    if (!part) return null;
     return JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
   } catch {
     return null;
@@ -138,7 +139,7 @@ export async function completeShopifySignIn(code: string, state: string): Promis
   const idToken: string | null = tokens.id_token ?? null;
   if (idToken && nonce) {
     const payload = decodeJwtPayload(idToken);
-    if (payload?.nonce && payload.nonce !== nonce) {
+    if (payload?.["nonce"] && payload["nonce"] !== nonce) {
       throw new Error("The sign-in could not be verified. Please try again.");
     }
   }
