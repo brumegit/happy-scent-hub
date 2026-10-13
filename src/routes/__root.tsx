@@ -17,6 +17,8 @@ import { DebugLogSheet } from "@/components/DebugLogSheet";
 import { InteractionTracer } from "@/components/InteractionTracer";
 import { useCartSync } from "@/hooks/useCartSync";
 import { initMetaPixel, trackEvent } from "@/lib/meta";
+import { initHotjar, identifyHotjar } from "@/lib/hotjar";
+import { getShopifySession } from "@/lib/shopify-auth";
 
 
 function NotFoundComponent() {
@@ -141,6 +143,8 @@ function RootComponent() {
   useEffect(() => {
     // Initialise the Meta Pixel (loads base code + fires initial PageView).
     initMetaPixel();
+    initHotjar();
+    identifyHotjar(getShopifySession()?.email ?? null);
     // Fire AppOpen once per browser session for retargeting and install attribution.
     if (!sessionStorage.getItem("meta-app-open")) {
       sessionStorage.setItem("meta-app-open", "1");
