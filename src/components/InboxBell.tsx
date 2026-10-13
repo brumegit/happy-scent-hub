@@ -5,7 +5,7 @@ import scentImage from "@/assets/diffuser-hero.jpg";
 
 // App inbox: Bird in-app inbox messages (last 3), each = image + short text + deep link.
 // Guests always get an "add your email" message so the red (1) shows.
-export type InboxMessage = { id: string; image: string; text: string; link: string };
+export type InboxMessage = { id: string; image: string; title: string; text: string; link: string };
 
 const GUEST_ID = "guest-add-email";
 
@@ -17,11 +17,12 @@ function normalize(raw: unknown): InboxMessage | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as any;
   const c: any = r.content ?? r.message ?? r;
-  const text = c.text ?? c.body ?? c.title ?? c.subtitle;
+  const text = c.text ?? c.body ?? c.subtitle;
   if (!text) return null;
   return {
     id: String(r.id ?? r.messageId ?? text),
     image: c.image ?? c.imageUrl ?? c.media?.url ?? c.icon ?? "",
+    title: String(c.title ?? c.heading ?? ""),
     text: String(text),
     link: c.link ?? c.deepLink ?? c.url ?? c.action?.url ?? c.actions?.[0]?.url ?? "/",
   };
