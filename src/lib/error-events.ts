@@ -22,14 +22,14 @@ export function reportErrorEvent(input: {
     track("AppError", { bird: {
       kind: input.kind,
       message: input.message,
-      room: input.room ?? null,
-      context: input.context ?? null,
+      room: input.room ?? "",
+      context: input.context ?? "",
       page: window.location.pathname + window.location.search,
       userAgent: navigator.userAgent,
-      linkError: debug.linkError,
-      pushSteps: steps,
-      pushStartedAt: debug.startedAt,
-      log: fullTrace().slice(-200).join("\n"),
+      linkError: debug.linkError ? String(debug.linkError) : "",
+      pushSteps: JSON.stringify(steps),
+      pushStartedAt: debug.startedAt ? String(debug.startedAt) : "",
+      log: fullTrace().slice(-200).join("\n").slice(-30000),
     } });
   } catch {
     // ignore
