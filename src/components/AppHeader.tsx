@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { useHydrated } from "@/hooks/useHydrated";
-import { getShopifySession, signInWithShopify, signOutShopify } from "@/lib/shopify-auth";
+import { getShopifySession, signOutShopify } from "@/lib/shopify-auth";
 
 export function AppHeader() {
   const hydrated = useHydrated();
@@ -25,8 +25,7 @@ export function AppHeader() {
         <Link to="/shop" className="text-foreground hover:underline underline-offset-4">
           Shop
         </Link>
-        {hydrated &&
-          (session ? (
+        {hydrated && session && (
             <button
               type="button"
               className="text-gold hover:underline underline-offset-4"
@@ -38,15 +37,7 @@ export function AppHeader() {
             >
               {displayName}
             </button>
-          ) : (
-            <button
-              type="button"
-              className="text-foreground hover:underline underline-offset-4"
-              onClick={() => void signInWithShopify()}
-            >
-              Sign in
-            </button>
-          ))}
+          )}
       </nav>
     </header>
   );
