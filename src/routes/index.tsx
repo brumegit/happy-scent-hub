@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 
 import { AppHeader } from "@/components/AppHeader";
+import { EmailReminderBanner } from "@/components/EmailReminderBanner";
+import { getContactEmail } from "@/lib/customer-identity";
 
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
@@ -72,6 +74,9 @@ function Home() {
   const navigate = useNavigate();
   const diffusers = useDiffuserStore((s) => s.diffusers);
   const hydrated = useHydrated();
+  const [hasContactEmail, setHasContactEmail] = useState(true);
+  useEffect(() => { setHasContactEmail(Boolean(getContactEmail())); }, []);
+  const bannerVisible = hydrated && !hasContactEmail;
 
   const empty = hydrated && diffusers.length === 0;
 
@@ -82,7 +87,7 @@ function Home() {
 
   return (
     <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
-      <div className="relative mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+      <div className={`relative mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-11 ${bannerVisible ? "pb-[calc(env(safe-area-inset-bottom)+6rem)]" : "pb-[calc(env(safe-area-inset-bottom)+1rem)]"}`}>
         <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
         </div>
@@ -128,6 +133,9 @@ function Home() {
           </div>
         )}
       </div>
+      {bannerVisible && (
+        <EmailReminderBanner stacked={false} onEmailSaved={() => setHasContactEmail(true)} />
+      )}
     </div>
   );
 }
