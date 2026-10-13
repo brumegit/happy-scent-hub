@@ -1007,6 +1007,9 @@ function Setup() {
           </div>
         </div>
       )}
+      {!editing && phase !== "email" && (
+        <EmailReminderBanner stacked={beepBarVisible} />
+      )}
       {picker && (
         <DevicePicker
           devices={picker}
