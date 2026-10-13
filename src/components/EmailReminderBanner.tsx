@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getContactEmail, saveContactEmail } from "@/lib/customer-identity";
 import { identifyHotjar } from "@/lib/hotjar";
+import { declareEmail } from "@/lib/analytics";
 
 // Persistent nudge for customers who skipped the email step. Stays pinned to
 // the bottom of setup until they add an email (red, hard to ignore, easy to
@@ -50,6 +51,7 @@ export function EmailReminderBanner({ stacked, onEmailSaved }: { stacked: boolea
               return;
             }
             identifyHotjar(getContactEmail());
+        declareEmail("guest_banner");
             setHasEmail(true);
             setOpen(false);
             onEmailSaved?.();

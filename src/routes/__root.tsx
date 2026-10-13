@@ -16,7 +16,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { DebugLogSheet } from "@/components/DebugLogSheet";
 import { InteractionTracer } from "@/components/InteractionTracer";
 import { useCartSync } from "@/hooks/useCartSync";
-import { initMetaPixel, trackEvent } from "@/lib/meta";
+import { initMetaPixel } from "@/lib/meta";
+import { track, identifyKnownUser } from "@/lib/analytics";
 import { initHotjar, identifyHotjar } from "@/lib/hotjar";
 import { getContactEmail } from "@/lib/customer-identity";
 
@@ -145,10 +146,11 @@ function RootComponent() {
     initMetaPixel();
     initHotjar();
     identifyHotjar(getContactEmail());
+    identifyKnownUser();
     // Fire AppOpen once per browser session for retargeting and install attribution.
     if (!sessionStorage.getItem("meta-app-open")) {
       sessionStorage.setItem("meta-app-open", "1");
-      trackEvent("AppOpen", { source: "webview" }, true);
+      track("AppOpen", { meta: { source: "webview" }, bird: { source: "webview" } });
     }
   }, []);
 

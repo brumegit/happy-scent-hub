@@ -237,7 +237,7 @@ function Setup() {
       setPhase("paired");
 
 
-      trackEvent("Lead", { content_category: "diffuser_pairing" });
+      track("AppPairingStarted", { bird: { deviceId: device.deviceId, deviceName: device.name ?? null } });
     } catch (err) {
       setPhase("idle");
       notifySlackAlert({
@@ -966,9 +966,9 @@ function Setup() {
                     navigate({ to: "/", replace: true });
                     return;
                   }
-                  trackEvent("CompleteRegistration", {
-                    content_name: name.trim() || DEFAULT_NAME,
-                    content_category: "diffuser_setup",
+                  track("AppPairingCompleted", {
+                    meta: { content_name: name.trim() || DEFAULT_NAME },
+                    bird: { diffuserName: name.trim() || DEFAULT_NAME, room: room.trim(), deviceId },
                   });
                   addDiffuser({
                     name: name.trim() || DEFAULT_NAME,
