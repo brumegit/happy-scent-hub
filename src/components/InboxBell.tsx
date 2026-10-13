@@ -106,18 +106,18 @@ export function InboxBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-50 w-72 rounded-md border border-border bg-background p-2 shadow-lg">
+        <div className="absolute right-0 top-8 z-50 w-72 border border-black bg-white p-2 shadow-lg">
           {messages.length === 0 ? (
-            <p className="p-3 text-center text-sm text-muted-foreground">No messages yet.</p>
+            <p className="p-3 text-center text-sm text-black/60">No messages yet.</p>
           ) : (
             messages.map((m) => (
-              <button key={m.id} type="button" onClick={() => go(m)} className="flex w-full items-center gap-3 rounded-md p-2 text-left hover:bg-muted">
+              <button key={m.id} type="button" onClick={() => go(m)} className="flex w-full items-center gap-3 p-2 text-left hover:bg-black/5">
                 {m.image ? (
-                  <img src={m.image} alt="" className="h-12 w-12 shrink-0 rounded object-cover bg-muted" />
+                  <img src={m.image} alt="" className="h-[72px] w-[72px] shrink-0 object-cover bg-black/5" />
                 ) : (
-                  <div className="h-12 w-12 shrink-0 rounded bg-muted" />
+                  <div className="h-[72px] w-[72px] shrink-0 bg-black/5" />
                 )}
-                <span className="text-sm leading-snug text-foreground">{m.text}</span>
+                <span className="text-sm leading-snug text-black">{m.text}</span>
               </button>
             ))
           )}
