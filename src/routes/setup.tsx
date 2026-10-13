@@ -50,6 +50,7 @@ import { trackEvent } from "@/lib/meta";
 import { notifySlackAlert } from "@/lib/slack-alerts";
 import { pushSettings, readSettings } from "@/lib/push";
 import { buildSyncTimestamp } from "@/lib/scentlife";
+import { getContactEmail } from "@/lib/customer-identity";
 import {
   INTENSITIES,
   PAUSE_SECONDS,
@@ -168,6 +169,10 @@ function Setup() {
   // Keep the sound check visible after a save without predicting a beep count.
   const [hasSavedSettings, setHasSavedSettings] = useState(false);
   const [beepDialogOpen, setBeepDialogOpen] = useState(false);
+  // Tracks the self-reported contact email so the guest banner can reserve
+  // space (and hide) as soon as an email exists.
+  const [hasContactEmail, setHasContactEmail] = useState(true);
+  useEffect(() => { setHasContactEmail(Boolean(getContactEmail())); }, [phase]);
   const beepContinueRef = useRef<(() => void) | null>(null);
   const [connectionLost, setConnectionLost] = useState(false);
   // React effect cleanup runs after a click handler returns. This ref closes
