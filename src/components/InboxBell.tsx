@@ -76,17 +76,12 @@ export function InboxBell() {
 
   const unread = messages.filter((m) => m.id === GUEST_ID || !seen.includes(m.id)).length;
 
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next) {
-      const ids = Array.from(new Set([...seen, ...messages.map((m) => m.id)]));
-      setSeen(ids);
-      try { localStorage.setItem("brume-inbox-seen", JSON.stringify(ids)); } catch { /* ignore */ }
-    }
-  };
+  const toggle = () => setOpen(!open);
 
   const go = (m: InboxMessage) => {
+    const ids = Array.from(new Set([...seen, m.id]));
+    setSeen(ids);
+    try { localStorage.setItem("brume-inbox-seen", JSON.stringify(ids)); } catch { /* ignore */ }
     setOpen(false);
     if (m.link === "#add-email") {
       (document.querySelector("[data-add-email]") as HTMLButtonElement | null)?.click();
