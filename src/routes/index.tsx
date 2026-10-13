@@ -33,6 +33,7 @@ import {
   pairDiffuser,
 } from "@/lib/bluetooth";
 import { pushSettings } from "@/lib/push";
+import { notifySlackAlert } from "@/lib/slack-alerts";
 import {
   INTENSITIES,
   blocksFromSchedule,
