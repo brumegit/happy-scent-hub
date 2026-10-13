@@ -103,7 +103,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Jost:wght@300;400;500;600&display=swap",
       },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "icon", href: "/favicon.png", type: "png" },
+    ],
+    scripts: [
+      {
+        src: "https://embeddables.p.mbirdcdn.net/sdk/v0/bird-sdk.js",
+        "data-config-url":
+          "https://api.bird.com/workspaces/69097a3b-f975-4e02-953e-7ed544b6d2b8/applications/2edfaee8-dfab-450a-8f66-033dd4e450b8/signature/2024-06-17T17-12-51_1664b9167f",
+        defer: true,
+      },
     ],
   }),
   shellComponent: RootShell,
