@@ -473,14 +473,15 @@ function Setup() {
     go?.();
   };
 
+  const bannerVisible = !editing && phase !== "email" && !hasContactEmail;
+  // Reserves room for the guest banner (about 5rem) and the beep bar (about
+  // 5.5rem) so the red banner never covers a button.
+  const bottomReserve = 2 + (bannerVisible ? 5 : 0) + (beepBarVisible ? 5.5 : 0);
+
   return (
     <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-background">
       <div
-        className={`mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 ${
-          beepBarVisible
-            ? "pb-[calc(env(safe-area-inset-bottom)+7.5rem)]"
-            : "pb-[calc(env(safe-area-inset-bottom)+2rem)]"
-        }`}
+        className={`mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col px-11 pb-[calc(env(safe-area-inset-bottom)+${bottomReserve}rem)]`}
       >
         <div className="z-40 shrink-0 -mx-11 bg-background px-11 pt-[calc(env(safe-area-inset-top)+2rem)] pb-8">
           <AppHeader />
