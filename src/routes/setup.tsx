@@ -477,7 +477,7 @@ function Setup() {
     go?.();
   };
 
-  const bannerVisible = !editing && phase !== "email" && !hasContactEmail;
+  const bannerVisible = phase !== "email" && !hasContactEmail;
   // Reserves room for the guest banner (about 5rem) and the beep bar (about
   // 5.5rem) so the red banner never covers a button.
   const bottomReserve = 2 + (bannerVisible ? 5 : 0) + (beepBarVisible ? 5.5 : 0);

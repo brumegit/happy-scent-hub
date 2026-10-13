@@ -11,4 +11,5 @@
 
 - Keep self-reported onboarding email in the browser-only customer-identity module; use it for support attribution, never to authorize Shopify account or order access.
 - Show EmailStep only before a customer's first pairing; customers with saved diffusers and diffuser edits skip it and rely on the guest banner, so returning users are never re-prompted.
+- Mount the shared guest email banner on both the diffuser list and setup, including edits, and reserve bottom space wherever it appears so pairing never removes the email entry point or hides controls.
 - Route customer-facing error alerts through notifySlackAlert, which also fans out to Bird (full debug trace) and Meta (bare AppError), so every error destination stays in sync.
