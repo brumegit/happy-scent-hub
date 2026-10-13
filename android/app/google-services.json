@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "12933469985",
+    "project_id": "bird-x-shopify---push-notif",
+    "storage_bucket": "bird-x-shopify---push-notif.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:12933469985:android:b3eb61a8a9ddb77f3f5060",
+        "android_client_info": {
+          "package_name": "me.brume.diffuser"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAh_tpRBioUsCDJ5w2TlS6Fhsu6azRSzMs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
