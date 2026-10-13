@@ -7,6 +7,7 @@ import { sendSlackAlert } from "./slack-alerts.functions";
 import type { SlackAlertKind } from "./slack-alerts.functions";
 import { getContactEmail } from "./customer-identity";
 import { getHotjarUserId } from "./hotjar";
+import { reportErrorEvent } from "./error-events";
 
 type AlertPayload = {
   kind: SlackAlertKind;
@@ -21,6 +22,7 @@ const recent = new Map<string, number>();
 export function notifySlackAlert(payload: AlertPayload): void {
   if (typeof window === "undefined") return;
   const key = `${payload.kind}|${payload.message}`;
+  if (payload.kind !== "support_request") reportErrorEvent(payload);
   const now = Date.now();
   const last = recent.get(key) ?? 0;
   if (now - last < DEDUPE_MS) return;

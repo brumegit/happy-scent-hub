@@ -295,7 +295,11 @@ function Setup() {
   }
 
 
-  // Email always precedes new pairing, including the quick-start entry point.
+  // Email precedes the first pairing only. Customers who already have a
+  // diffuser skip it; the guest banner still invites them to add one.
+  useEffect(() => {
+    if (phase === "email" && !editing && existingCount > 0) setPhase(start ? "idle" : "intro");
+  }, [phase, editing, existingCount, start]);
 
 
   // Champagne "OK" holds, then fades over 3 seconds before naming.
