@@ -99,6 +99,13 @@ export function DebugLogSheet() {
               >
                 Email log
               </button>
+              <button
+                type="button"
+                onClick={sendTestError}
+                className="rounded-[5px] border border-destructive px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] text-destructive"
+              >
+                Test error
+              </button>
               {typeof navigator !== "undefined" && "share" in navigator && (
                 <button
                   type="button"
