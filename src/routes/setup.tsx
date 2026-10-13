@@ -276,6 +276,11 @@ function Setup() {
       await afterPaired(device);
     } catch (err) {
       setPhase("idle");
+      notifySlackAlert({
+        kind: "pairing_failed",
+        message: (err as Error).message || "Pairing failed",
+        room: room.trim() || undefined,
+      });
       toast.error((err as Error).message, { className: "whitespace-pre-line" });
     } finally {
       pickerResolve.current = null;
