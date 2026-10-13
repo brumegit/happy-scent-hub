@@ -5,7 +5,7 @@ import scentImage from "@/assets/diffuser-hero.jpg";
 
 // App inbox: Bird in-app inbox messages (last 3), each = image + short text + deep link.
 // Guests always get an "add your email" message so the red (1) shows.
-export type InboxMessage = { id: string; image: string; text: string; link: string };
+export type InboxMessage = { id: string; image: string; title: string; text: string; link: string };
 
 const GUEST_ID = "guest-add-email";
 
@@ -17,11 +17,12 @@ function normalize(raw: unknown): InboxMessage | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as any;
   const c: any = r.content ?? r.message ?? r;
-  const text = c.text ?? c.body ?? c.title ?? c.subtitle;
+  const text = c.text ?? c.body ?? c.subtitle;
   if (!text) return null;
   return {
     id: String(r.id ?? r.messageId ?? text),
     image: c.image ?? c.imageUrl ?? c.media?.url ?? c.icon ?? "",
+    title: String(c.title ?? c.heading ?? ""),
     text: String(text),
     link: c.link ?? c.deepLink ?? c.url ?? c.action?.url ?? c.actions?.[0]?.url ?? "/",
   };
@@ -58,7 +59,7 @@ export function InboxBell() {
       const bird = await fetchBirdInbox();
       const guest: InboxMessage[] = getContactEmail()
         ? []
-        : [{ id: GUEST_ID, image: scentImage, text: "Add your email to get tips and refill reminders.", link: "#add-email" }];
+        : [{ id: GUEST_ID, image: scentImage, title: "Stay in the loop", text: "Add your email to get tips and refill reminders.", link: "#add-email" }];
       if (alive) setMessages([...guest, ...bird].slice(0, 3));
     };
     load();
@@ -76,12 +77,18 @@ export function InboxBell() {
 
   const unread = messages.filter((m) => m.id === GUEST_ID || !seen.includes(m.id)).length;
 
-  const toggle = () => setOpen(!open);
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) {
+      // Opening the list counts as an impression: clear the unread badge.
+      const ids = Array.from(new Set([...seen, ...messages.map((m) => m.id)]));
+      setSeen(ids);
+      try { localStorage.setItem("brume-inbox-seen", JSON.stringify(ids)); } catch { /* ignore */ }
+    }
+  };
 
   const go = (m: InboxMessage) => {
-    const ids = Array.from(new Set([...seen, m.id]));
-    setSeen(ids);
-    try { localStorage.setItem("brume-inbox-seen", JSON.stringify(ids)); } catch { /* ignore */ }
     setOpen(false);
     if (m.link === "#add-email") {
       (document.querySelector("[data-add-email]") as HTMLButtonElement | null)?.click();
@@ -111,8 +118,11 @@ export function InboxBell() {
                   <img src={m.image} alt="" className="block h-36 w-full object-cover object-top bg-black/5" />
                 ) : null}
                 <span className={`flex items-center justify-between gap-3 text-sm leading-normal text-black ${m.image ? "px-3 py-3" : "p-3"}`}>
-                  <span className="text-left">{m.text}</span>
-                  <span className="shrink-0 bg-black px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-white">
+                  <span className="text-left">
+                    {m.title ? <span className="block font-semibold">{m.title}</span> : null}
+                    <span className="block">{m.text}</span>
+                  </span>
+                  <span className="shrink-0 border border-gold bg-black px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-gold">
                     {m.id === GUEST_ID ? "Add email" : "Open"}
                   </span>
                 </span>
