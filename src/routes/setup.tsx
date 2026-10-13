@@ -8,6 +8,7 @@ import { ArrowLeft, Bluetooth, CalendarClock, Star } from "lucide-react";
 import pairingVideo from "@/assets/bluetooth-pairing.mp4.asset.json";
 import { AppHeader } from "@/components/AppHeader";
 import { EmailStep } from "@/components/EmailStep";
+import { EmailReminderBanner } from "@/components/EmailReminderBanner";
 import { RoomSuggestions } from "@/components/RoomSuggestions";
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
