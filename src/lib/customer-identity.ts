@@ -30,5 +30,6 @@ export function saveContactEmail(value: string): boolean {
   } catch {
     // Still usable for support during this app visit if storage is unavailable.
   }
+  window.dispatchEvent(new Event("brume-email-saved"));
   return true;
 }

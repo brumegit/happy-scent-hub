@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { InboxBell } from "@/components/InboxBell";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getShopifySession, signOutShopify } from "@/lib/shopify-auth";
 
@@ -38,6 +39,7 @@ export function AppHeader() {
               {displayName}
             </button>
           )}
+        <InboxBell />
       </nav>
     </header>
   );
