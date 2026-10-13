@@ -16,7 +16,12 @@ export function EmailReminderBanner({ stacked, onEmailSaved }: { stacked: boolea
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setHasEmail(Boolean(getContactEmail())); }, []);
+  useEffect(() => {
+    const sync = () => setHasEmail(Boolean(getContactEmail()));
+    sync();
+    window.addEventListener("brume-email-saved", sync);
+    return () => window.removeEventListener("brume-email-saved", sync);
+  }, []);
 
   if (hasEmail) return null;
 
@@ -31,6 +36,7 @@ export function EmailReminderBanner({ stacked, onEmailSaved }: { stacked: boolea
           <Button
             variant="outline"
             className="h-10 shrink-0 border-white bg-transparent px-4 text-sm text-white hover:bg-transparent hover:text-white"
+            data-add-email
             onClick={() => { setEmail(getContactEmail() ?? ""); setOpen(true); }}
           >
             Add email

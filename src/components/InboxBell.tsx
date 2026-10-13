@@ -1,7 +1,7 @@
 import { Bell } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getContactEmail } from "@/lib/customer-identity";
-import scentImage from "@/assets/brume-logo.png";
+import scentImage from "@/assets/diffuser-hero.jpg";
 
 // App inbox: Bird in-app inbox messages (last 3), each = image + short text + deep link.
 // Guests always get an "add your email" message so the red (1) shows.
