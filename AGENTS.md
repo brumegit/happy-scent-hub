@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep self-reported onboarding email in the browser-only customer-identity module; use it for support attribution, never to authorize Shopify account or order access.
+- Keep optional email collection in EmailStep before all new-pairing entry points; existing diffuser edits bypass it so settings access stays uninterrupted.
