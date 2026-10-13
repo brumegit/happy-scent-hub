@@ -59,7 +59,7 @@ export function InboxBell() {
       const bird = await fetchBirdInbox();
       const guest: InboxMessage[] = getContactEmail()
         ? []
-        : [{ id: GUEST_ID, image: scentImage, text: "Add your email to get tips and refill reminders.", link: "#add-email" }];
+        : [{ id: GUEST_ID, image: scentImage, title: "Stay in the loop", text: "Add your email to get tips and refill reminders.", link: "#add-email" }];
       if (alive) setMessages([...guest, ...bird].slice(0, 3));
     };
     load();
@@ -77,12 +77,18 @@ export function InboxBell() {
 
   const unread = messages.filter((m) => m.id === GUEST_ID || !seen.includes(m.id)).length;
 
-  const toggle = () => setOpen(!open);
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) {
+      // Opening the list counts as an impression: clear the unread badge.
+      const ids = Array.from(new Set([...seen, ...messages.map((m) => m.id)]));
+      setSeen(ids);
+      try { localStorage.setItem("brume-inbox-seen", JSON.stringify(ids)); } catch { /* ignore */ }
+    }
+  };
 
   const go = (m: InboxMessage) => {
-    const ids = Array.from(new Set([...seen, m.id]));
-    setSeen(ids);
-    try { localStorage.setItem("brume-inbox-seen", JSON.stringify(ids)); } catch { /* ignore */ }
     setOpen(false);
     if (m.link === "#add-email") {
       (document.querySelector("[data-add-email]") as HTMLButtonElement | null)?.click();
