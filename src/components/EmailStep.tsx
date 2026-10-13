@@ -15,7 +15,7 @@ export function EmailStep({ onContinue }: { onContinue: () => void }) {
 
   return (
     <section className="flex flex-1 flex-col justify-center">
-      <h1 className="font-display text-3xl leading-tight">Your email</h1>
+      <h1 className="font-display text-3xl leading-tight">Tailor your diffuser to you</h1>
       <p className="mt-3 text-sm text-foreground">Use the email from your Brume order so we can tailor your experience.</p>
       <form className="mt-8" onSubmit={(event) => {
         event.preventDefault();
