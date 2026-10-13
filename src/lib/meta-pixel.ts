@@ -49,6 +49,7 @@ export function initPixel(email?: string | null): void {
   })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
+  if (email) matchedEmail = email.trim().toLowerCase();
   window.fbq?.("init", PIXEL_ID, email ? { em: email } : {});
   window.fbq?.("track", "PageView");
 }
