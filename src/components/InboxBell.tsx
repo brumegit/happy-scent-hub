@@ -15,8 +15,8 @@ type BirdInboxLike = {
 
 function normalize(raw: unknown): InboxMessage | null {
   if (!raw || typeof raw !== "object") return null;
-  const r = raw as Record<string, any>;
-  const c = (r.content ?? r.message ?? r) as Record<string, any>;
+  const r = raw as any;
+  const c: any = r.content ?? r.message ?? r;
   const text = c.text ?? c.body ?? c.title ?? c.subtitle;
   if (!text) return null;
   return {
@@ -29,7 +29,7 @@ function normalize(raw: unknown): InboxMessage | null {
 
 async function fetchBirdInbox(): Promise<InboxMessage[]> {
   const bird = (window as unknown as { Bird?: BirdInboxLike }).Bird;
-  const inbox = bird?.inbox as Record<string, any> | undefined;
+  const inbox: any = bird?.inbox;
   if (!inbox) return [];
   for (const fn of ["getMessages", "list", "fetchMessages", "getInboxMessages"]) {
     if (typeof inbox[fn] === "function") {
