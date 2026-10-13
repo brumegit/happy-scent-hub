@@ -4,6 +4,7 @@
 // - Meta: a bare "AppError" custom event with no payload.
 
 import { fullTrace } from "./ble-log";
+import { getHotjarUserId } from "./hotjar";
 import { pushDebug } from "@/stores/pushDebugStore";
 import { track } from "./analytics";
 
@@ -29,6 +30,7 @@ export function reportErrorEvent(input: {
       linkError: debug.linkError ? String(debug.linkError) : "",
       pushSteps: JSON.stringify(steps),
       pushStartedAt: debug.startedAt ? String(debug.startedAt) : "",
+      hotjarUserId: getHotjarUserId() ?? "",
       log: fullTrace().slice(-200).join("\n").slice(-30000),
     } });
   } catch {
