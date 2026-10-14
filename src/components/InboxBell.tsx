@@ -75,7 +75,7 @@ export function InboxBell() {
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
-  const unread = messages.filter((m) => m.id === GUEST_ID || !seen.includes(m.id)).length;
+  const unread = messages.filter((m) => !seen.includes(m.id)).length;
 
   const toggle = () => {
     const next = !open;
@@ -118,11 +118,8 @@ export function InboxBell() {
                   <img src={m.image} alt="" className="block h-36 w-full object-cover object-top bg-black/5" />
                 ) : null}
                 <span className={`flex items-center justify-between gap-3 text-sm leading-normal text-black ${m.image ? "px-3 py-3" : "p-3"}`}>
-                  <span className="text-left">
-                    {m.title ? <span className="block font-semibold">{m.title}</span> : null}
-                    <span className="block">{m.text}</span>
-                  </span>
-                  <span className="shrink-0 border border-gold bg-black px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-gold">
+                  <span className="text-left">{m.text}</span>
+                  <span className="shrink-0 border border-black bg-transparent px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-black">
                     {m.id === GUEST_ID ? "Add email" : "Open"}
                   </span>
                 </span>
