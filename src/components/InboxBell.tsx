@@ -1,9 +1,10 @@
-import { Bell } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getContactEmail } from "@/lib/customer-identity";
 import scentImage from "@/assets/diffuser-hero.jpg";
 
 // App inbox: Bird in-app inbox messages (last 3), each = image + short text + deep link.
+// Shown one at a time; white arrows on the image page between messages.
 // Guests always get an "add your email" message so the red (1) shows.
 export type InboxMessage = { id: string; image: string; title: string; text: string; link: string };
 
@@ -49,6 +50,7 @@ async function fetchBirdInbox(): Promise<InboxMessage[]> {
 export function InboxBell() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
+  const [index, setIndex] = useState(0);
   const [seen, setSeen] = useState<string[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -80,8 +82,9 @@ export function InboxBell() {
   const toggle = () => {
     const next = !open;
     setOpen(next);
+    setIndex(0);
     if (next) {
-      // Opening the list counts as an impression: clear the unread badge.
+      // Opening counts as an impression: clear the unread badge.
       const ids = Array.from(new Set([...seen, ...messages.map((m) => m.id)]));
       setSeen(ids);
       try { localStorage.setItem("brume-inbox-seen", JSON.stringify(ids)); } catch { /* ignore */ }
@@ -96,6 +99,9 @@ export function InboxBell() {
     }
     window.location.href = m.link;
   };
+
+  const safeIndex = Math.min(index, Math.max(messages.length - 1, 0));
+  const current = messages[safeIndex];
 
   return (
     <div ref={ref} className="relative">
@@ -112,19 +118,64 @@ export function InboxBell() {
           {messages.length === 0 ? (
             <p className="p-3 text-center text-sm text-black/60">No messages yet.</p>
           ) : (
-            messages.map((m, i) => (
-              <button key={m.id} type="button" onClick={() => go(m)} className={`block w-full text-left tracking-normal ${i > 0 ? "border-t border-black/10" : ""}`}>
-                {m.image ? (
-                  <img src={m.image} alt="" className="block h-36 w-full object-cover object-top bg-black/5" />
-                ) : null}
-                <span className={`flex items-center justify-between gap-3 text-sm leading-normal text-black ${m.image ? "px-3 py-3" : "p-3"}`}>
-                  <span className="text-left">{m.text}</span>
+            current && (
+              <div className="relative">
+                {current.image ? (
+                  <div className="relative">
+                    <img src={current.image} alt="" className="block h-36 w-full object-cover object-top bg-black/5" />
+                    {messages.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label="Previous message"
+                          onClick={(e) => { e.stopPropagation(); setIndex((i) => (i <= 0 ? messages.length - 1 : i - 1)); }}
+                          className="absolute left-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                        >
+                          <ChevronLeft className="h-6 w-6" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Next message"
+                          onClick={(e) => { e.stopPropagation(); setIndex((i) => (i >= messages.length - 1 ? 0 : i + 1)); }}
+                          className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                        >
+                          <ChevronRight className="h-6 w-6" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative flex h-36 items-center justify-center bg-black/5">
+                    {messages.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label="Previous message"
+                          onClick={() => setIndex((i) => (i <= 0 ? messages.length - 1 : i - 1))}
+                          className="absolute left-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                        >
+                          <ChevronLeft className="h-6 w-6" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Next message"
+                          onClick={() => setIndex((i) => (i >= messages.length - 1 ? 0 : i + 1))}
+                          className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+                        >
+                          <ChevronRight className="h-6 w-6" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+                <button type="button" onClick={() => go(current)} className={`flex w-full items-center justify-between gap-3 text-left text-sm leading-normal tracking-normal text-black ${current.image ? "px-3 py-3" : "p-3"}`}>
+                  <span>{current.text}</span>
                   <span className="shrink-0 border border-black bg-transparent px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-black">
-                    {m.id === GUEST_ID ? "Add email" : "Open"}
+                    {current.id === GUEST_ID ? "Add email" : "Open"}
                   </span>
-                </span>
-              </button>
-            ))
+                </button>
+              </div>
+            )
           )}
         </div>
       )}
