@@ -61,7 +61,7 @@ export function InboxBell() {
       const bird = await fetchBirdInbox();
       const guest: InboxMessage[] = getContactEmail()
         ? []
-        : [{ id: GUEST_ID, image: scentImage, title: "Stay in the loop", text: "Add your email to get tips and refill reminders.", link: "#add-email" }];
+        : [{ id: GUEST_ID, image: scentImage, title: "Stay in the loop", text: "Add your email to get an experience tailored to you.", link: "#add-email" }];
       if (alive) setMessages([...guest, ...bird].slice(0, 3));
     };
     load();
