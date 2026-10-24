@@ -18,7 +18,7 @@ export const trackMetaEvent = createServerFn({ method: "POST" })
       fbp: string | undefined;
       fbc: string | undefined;
       eventSourceUrl: string | undefined;
-      permission?: { platform: string; status: TrackingStatus; region?: string; noticeVersion: string };
+      permission?: { platform: string; status: TrackingStatus; region: string | undefined; noticeVersion: string } | undefined;
     }) => input,
   )
   .handler(async ({ data }) => {

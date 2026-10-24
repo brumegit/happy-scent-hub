@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
-import { regionAllowsTracking, shouldRequestTracking, trackingAllowed, TRACKING_NOTICE_VERSION, type TrackingStatus } from "./tracking-policy";
+import { shouldRequestTracking, trackingAllowed, TRACKING_NOTICE_VERSION, type TrackingStatus } from "./tracking-policy";
 
 const ATT = registerPlugin<{ status(): Promise<{ status: TrackingStatus }>; request(): Promise<{ status: TrackingStatus }> }>("ATT");
 let status: TrackingStatus = "unknown";
@@ -64,8 +64,6 @@ export function onTrackingPermissionChange(listener: () => void): () => void {
 export async function requestTrackingAfterSetup(): Promise<void> {
   await initTrackingPermission();
   if (requestPending || !shouldRequestTracking(Capacitor.getPlatform(), status, true) || document.visibilityState !== "visible") return;
-  // No regional banner was requested: do not collect advertising acceptance there.
-  if (!regionAllowsTracking(region)) return;
   requestPending = true;
   try {
     status = (await ATT.request()).status;

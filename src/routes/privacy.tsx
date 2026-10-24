@@ -116,6 +116,27 @@ function PrivacyPage() {
           />
         )}
 
+        <section className="mt-10 text-sm leading-relaxed text-muted-foreground">
+          <h2 className="font-display text-xl text-foreground">Advertising measurement</h2>
+          <p className="mt-3">
+            With tracking permission, Brume shares app activity, page visits,
+            browser identifiers and technical device information with Meta for
+            advertising measurement and ad personalization. Your provided email
+            may be hashed and shared for matching only after recorded acceptance.
+            Hashing does not make this data anonymous.
+          </p>
+          <p className="mt-3">
+            On iPhone, the tracking request appears after diffuser setup. Refusal
+            does not affect your diffuser. You can withdraw permission in iPhone
+            Settings under Privacy &amp; Security, Tracking, Brume. Advertising
+            tracking is blocked in regions requiring separate consent and whenever
+            your region cannot be determined; Apple permission alone does not
+            override those restrictions. We retain the permission choice, time,
+            region and notice version on your device, including prior acceptance
+            when permission is withdrawn.
+          </p>
+        </section>
+
         <section className="mt-10 pb-16 text-sm leading-relaxed text-muted-foreground">
           <h2 className="font-display text-xl text-foreground">
             Analytics &amp; session recording
