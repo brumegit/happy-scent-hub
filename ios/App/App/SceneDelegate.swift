@@ -83,6 +83,10 @@ class BrumeBridgeViewController: CAPBridgeViewController {
     private var progressObservation: NSKeyValueObservation?
     private var loadingObservation: NSKeyValueObservation?
 
+    override func capacitorDidLoad() {
+        bridge?.registerPluginInstance(ATTPlugin())
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         BrumeLoadingOverlay.install(on: view)

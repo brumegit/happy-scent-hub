@@ -21,6 +21,7 @@ import { initMetaPixel } from "@/lib/meta";
 import { track, identifyKnownUser, initGoogleAnalytics } from "@/lib/analytics";
 import { initHotjar, identifyHotjar } from "@/lib/hotjar";
 import { getContactEmail } from "@/lib/customer-identity";
+import { initTrackingPermission, onTrackingPermissionChange, canTrackAdvertising } from "@/lib/tracking-permission";
 
 
 function NotFoundComponent() {
@@ -143,8 +144,18 @@ function RootComponent() {
   useCartSync();
 
   useEffect(() => {
-    // Initialise the Meta Pixel (loads base code + fires initial PageView).
-    initMetaPixel();
+    // Query ATT silently at launch. Only the diffuser list requests permission.
+    const startPermittedTracking = () => {
+      if (!canTrackAdvertising()) return;
+      initMetaPixel();
+      identifyKnownUser();
+      if (!sessionStorage.getItem("meta-authorized-app-open")) {
+        sessionStorage.setItem("meta-authorized-app-open", "1");
+        import("@/lib/meta").then(({ trackEvent }) => trackEvent("AppOpen", { source: "webview" }, true));
+      }
+    };
+    const unsubscribe = onTrackingPermissionChange(startPermittedTracking);
+    void initTrackingPermission().then(startPermittedTracking);
     initHotjar();
     initGoogleAnalytics();
     identifyHotjar(getContactEmail());
@@ -154,6 +165,7 @@ function RootComponent() {
       sessionStorage.setItem("meta-app-open", "1");
       track("AppOpen", { meta: { source: "webview" }, bird: { source: "webview" } });
     }
+    return unsubscribe;
   }, []);
 
 

@@ -19,6 +19,7 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { EmailReminderBanner } from "@/components/EmailReminderBanner";
 import { getContactEmail } from "@/lib/customer-identity";
+import { requestTrackingAfterSetup } from "@/lib/tracking-permission";
 
 import { ScheduleGrid } from "@/components/ScheduleGrid";
 import { StatusButton, type CircleState } from "@/components/StatusButton";
@@ -79,6 +80,13 @@ function Home() {
   const bannerVisible = hydrated && !hasContactEmail;
 
   const empty = hydrated && diffusers.length === 0;
+
+  useEffect(() => {
+    if (!hydrated || diffusers.length === 0) return;
+    // Home is reached only after setup and its beep dialog are complete.
+    const timer = window.setTimeout(() => void requestTrackingAfterSetup(), 1000);
+    return () => window.clearTimeout(timer);
+  }, [hydrated, diffusers.length]);
 
   // With no diffuser there is no home to show, setup is the whole app.
   useEffect(() => {
