@@ -101,8 +101,8 @@ export function InboxBell() {
   const go = (m: InboxMessage) => {
     setOpen(false);
     if (m.id === GUEST_EMAIL_ID) {
-      const openEmail = (window as unknown as { __brumeOpenEmail?: () => void }).__brumeOpenEmail;
-      if (openEmail) { openEmail(); return; }
+      window.dispatchEvent(new CustomEvent("brume-open-email", { detail: { source: "inbox" } }));
+      return;
     }
     window.location.href = m.link;
   };

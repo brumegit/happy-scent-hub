@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { EmailEntrySheet } from "@/components/EmailEntrySheet";
 import { DebugLogSheet } from "@/components/DebugLogSheet";
 import { InteractionTracer } from "@/components/InteractionTracer";
 import { useCartSync } from "@/hooks/useCartSync";
@@ -165,6 +166,7 @@ function RootComponent() {
       <Outlet />
       <InteractionTracer />
       <DebugLogSheet />
+      <EmailEntrySheet />
       <Toaster position="top-center" />
     </QueryClientProvider>
   );
