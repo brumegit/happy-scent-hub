@@ -2,6 +2,7 @@ import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getContactEmail } from "@/lib/customer-identity";
 import refillsImage from "@/assets/refills.png.asset.json";
+import emailImage from "@/assets/email.png.asset.json";
 
 // App inbox: Bird in-app inbox messages (last 3), each = image + short text + deep link.
 // Shown one at a time; white arrows on the image page between messages.
@@ -9,7 +10,9 @@ import refillsImage from "@/assets/refills.png.asset.json";
 export type InboxMessage = { id: string; image: string; title: string; text: string; link: string };
 
 const GUEST_ID = "guest-subscribe";
+const GUEST_EMAIL_ID = "guest-email";
 const SUBSCRIBE_URL = "https://brume.me/collections/single-notes-collection";
+const EMAIL_LINK = "/";
 
 type BirdInboxLike = {
   inbox?: Record<string, unknown>;
@@ -62,7 +65,10 @@ export function InboxBell() {
       const bird = await fetchBirdInbox();
       const guest: InboxMessage[] = getContactEmail()
         ? []
-        : [{ id: GUEST_ID, image: refillsImage.url, title: "Save on refills", text: "Subscribe to scent refills and get extra savings.", link: SUBSCRIBE_URL }];
+        : [
+            { id: GUEST_ID, image: refillsImage.url, title: "Save on refills", text: "Subscribe to scent refills and get extra savings.", link: SUBSCRIBE_URL },
+            { id: GUEST_EMAIL_ID, image: emailImage.url, title: "Add your email", text: "Add your email to get an experience tailored to you.", link: EMAIL_LINK },
+          ];
       if (alive) setMessages([...guest, ...bird].slice(0, 3));
     };
     load();
@@ -94,6 +100,10 @@ export function InboxBell() {
 
   const go = (m: InboxMessage) => {
     setOpen(false);
+    if (m.id === GUEST_EMAIL_ID) {
+      window.dispatchEvent(new CustomEvent("brume-open-email", { detail: { source: "inbox" } }));
+      return;
+    }
     window.location.href = m.link;
   };
 
@@ -168,7 +178,7 @@ export function InboxBell() {
                 <button type="button" onClick={() => go(current)} className={`flex w-full items-center justify-between gap-3 text-left text-sm leading-normal tracking-normal text-black ${current.image ? "px-3 py-3" : "p-3"}`}>
                   <span>{current.text}</span>
                   <span className="shrink-0 border border-black bg-transparent px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-black">
-                    {current.id === GUEST_ID ? "Learn more" : "Open"}
+                    {current.id === GUEST_ID ? "Learn more" : current.id === GUEST_EMAIL_ID ? "Add email" : "Open"}
                   </span>
                 </button>
               </div>
