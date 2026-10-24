@@ -1,6 +1,7 @@
 // Client-side Meta Pixel loader and helpers.
 // The Pixel runs inside the Capacitor webview exactly like on a website
 // no native SDK needed. All functions are SSR-safe (guarded by typeof window).
+import { canTrackAdvertising, onTrackingPermissionChange } from "./tracking-permission";
 
 const PIXEL_ID = import.meta.env["VITE_META_PIXEL_ID"] as string | undefined;
 
@@ -23,8 +24,8 @@ declare global {
  * Loads the Meta Pixel base script and fires the initial PageView.
  * Safe to call multiple times, only loads once.
  */
-export function initPixel(email?: string | null): void {
-  if (typeof window === "undefined" || initialized || !PIXEL_ID) return;
+export function initPixel(): void {
+  if (typeof window === "undefined" || initialized || !PIXEL_ID || !canTrackAdvertising()) return;
   initialized = true;
 
   // Standard Meta Pixel base code, adapted for TypeScript.
@@ -49,8 +50,10 @@ export function initPixel(email?: string | null): void {
   })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  if (email) matchedEmail = email.trim().toLowerCase();
-  window.fbq?.("init", PIXEL_ID, email ? { em: email } : {});
+  // ID-only browser instance: requested email matching is event-scoped in CAPI.
+  window.fbq?.("init", PIXEL_ID, {}, { agent: "lovable" });
+  window.fbq?.("consent", "grant");
+  onTrackingPermissionChange(() => window.fbq?.("consent", canTrackAdvertising() ? "grant" : "revoke"));
   window.fbq?.("track", "PageView");
 }
 
@@ -60,7 +63,7 @@ export function pixelTrack(
   data?: Record<string, unknown>,
   eventId?: string,
 ): void {
-  if (typeof window === "undefined" || !window.fbq) return;
+  if (typeof window === "undefined" || !window.fbq || !canTrackAdvertising()) return;
   const opts = eventId ? { eventID: eventId } : undefined;
   window.fbq("track", eventName, data ?? {}, opts);
 }
@@ -71,21 +74,21 @@ export function pixelTrackCustom(
   data?: Record<string, unknown>,
   eventId?: string,
 ): void {
-  if (typeof window === "undefined" || !window.fbq) return;
+  if (typeof window === "undefined" || !window.fbq || !canTrackAdvertising()) return;
   const opts = eventId ? { eventID: eventId } : undefined;
   window.fbq("trackCustom", eventName, data ?? {}, opts);
 }
 
 /** Read the _fbp cookie value set by the Pixel, for CAPI user matching. */
 export function getFbp(): string | undefined {
-  if (typeof document === "undefined") return undefined;
+  if (typeof document === "undefined" || !canTrackAdvertising()) return undefined;
   const match = document.cookie.match(/(?:^|;\s*)_fbp=([^;]+)/);
   return match?.[1] ?? undefined;
 }
 
 /** Read the _fbc cookie value (set when arriving via a Meta ad click). */
 export function getFbc(): string | undefined {
-  if (typeof document === "undefined") return undefined;
+  if (typeof document === "undefined" || !canTrackAdvertising()) return undefined;
   const match = document.cookie.match(/(?:^|;\s*)_fbc=([^;]+)/);
   return match?.[1] ?? undefined;
 }
@@ -100,17 +103,5 @@ export function generateFbp(): string {
   return `fb.1.${ts}.${rand}`;
 }
 
-let matchedEmail: string | null = null;
-
-/**
- * Advanced matching for the browser pixel. Re-calling fbq("init") with the
- * same pixel ID triggers Meta's "Duplicate Pixel ID" warning, so we only do
- * it once per distinct email. Server-side events always carry the email.
- */
-export function setPixelUserEmail(email: string): void {
-  if (typeof window === "undefined" || !window.fbq || !PIXEL_ID) return;
-  const em = email.trim().toLowerCase();
-  if (!em || em === matchedEmail) return;
-  matchedEmail = em;
-  window.fbq("init", PIXEL_ID, { em });
-}
+/** Matching is server event-scoped, never retained in the browser Pixel. */
+export function setPixelUserEmail(_email: string): void {}

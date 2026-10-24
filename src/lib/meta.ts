@@ -10,6 +10,7 @@
 
 import { trackMetaEvent } from "./meta.functions";
 import { getContactEmail } from "./customer-identity";
+import { advertisingEvidence, canTrackAdvertising, canShareMatchingEmail } from "./tracking-permission";
 import {
   initPixel,
   pixelTrack,
@@ -24,13 +25,14 @@ let pixelReady = false;
 
 /** Ensure the Pixel base code is loaded before firing events. */
 function ensurePixelInit(): void {
-  if (pixelReady) return;
+  if (typeof window === "undefined" || !canTrackAdvertising() || pixelReady) return;
   pixelReady = true;
-  initPixel(getContactEmail());
+  initPixel();
 }
 
 /** Attach a declared email to the Pixel (advanced matching, hashed by Meta). */
 export function setMetaUserEmail(email: string): void {
+  if (!canTrackAdvertising()) return;
   ensurePixelInit();
   setPixelUserEmail(email);
 }
@@ -47,7 +49,7 @@ export function trackEvent(
   data?: Record<string, unknown>,
   isCustom?: boolean,
 ): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !canTrackAdvertising()) return;
 
   ensurePixelInit();
 
@@ -73,7 +75,8 @@ export function trackEvent(
       eventName,
       eventId,
       customData: data,
-      email: getContactEmail() ?? undefined,
+      email: canShareMatchingEmail() ? getContactEmail() ?? undefined : undefined,
+      permission: advertisingEvidence(),
       fbp,
       fbc,
       eventSourceUrl,

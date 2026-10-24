@@ -68,6 +68,9 @@
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Brume uses Bluetooth to connect to and configure your diffuser.</string>
+
+	<key>NSUserTrackingUsageDescription</key>
+	<string>With your permission, Brume shares app activity and your provided email address with Meta to measure advertising and personalize ads. You can change this in iPhone Settings.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Brume uses Bluetooth to connect to and configure your diffuser.</string>
 	<key>NSCameraUsageDescription</key>
