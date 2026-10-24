@@ -1,12 +1,13 @@
 import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getContactEmail } from "@/lib/customer-identity";
+import { unreadInboxCount, visibleInboxMessages } from "@/lib/inbox-messages";
 import refillsImage from "@/assets/refills.png.asset.json";
 import emailImage from "@/assets/email.png.asset.json";
 
 // App inbox: Bird in-app inbox messages (last 3), each = image + short text + deep link.
 // Shown one at a time; white arrows on the image page between messages.
-// Guests always get a subscription-promo message so the red (1) shows.
+// Subscription stays available; only the email prompt is hidden after email entry.
 export type InboxMessage = { id: string; image: string; title: string; text: string; link: string };
 
 const GUEST_ID = "guest-subscribe";
@@ -65,9 +66,9 @@ export function InboxBell() {
       const bird = await fetchBirdInbox();
       const guest: InboxMessage[] = [
             { id: GUEST_ID, image: refillsImage.url, title: "Save on refills", text: "Subscribe to scent refills and get extra savings.", link: SUBSCRIBE_URL },
-             ...(getContactEmail() ? [] : [{ id: GUEST_EMAIL_ID, image: emailImage.url, title: "Add your email", text: "Add your email to get an experience tailored to you.", link: EMAIL_LINK }]),
+             { id: GUEST_EMAIL_ID, image: emailImage.url, title: "Add your email", text: "Add your email to get an experience tailored to you.", link: EMAIL_LINK },
           ];
-      if (alive) setMessages([...guest, ...bird].slice(0, 3));
+      if (alive) setMessages(visibleInboxMessages([...guest, ...bird], Boolean(getContactEmail())));
     };
     load();
     const t = setTimeout(load, 4000); // Bird SDK loads deferred
@@ -82,7 +83,7 @@ export function InboxBell() {
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
-  const unread = messages.filter((m) => !seen.includes(m.id)).length;
+  const unread = unreadInboxCount(messages, seen);
 
   const toggle = () => {
     const next = !open;
