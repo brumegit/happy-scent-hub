@@ -427,13 +427,18 @@ function Setup() {
       {
         const blocks = scheduleToBlocks(schedule);
         track("AppRoutinePushed", {
-          meta: { routine_count: blocks.length, intensity },
+          meta: { routine_count: blocks.length, intensity, week_coverage: weekCoverage(schedule) },
           bird: {
             context: editing ? "edit" : "first_setup",
             room: room.trim() || undefined,
             diffuserId: deviceId ?? undefined,
             intensity,
             routineCount: blocks.length,
+            routineNames: routineNames(schedule),
+            weekCoverage: weekCoverage(schedule),
+            weeklyHours: weeklyHours(schedule),
+            daysUsed: daysUsed(schedule),
+            customTiming: !!custom,
             routines: blocks.map((b) => JSON.stringify(b)).join(" | ").slice(0, 2000),
           },
         });
