@@ -62,7 +62,7 @@ export function InboxBell() {
       const bird = await fetchBirdInbox();
       const guest: InboxMessage[] = getContactEmail()
         ? []
-        : [{ id: GUEST_ID, image: refillsImage.url, title: "Save on refills", text: "Subscribe to your scent refills and get extra savings.", link: SUBSCRIBE_URL }];
+        : [{ id: GUEST_ID, image: refillsImage.url, title: "Save on refills", text: "Subscribe to scent refills and get extra savings.", link: SUBSCRIBE_URL }];
       if (alive) setMessages([...guest, ...bird].slice(0, 3));
     };
     load();
@@ -168,7 +168,7 @@ export function InboxBell() {
                 <button type="button" onClick={() => go(current)} className={`flex w-full items-center justify-between gap-3 text-left text-sm leading-normal tracking-normal text-black ${current.image ? "px-3 py-3" : "p-3"}`}>
                   <span>{current.text}</span>
                   <span className="shrink-0 border border-black bg-transparent px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-black">
-                    {current.id === GUEST_ID ? "Subscribe" : "Open"}
+                    {current.id === GUEST_ID ? "Learn more" : "Open"}
                   </span>
                 </button>
               </div>
