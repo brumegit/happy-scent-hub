@@ -151,6 +151,17 @@ function Setup() {
   const addDiffuser = useDiffuserStore((s) => s.addDiffuser);
   const updateDiffuser = useDiffuserStore((s) => s.updateDiffuser);
   const existingCount = useDiffuserStore((s) => s.diffusers.length);
+  const savedDiffusers = useDiffuserStore((s) => s.diffusers);
+  // first_pairing: no diffuser saved yet. re_pairing: this hardware is already saved.
+  // new_pairing: an additional diffuser. edit: settings change, no pairing.
+  const pairingTypeFor = (devId: string | null | undefined) =>
+    editing
+      ? "edit"
+      : devId && savedDiffusers.some((d) => d.device_id === devId)
+        ? "re_pairing"
+        : existingCount === 0
+          ? "first_pairing"
+          : "new_pairing";
   // Editing an existing diffuser: skip pairing and naming, start on intensity.
   const editing = useDiffuserStore((s) => s.diffusers.find((d) => d.id === edit) ?? null);
 
@@ -238,7 +249,9 @@ function Setup() {
       setPhase("paired");
 
 
-      track("AppPairingStarted", { bird: { deviceId: device.deviceId, deviceName: device.suggestedName } });
+      track("AppPairingStarted", {
+        meta: { pairing_type: pairingTypeFor(device.deviceId) },
+        bird: { pairingType: pairingTypeFor(device.deviceId), deviceId: device.deviceId, deviceName: device.suggestedName } });
     } catch (err) {
       setPhase("idle");
       notifySlackAlert({
@@ -430,12 +443,14 @@ function Setup() {
         track("AppRoutinePushed", {
           meta: {
             routine_count: blocks.length,
+            pairing_type: pairingTypeFor(deviceId),
             intensity,
             week_coverage: weekCoverage(schedule),
             usage_score: usageScore(schedule, intensity, custom),
           },
           bird: {
             context: editing ? "edit" : "first_setup",
+            pairingType: pairingTypeFor(deviceId),
             room: room.trim() || undefined,
             diffuserId: deviceId ?? undefined,
             intensity,
@@ -993,12 +1008,13 @@ function Setup() {
                     return;
                   }
                   track("AppPairingCompleted", {
-                    meta: { content_name: name.trim() || DEFAULT_NAME, first_diffuser: existingCount === 0 },
+                    meta: { content_name: name.trim() || DEFAULT_NAME, first_diffuser: existingCount === 0, pairing_type: pairingTypeFor(deviceId) },
                     bird: {
                       diffuserName: name.trim() || DEFAULT_NAME,
                       room: room.trim(),
                       deviceId,
                       first_diffuser: existingCount === 0,
+                      pairingType: pairingTypeFor(deviceId),
                     },
                   });
                   addDiffuser({
