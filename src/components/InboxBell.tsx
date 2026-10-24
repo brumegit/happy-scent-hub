@@ -63,11 +63,9 @@ export function InboxBell() {
     let alive = true;
     const load = async () => {
       const bird = await fetchBirdInbox();
-      const guest: InboxMessage[] = getContactEmail()
-        ? []
-        : [
+      const guest: InboxMessage[] = [
             { id: GUEST_ID, image: refillsImage.url, title: "Save on refills", text: "Subscribe to scent refills and get extra savings.", link: SUBSCRIBE_URL },
-            { id: GUEST_EMAIL_ID, image: emailImage.url, title: "Add your email", text: "Add your email to get an experience tailored to you.", link: EMAIL_LINK },
+             ...(getContactEmail() ? [] : [{ id: GUEST_EMAIL_ID, image: emailImage.url, title: "Add your email", text: "Add your email to get an experience tailored to you.", link: EMAIL_LINK }]),
           ];
       if (alive) setMessages([...guest, ...bird].slice(0, 3));
     };
