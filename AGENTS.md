@@ -13,3 +13,4 @@
 - Show EmailStep only before a customer's first pairing; customers with saved diffusers and diffuser edits skip it and rely on the guest banner, so returning users are never re-prompted.
 - Mount the shared guest email banner on both the diffuser list and setup, including edits, and reserve bottom space wherever it appears so pairing never removes the email entry point or hides controls.
 - Route customer-facing error alerts through notifySlackAlert, which also fans out to Bird (full debug trace) and Meta (bare AppError), so every error destination stays in sync.
+- Keep inbox visibility and unread-count rules in the browser-safe inbox-messages module so message retention is independently testable.
