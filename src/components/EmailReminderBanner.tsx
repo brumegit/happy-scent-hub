@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { getContactEmail } from "@/lib/customer-identity";
 
 // Persistent nudge for customers who skipped the email step. Stays pinned to
 // the bottom of setup until they add an email (red, hard to ignore, easy to
