@@ -981,8 +981,13 @@ function Setup() {
                     return;
                   }
                   track("AppPairingCompleted", {
-                    meta: { content_name: name.trim() || DEFAULT_NAME },
-                    bird: { diffuserName: name.trim() || DEFAULT_NAME, room: room.trim(), deviceId },
+                    meta: { content_name: name.trim() || DEFAULT_NAME, first_diffuser: existingCount === 0 },
+                    bird: {
+                      diffuserName: name.trim() || DEFAULT_NAME,
+                      room: room.trim(),
+                      deviceId,
+                      first_diffuser: existingCount === 0,
+                    },
                   });
                   addDiffuser({
                     name: name.trim() || DEFAULT_NAME,
