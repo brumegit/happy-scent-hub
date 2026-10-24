@@ -126,7 +126,7 @@ function PrivacyPage() {
             app (taps, scrolling and pages visited) and technical details such
             as device type and screen size. Sensitive fields are masked and
             never recorded. Recordings are linked to your email address only
-            when you are signed in, so our team can find your session when you
+            when you provide your email, so our team can find your session when you
             report an issue.
           </p>
           <p className="mt-3">
