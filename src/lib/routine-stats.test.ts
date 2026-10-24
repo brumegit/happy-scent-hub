@@ -21,7 +21,7 @@ describe("weekly coverage", () => {
   });
   it("names routines without clock times", () => {
     const names = routineNames(withRanges([[480, 1200]]));
-    expect(names).toBe("Daily morning");
+    expect(names).toBe("Daily all-waking-hours");
     expect(names).not.toMatch(/AM|PM/);
   });
 });
