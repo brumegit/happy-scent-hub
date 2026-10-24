@@ -1,6 +1,7 @@
 # Task roadmap
 
-- [ ] Add deferred Apple tracking permission, gate Meta reporting, and verify denied/allowed behavior. Native device verification requires a new Xcode build.
+- [x] Add deferred Apple tracking permission and Meta reporting gates; timing/authorization tests and browser blocking checks passed.
+- [ ] Verify the real Apple prompt and Allow/Refuse on iPhone. BLOCKED on: user pulling changes and running iOS build 16 with the updated web version in a test environment.
 
 - [x] Add optional email as the first setup step, Skip confirmation, and email attribution for support alerts.
 - [ ] Native code work (next store release): Bird push notifications (permission request, token to Bird with customer email), Firebase Analytics native SDK integration. BLOCKED on: Apple APNs key (.p8 + Key ID + Team ID) configured in Bird.
