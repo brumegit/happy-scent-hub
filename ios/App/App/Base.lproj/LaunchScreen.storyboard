@@ -16,14 +16,10 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="22" translatesAutoresizingMaskIntoConstraints="NO" id="brm-stack-01">
-                                <rect key="frame" x="100" y="300" width="175" height="76"/>
+                                <rect key="frame" x="100" y="325" width="175" height="17"/>
                                 <subviews>
-                                    <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" animating="YES" style="large" translatesAutoresizingMaskIntoConstraints="NO" id="brm-spin-01">
-                                        <rect key="frame" x="69" y="0.0" width="37" height="37"/>
-                                        <color key="color" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                    </activityIndicatorView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="brm-label-01">
-                                        <rect key="frame" x="0.0" y="59" width="175" height="17"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="175" height="17"/>
                                         <attributedString key="attributedText">
                                             <fragment content="OPENING BRUME">
                                                 <attributes>
