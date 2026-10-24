@@ -23,6 +23,13 @@ export function EmailReminderBanner({ stacked, onEmailSaved }: { stacked: boolea
     return () => window.removeEventListener("brume-email-saved", sync);
   }, []);
 
+  // Lets the inbox bell open this sheet from anywhere the banner is mounted.
+  useEffect(() => {
+    const open = () => { setEmail(getContactEmail() ?? ""); setOpen(true); };
+    (window as unknown as { __brumeOpenEmail?: () => void }).__brumeOpenEmail = open;
+    return () => { (window as unknown as { __brumeOpenEmail?: () => void }).__brumeOpenEmail = undefined; };
+  }, []);
+
   if (hasEmail) return null;
 
   return (
