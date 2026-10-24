@@ -64,6 +64,7 @@ import {
   type DaySchedule,
   type Intensity,
 } from "@/lib/diffuser";
+import { daysUsed, routineNames, weekCoverage, weeklyHours } from "@/lib/routine-stats";
 import { useDiffuserStore } from "@/stores/diffuserStore";
 import { bluetoothRequirementPrompt, useBluetoothRequirements } from "@/hooks/useBluetoothRequirements";
 
