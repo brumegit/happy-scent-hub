@@ -11,7 +11,7 @@ final class BrumeLoadingOverlay: UIView {
     private static weak var current: BrumeLoadingOverlay?
     private static var dismissed = false
 
-    static let champagne = UIColor(red: 1.0, green: 0.894, blue: 0.616, alpha: 1.0)
+    static let tint = UIColor.white
 
     @discardableResult
     static func install(on host: UIView) -> BrumeLoadingOverlay? {
@@ -51,17 +51,17 @@ final class BrumeLoadingOverlay: UIView {
         isUserInteractionEnabled = true
 
         let spinner = UIActivityIndicatorView(style: .large)
-        spinner.color = BrumeLoadingOverlay.champagne
+        spinner.color = BrumeLoadingOverlay.tint
         spinner.startAnimating()
 
         let label = UILabel()
         label.textAlignment = .center
         label.attributedText = NSAttributedString(
-            string: "Opening Brume 24/7",
+            string: "OPENING BRUME",
             attributes: [
                 .kern: 3.0,
-                .foregroundColor: BrumeLoadingOverlay.champagne,
-                .font: UIFont(name: "Georgia", size: 15) ?? UIFont.systemFont(ofSize: 15)
+                .foregroundColor: BrumeLoadingOverlay.tint,
+                .font: UIFont(name: "Jost-Regular", size: 14) ?? UIFont.systemFont(ofSize: 14, weight: .regular)
             ]
         )
 
