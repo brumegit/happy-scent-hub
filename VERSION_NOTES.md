@@ -9,6 +9,30 @@ version/build numbers.
 
 ---
 
+## 1.1 — build 15 (Android) / 1.1 build 16 (iOS)
+
+Date: 2026-10-24
+
+- Signed `.aab` rebuilt here in the Lovable environment (JDK 21 + Android SDK
+  installed there). The Mac was never used for Android builds, which is why it
+  has no Java installed.
+- `versionCode` 15, `versionName` "1.1" in `android/app/build.gradle`.
+- Start-up screen: static launch screen shows "OPENING BRUME" text only, the
+  animated spinner is drawn by the web layer as soon as the app is alive.
+- Apple ATT (App Tracking Transparency) support added natively:
+  `ios/App/App/ATTPlugin.swift`, `NSUserTrackingUsageDescription` in
+  `Info.plist`, plugin registered in `SceneDelegate.swift`. The prompt is
+  requested only after Bluetooth setup and the beep confirmation.
+- Tracking policy: Meta pixel and Conversions API are gated by
+  `canTrackAdvertising()`; refused or unresolved consent keeps Meta off.
+  Bird, Hotjar, Google Analytics and Slack are unaffected.
+- Signed with the existing BRUME upload keystore (same key as all prior
+  uploads — Play accepts it as an update).
+- Build output: `/mnt/documents/exports/brume-android-release-v1.1.aab`
+- Deobfuscation mapping: `/mnt/documents/exports/mapping-v1.1.txt`
+
+---
+
 ## 1.0.11 — build 12 (Android)
 
 Date: 2026-09-13
