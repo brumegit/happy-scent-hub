@@ -1,14 +1,15 @@
 import { Bell, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getContactEmail } from "@/lib/customer-identity";
-import scentImage from "@/assets/diffuser-hero.jpg";
+import refillsImage from "@/assets/refills.png.asset.json";
 
 // App inbox: Bird in-app inbox messages (last 3), each = image + short text + deep link.
 // Shown one at a time; white arrows on the image page between messages.
-// Guests always get an "add your email" message so the red (1) shows.
+// Guests always get a subscription-promo message so the red (1) shows.
 export type InboxMessage = { id: string; image: string; title: string; text: string; link: string };
 
-const GUEST_ID = "guest-add-email";
+const GUEST_ID = "guest-subscribe";
+const SUBSCRIBE_URL = "https://brume.me/collections/single-notes-collection";
 
 type BirdInboxLike = {
   inbox?: Record<string, unknown>;
@@ -61,7 +62,7 @@ export function InboxBell() {
       const bird = await fetchBirdInbox();
       const guest: InboxMessage[] = getContactEmail()
         ? []
-        : [{ id: GUEST_ID, image: scentImage, title: "Stay in the loop", text: "Add your email to get an experience tailored to you.", link: "#add-email" }];
+        : [{ id: GUEST_ID, image: refillsImage.url, title: "Save on refills", text: "Subscribe to your scent refills and get extra savings.", link: SUBSCRIBE_URL }];
       if (alive) setMessages([...guest, ...bird].slice(0, 3));
     };
     load();
@@ -93,10 +94,6 @@ export function InboxBell() {
 
   const go = (m: InboxMessage) => {
     setOpen(false);
-    if (m.link === "#add-email") {
-      (document.querySelector("[data-add-email]") as HTMLButtonElement | null)?.click();
-      return;
-    }
     window.location.href = m.link;
   };
 
@@ -171,7 +168,7 @@ export function InboxBell() {
                 <button type="button" onClick={() => go(current)} className={`flex w-full items-center justify-between gap-3 text-left text-sm leading-normal tracking-normal text-black ${current.image ? "px-3 py-3" : "p-3"}`}>
                   <span>{current.text}</span>
                   <span className="shrink-0 border border-black bg-transparent px-3 py-1.5 text-xs font-medium uppercase tracking-normal text-black">
-                    {current.id === GUEST_ID ? "Add email" : "Open"}
+                    {current.id === GUEST_ID ? "Subscribe" : "Open"}
                   </span>
                 </button>
               </div>
