@@ -1,7 +1,17 @@
 // Weekly-usage summary sent with AppRoutinePushed. Coverage is the share of the
 // week the diffuser is scheduled to run: 24/7 is 100, 12 hours a day is 50.
 
-import { DAYS, dayRanges, routineName, scheduleToBlocks, type DaySchedule } from "@/lib/diffuser";
+import {
+  DAYS,
+  INTENSITIES,
+  dayRanges,
+  intensityStars,
+  routineName,
+  scheduleToBlocks,
+  type CustomTiming,
+  type DaySchedule,
+  type Intensity,
+} from "@/lib/diffuser";
 
 const WEEK_MINUTES = 7 * 24 * 60;
 
@@ -41,4 +51,32 @@ export function daysUsed(schedule: DaySchedule[]): number {
     const day = schedule.find((s) => s.day === d.value);
     return !!day?.active && dayRanges(day).some(([start, end]) => end > start);
   }).length;
+}
+
+/**
+ * Intensity level 1–5. With custom spray/pause times the nearest preset is
+ * used, so the score still reflects how much oil the setting actually sprays.
+ */
+export function intensityLevel(intensity: Intensity, custom?: CustomTiming | null): number {
+  if (!custom) return intensityStars(intensity);
+  const closest = INTENSITIES.reduce(
+    (best, preset) =>
+      Math.abs(preset.onSeconds - custom.onSeconds) < Math.abs(best.onSeconds - custom.onSeconds)
+        ? preset
+        : best,
+    INTENSITIES[2]!,
+  );
+  return closest.stars;
+}
+
+/**
+ * Usage score 1–500: week coverage (0–100) × intensity level (1–5).
+ * 24/7 on the highest intensity is 500, 12 h a day on Medium is 150.
+ */
+export function usageScore(
+  schedule: DaySchedule[],
+  intensity: Intensity,
+  custom?: CustomTiming | null,
+): number {
+  return Math.max(1, Math.min(500, weekCoverage(schedule) * intensityLevel(intensity, custom)));
 }
