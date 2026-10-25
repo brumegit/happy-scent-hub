@@ -17,3 +17,4 @@
 - Load the Bird SDK after native platform detection and gate all Bird calls with bird-policy, so browser visits never create Bird contacts.
 - Keep Apple ATT in the local registered Capacitor plugin; request only on the saved-diffuser list after setup so Bluetooth and save dialogs stay uninterrupted.
 - Gate Meta Pixel and CAPI through the shared tracking policy; fail closed for missing native authorization or unresolved/consent-required regions, and keep email matching event-scoped in CAPI to avoid retained browser identifiers.
+- Register Bird remote push only through the native BirdKit/Bird Android SDKs behind the local BirdPush Capacitor plugin, linking native and web Bird contacts by the shared install externalid; the web SDK cannot hold a phone push address.

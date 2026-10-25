@@ -9,6 +9,25 @@ version/build numbers.
 
 ---
 
+## 1.2 — build 16 (Android) / 1.2 build 17 (iOS)
+
+Date: 2026-10-25
+
+- Bird remote push registration (missed in 1.1): Bird Swift SDK (BirdKit
+  0.2.2, Swift Package) and Bird Android SDK 0.4.3 with
+  `BirdFirebaseMessagingService`.
+- Local `BirdPush` Capacitor plugin on both platforms: notification
+  permission, `subscribedPush` attribute, contact linked by the per-install
+  `externalid` that the web Bird SDK also uses.
+- iOS: `App.entitlements` (aps-environment, app group
+  `group.me.brume.diffuser`, keychain group), `remote-notification`
+  background mode, APNs token forwarded to Bird in `AppDelegate`; people who
+  already allowed notifications are registered at launch without a new prompt.
+- Android minSdk raised to 26 (required by the Bird SDK).
+- Debug screen (10 logo taps → Open debug log) first line shows push status.
+
+---
+
 ## 1.1 — build 15 (Android) / 1.1 build 16 (iOS)
 
 Date: 2026-10-24
