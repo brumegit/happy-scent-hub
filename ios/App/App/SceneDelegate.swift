@@ -81,6 +81,7 @@ final class BrumeLoadingOverlay: UIView {
 /// Bridge controller that reports when the remote web app has finished loading.
 class BrumeBridgeViewController: CAPBridgeViewController {
     private var progressObservation: NSKeyValueObservation?
+    private var urlObservation: NSKeyValueObservation?
     private var loadingObservation: NSKeyValueObservation?
 
     override func capacitorDidLoad() {
@@ -110,6 +111,14 @@ class BrumeBridgeViewController: CAPBridgeViewController {
         webView.isOpaque = false
         webView.backgroundColor = .black
         webView.scrollView.backgroundColor = .black
+        // The Brume app screen stays locked (no rubber-band), but other pages
+        // opened inside the app (brume.me shop) must scroll normally.
+        urlObservation = webView.observe(\.url, options: [.initial, .new]) { web, _ in
+            let host = web.url?.host ?? ""
+            let isAppScreen = host.isEmpty || host == "app.brume.me" || host.hasSuffix(".lovable.app")
+            web.scrollView.isScrollEnabled = !isAppScreen
+            web.scrollView.bounces = !isAppScreen
+        }
         progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { _, change in
             if let value = change.newValue, value >= 0.95 {
                 NotificationCenter.default.post(name: brumeWebAppReady, object: nil)
