@@ -105,6 +105,22 @@ function birdIdentify(email: string): void {
   });
 }
 
+/**
+ * Links the web Bird contact to the per-install id that the native Bird SDK
+ * also uses (see bird-push.ts), so web events and the push token share one
+ * contact. Must run before any email identification.
+ */
+export function birdIdentifyInstall(installId: string): void {
+  withBird((bird) => {
+    void Promise.resolve(
+      bird.contact?.identify?.({
+        strategy: "Visitor",
+        identifier: { key: "externalid", value: installId },
+      }),
+    ).catch(() => {});
+  });
+}
+
 function birdTrack(name: string, props: Record<string, unknown>): void {
   withBird((bird) => {
     const fn = bird.tracker?.track ?? bird.tracker?.web?.track;
