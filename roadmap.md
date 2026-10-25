@@ -7,7 +7,7 @@
 
 - [x] Add optional email as the first setup step, Skip confirmation, and email attribution for support alerts.
 - [x] Bird native push code: BirdKit + Bird Android SDK, BirdPush plugin, install-id contact link, subscribedPush, debug status. Android release compiles.
-- [ ] Put the Bird application key into iOS Info.plist and Android strings.xml, build signed Android 1.2 (16). BLOCKED on: user sending the Bird application key.
+- [ ] Put the Bird application key into iOS Info.plist and Android strings.xml, build signed Android 1.2 (16). BLOCKED on: user sending the Bird application key (Aperçu tab), not the identity signing key.
 - [ ] iOS 1.2 (17) archive on Mac + confirm "Push registered with Bird" on iPhone and a test push. BLOCKED on: user running the Mac steps.
 - [ ] Firebase Analytics native SDK integration (next store release).
 - [ ] REMIND USER: Xcode part (iOS device testing / store build) — user said to remind him later (Oct 13, 2026). GoogleService-Info.plist already added; needs the "copy into Xcode project" step when he returns to it.
