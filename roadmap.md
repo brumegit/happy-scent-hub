@@ -1,6 +1,6 @@
 # Task roadmap
 
-- [ ] Restrict Bird SDK initialization and contact/event calls to installed mobile apps; verify browser blocking and mobile allowance.
+- [x] Restrict Bird SDK initialization and contact/event calls to installed mobile apps; browser blocking verified, mobile platform allowance tested with simulated native environments (not physical devices).
 
 - [x] Add deferred Apple tracking permission and Meta reporting gates; timing/authorization tests and browser blocking checks passed.
 - [ ] Verify the real Apple prompt and Allow/Refuse on iPhone. BLOCKED on: user pulling changes and running iOS build 16 with the updated web version in a test environment.
