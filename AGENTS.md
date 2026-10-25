@@ -14,5 +14,6 @@
 - Mount the shared guest email banner on both the diffuser list and setup, including edits, and reserve bottom space wherever it appears so pairing never removes the email entry point or hides controls.
 - Route customer-facing error alerts through notifySlackAlert, which also fans out to Bird (full debug trace) and Meta (bare AppError), so every error destination stays in sync.
 - Keep inbox visibility and unread-count rules in the browser-safe inbox-messages module so message retention is independently testable.
+- Load the Bird SDK after native platform detection and gate all Bird calls with bird-policy, so browser visits never create Bird contacts.
 - Keep Apple ATT in the local registered Capacitor plugin; request only on the saved-diffuser list after setup so Bluetooth and save dialogs stay uninterrupted.
 - Gate Meta Pixel and CAPI through the shared tracking policy; fail closed for missing native authorization or unresolved/consent-required regions, and keep email matching event-scoped in CAPI to avoid retained browser identifiers.
