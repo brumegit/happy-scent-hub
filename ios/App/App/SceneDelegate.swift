@@ -81,6 +81,7 @@ final class BrumeLoadingOverlay: UIView {
 /// Bridge controller that reports when the remote web app has finished loading.
 class BrumeBridgeViewController: CAPBridgeViewController {
     private var progressObservation: NSKeyValueObservation?
+    private var urlObservation: NSKeyValueObservation?
     private var loadingObservation: NSKeyValueObservation?
 
     override func capacitorDidLoad() {

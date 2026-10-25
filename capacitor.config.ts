@@ -15,11 +15,9 @@ const config: CapacitorConfig = {
     url: PRODUCTION_URL,
     cleartext: false,
     // Without this list the native shell treats the remote app as an external
-    // site and kicks the user out to Safari (black webview + Safari opening
-    // app.brume.me on launch). The brume.me shop is deliberately NOT listed:
-    // the app webview has scrolling disabled, so shop links must open in the
-    // system browser where the page can scroll.
-    allowNavigation: ["app.brume.me", "*.lovable.app"],
+    // site and kicks the user out to Safari. brume.me shop pages stay in-app;
+    // SceneDelegate re-enables scrolling whenever the page is not app.brume.me.
+    allowNavigation: ["app.brume.me", "*.brume.me", "brume.me", "*.lovable.app"],
   },
   ios: {
     contentInset: "never",
