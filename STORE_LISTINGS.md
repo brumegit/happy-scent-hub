@@ -157,3 +157,13 @@ intensity (low, medium or high), and set up to five weekly schedules straight
 from your phone. Settings stay on your device and are sent to your diffuser
 over Bluetooth — no account, no password. Enter the email you ordered with for
 a tailored experience, or continue as a guest.
+
+### Release notes 1.2 (What's new — 500 char max)
+
+This update adds push notifications. After you save your first diffuser, the
+app can ask to send you reminders and offers, and you can turn them off anytime
+from your phone settings. Everything else works the same: pair your diffuser
+over Bluetooth, choose low, medium or high intensity, and set up to five weekly
+schedules, no account needed. General stability improvements.
+
+Need help? Text us: +1 888-213-2088
