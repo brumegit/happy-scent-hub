@@ -5,6 +5,7 @@
 
 import { getContactEmail } from "./customer-identity";
 import { trackEvent, setMetaUserEmail } from "./meta";
+import { isBirdPlatformAllowed } from "./bird-policy";
 
 type BirdLike = {
   tracker?: {
@@ -66,8 +67,20 @@ function gaTrack(name: string, props: Record<string, unknown>): void {
 
 const DECLARED_KEY = "brume-email-declared-sent";
 
+/** Load Bird only after confirming an installed mobile app environment. */
+export function initBird(): void {
+  if (typeof window === "undefined" || !isBirdPlatformAllowed(appPlatform())) return;
+  if (document.getElementById("brume-bird-sdk")) return;
+  const script = document.createElement("script");
+  script.id = "brume-bird-sdk";
+  script.src = "https://embeddables.p.mbirdcdn.net/sdk/v0/bird-sdk.js";
+  script.dataset["configUrl"] = "https://api.bird.com/workspaces/69097a3b-f975-4e02-953e-7ed544b6d2b8/applications/2edfaee8-dfab-450a-8f66-033dd4e450b8/signature/2024-06-17T17-12-51_1664b9167f";
+  script.defer = true;
+  document.head.appendChild(script);
+}
+
 function withBird(fn: (bird: BirdLike) => void, attempt = 0): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !isBirdPlatformAllowed(appPlatform())) return;
   const bird = (window as unknown as { Bird?: BirdLike }).Bird;
   if (bird?.tracker || bird?.contact) {
     try {

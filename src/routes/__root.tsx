@@ -18,7 +18,7 @@ import { DebugLogSheet } from "@/components/DebugLogSheet";
 import { InteractionTracer } from "@/components/InteractionTracer";
 import { useCartSync } from "@/hooks/useCartSync";
 import { initMetaPixel } from "@/lib/meta";
-import { track, identifyKnownUser, initGoogleAnalytics } from "@/lib/analytics";
+import { track, identifyKnownUser, initGoogleAnalytics, initBird } from "@/lib/analytics";
 import { initHotjar, identifyHotjar } from "@/lib/hotjar";
 import { getContactEmail } from "@/lib/customer-identity";
 import { initTrackingPermission, onTrackingPermissionChange, canTrackAdvertising } from "@/lib/tracking-permission";
@@ -110,14 +110,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
-    scripts: [
-      {
-        src: "https://embeddables.p.mbirdcdn.net/sdk/v0/bird-sdk.js",
-        "data-config-url":
-          "https://api.bird.com/workspaces/69097a3b-f975-4e02-953e-7ed544b6d2b8/applications/2edfaee8-dfab-450a-8f66-033dd4e450b8/signature/2024-06-17T17-12-51_1664b9167f",
-        defer: true,
-      },
-    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -144,6 +136,7 @@ function RootComponent() {
   useCartSync();
 
   useEffect(() => {
+    initBird();
     // Query ATT silently at launch. Only the diffuser list requests permission.
     const startPermittedTracking = () => {
       if (!canTrackAdvertising()) return;
