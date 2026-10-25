@@ -173,6 +173,10 @@ export async function requestNotificationPermission() {
   notificationsAsked = true;
   try {
     if (isNativeSync()) {
+      // Store builds with Bird push: one prompt that also registers the phone
+      // with Bird. Older builds fall through to the local-notification prompt.
+      const { requestBirdPush } = await import("@/lib/bird-push");
+      if (await requestBirdPush()) return;
       const { LocalNotifications } = await import("@capacitor/local-notifications");
       const current = await LocalNotifications.checkPermissions();
       if (current.display === "prompt" || current.display === "prompt-with-rationale") {

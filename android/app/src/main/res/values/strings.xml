@@ -4,4 +4,5 @@
     <string name="title_activity_main">Brume 24/7</string>
     <string name="package_name">me.brume.diffuser</string>
     <string name="custom_url_scheme">me.brume.diffuser</string>
+    <string translatable="false" name="com_bird_application_key">BIRD_APPLICATION_KEY</string>
 </resources>

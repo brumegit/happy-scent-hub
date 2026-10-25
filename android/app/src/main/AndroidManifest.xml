@@ -27,6 +27,18 @@
             </intent-filter>
         </activity>
 
+        <!-- Bird receives the Firebase push token and incoming pushes here.
+             Lint cannot follow Bird's obfuscated parent class (it does extend
+             FirebaseMessagingService), hence the ignore. -->
+        <service
+            android:name="com.bird.BirdFirebaseMessagingService"
+            android:exported="false"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

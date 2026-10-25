@@ -176,6 +176,26 @@ App Store requires screenshots at specific sizes. The easiest way:
 
 ---
 
+## Push notifications build (1.2 / build 17)
+
+This build adds Bird push. Everything is already in the project; on the Mac:
+
+1. `git pull`, then `bun install`, `bun run build`, `npx cap sync ios`,
+   `npx cap open ios`.
+2. Xcode resolves the **swift-sdk** (BirdKit) package automatically; wait for
+   "Resolving packages" to finish.
+3. App target → **Signing & Capabilities**: pick your Team. You should see
+   **Push Notifications**, **App Groups** (`group.me.brume.diffuser`),
+   **Keychain Sharing** and **Background Modes → Remote notifications**.
+   If App Groups shows a red warning, click the refresh/➕ next to
+   `group.me.brume.diffuser` so Xcode registers it.
+4. General tab: Version **1.2**, Build **17**.
+5. Run on your iPhone. Allow notifications when asked (or, if you already
+   allowed them before, nothing is asked). Tap the logo 10 times → **Open
+   debug log**: the first line must say **Push registered with Bird**.
+6. In Bird, your contact should now show a push subscription. Send a test
+   push from the flow. Then Product → Archive → upload as usual.
+
 ## Testing on your iPhone first (recommended before submitting)
 
 You don't need to submit to the store to test — you can run it directly:

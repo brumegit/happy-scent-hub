@@ -7,8 +7,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Start Bird and refresh the push token for people who already allowed
+        // notifications, so they reach Bird without being asked again.
+        _ = BrumeBird.shared
+        BrumeBird.refreshTokenIfAllowed()
         return true
+    }
+
+    // MARK: Bird remote push
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        BrumeBird.register(token: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        BrumeBird.lastError = "APNs registration failed: \(error.localizedDescription)"
+    }
+
+    func application(_ application: UIApplication,
+                     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        guard let bird = BrumeBird.shared else {
+            completionHandler(.noData)
+            return
+        }
+        bird.notifications.handleBackgroundNotification(userInfo: userInfo, completionHandler: completionHandler)
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
