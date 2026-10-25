@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- Bird's SDK declares minSdk 26 but we keep supporting Android 7 (API 24).
+         The Bird code only ever runs on API 26+ (gated in MainActivity), so the
+         override is safe: on Android 7 the Bird classes are simply never loaded. -->
+    <uses-sdk tools:overrideLibrary="com.bird" />
+
     <!-- Phone only — no tablet support (mirrors iOS TARGETED_DEVICE_FAMILY = 1) -->
     <supports-screens
         android:smallScreens="true"
