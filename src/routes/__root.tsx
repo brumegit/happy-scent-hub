@@ -19,6 +19,7 @@ import { InteractionTracer } from "@/components/InteractionTracer";
 import { useCartSync } from "@/hooks/useCartSync";
 import { initMetaPixel } from "@/lib/meta";
 import { track, identifyKnownUser, initGoogleAnalytics, initBird, birdIdentifyInstall } from "@/lib/analytics";
+import { hasBirdPush, getInstallId, syncBirdPush } from "@/lib/bird-push";
 import { initHotjar, identifyHotjar } from "@/lib/hotjar";
 import { getContactEmail } from "@/lib/customer-identity";
 import { initTrackingPermission, onTrackingPermissionChange, canTrackAdvertising } from "@/lib/tracking-permission";
@@ -139,12 +140,12 @@ function RootComponent() {
     initBird();
     // Store builds with Bird push: link web + native Bird contacts by install
     // id, and refresh the push token if notifications were already allowed.
-    void import("@/lib/bird-push").then(({ hasBirdPush, getInstallId, syncBirdPush }) => {
-      const installId = getInstallId();
-      if (!hasBirdPush() || !installId) return;
+    // Runs before identifyKnownUser below so the install id lands first.
+    const installId = hasBirdPush() ? getInstallId() : null;
+    if (installId) {
       birdIdentifyInstall(installId);
       void syncBirdPush();
-    });
+    }
     // Query ATT silently at launch. Only the diffuser list requests permission.
     const startPermittedTracking = () => {
       if (!canTrackAdvertising()) return;
