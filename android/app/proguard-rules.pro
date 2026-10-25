@@ -43,3 +43,12 @@
 # Move all obfuscated classes into the root package (Play "Repackage Classes")
 -repackageclasses ''
 -allowaccessmodification
+
+# Bird SDK (push notifications) uses kotlinx.serialization and reflection.
+-keep class com.bird.** { *; }
+-dontwarn com.bird.**
+-keepattributes InnerClasses,Signature,EnclosingMethod
+-keep class kotlinx.serialization.** { *; }
+-dontwarn kotlinx.serialization.**
+-dontwarn io.ktor.**
+-dontwarn org.slf4j.**
