@@ -66,6 +66,21 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>Bird</key>
+	<dict>
+		<key>ApplicationKey</key>
+		<string>BIRD_APPLICATION_KEY</string>
+		<key>AppGroup</key>
+		<string>group.me.brume.diffuser</string>
+		<key>AccessGroup</key>
+		<string>$(AppIdentifierPrefix)me.brume.diffuser</string>
+		<key>LogLevel</key>
+		<string>none</string>
+	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Brume uses Bluetooth to connect to and configure your diffuser.</string>
 

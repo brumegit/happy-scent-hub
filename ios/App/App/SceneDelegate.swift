@@ -86,6 +86,7 @@ class BrumeBridgeViewController: CAPBridgeViewController {
 
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(ATTPlugin())
+        bridge?.registerPluginInstance(BirdPushPlugin())
     }
 
     override func viewDidAppear(_ animated: Bool) {

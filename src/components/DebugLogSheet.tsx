@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { birdPushStatus, getInstallId, hasBirdPush } from "@/lib/bird-push";
 import { useHydrated } from "@/hooks/useHydrated";
 import { emailDebugLog } from "@/lib/emailLog";
 import { setDebugEnabled, useDebugMode } from "@/hooks/useDebugMode";
@@ -12,10 +13,27 @@ export function DebugLogSheet() {
   const { log, linkError, startedAt } = usePushDebugStore();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [pushLine, setPushLine] = useState("Push: checking...");
+
+  useEffect(() => {
+    if (!open) return;
+    if (!hasBirdPush()) {
+      setPushLine("Push: not available in this app build");
+      return;
+    }
+    void birdPushStatus().then((s) => {
+      setPushLine(
+        s
+          ? `Push: permission ${s.permission} · ${s.registered ? "Push registered with Bird" : "NOT registered"} · Bird ${s.birdReady ? "ready" : "not started"}${s.error ? ` · ${s.error}` : ""} · id ${getInstallId() ?? "none"}`
+          : "Push: status unavailable",
+      );
+    });
+  }, [open]);
 
   if (!hydrated || !debug) return null;
 
   const text = [
+    pushLine,
     startedAt ? `Last push ${new Date(startedAt).toLocaleTimeString()}` : "No push yet.",
     linkError ? `\nERROR:\n${linkError}\n` : "",
     ...log,
