@@ -67,9 +67,9 @@ function gaTrack(name: string, props: Record<string, unknown>): void {
 
 const DECLARED_KEY = "brume-email-declared-sent";
 
-/** Load Bird only after confirming an installed mobile app environment. */
+/** Load Bird only in the store apps, or on the web once an email is declared. */
 export function initBird(): void {
-  if (typeof window === "undefined" || !isBirdPlatformAllowed(appPlatform())) return;
+  if (typeof window === "undefined" || !isBirdPlatformAllowed(appPlatform(), !!getContactEmail())) return;
   if (document.getElementById("brume-bird-sdk")) return;
   const script = document.createElement("script");
   script.id = "brume-bird-sdk";
@@ -80,7 +80,7 @@ export function initBird(): void {
 }
 
 function withBird(fn: (bird: BirdLike) => void, attempt = 0): void {
-  if (typeof window === "undefined" || !isBirdPlatformAllowed(appPlatform())) return;
+  if (typeof window === "undefined" || !isBirdPlatformAllowed(appPlatform(), !!getContactEmail())) return;
   const bird = (window as unknown as { Bird?: BirdLike }).Bird;
   if (bird?.tracker || bird?.contact) {
     try {
@@ -166,6 +166,7 @@ export function identifyKnownUser(): void {
   const email = getContactEmail();
   if (!email) return;
   setMetaUserEmail(email);
+  initBird();
   birdIdentify(email);
 }
 
@@ -178,6 +179,7 @@ export function declareEmail(source: string): void {
   const email = getContactEmail();
   if (!email) return;
   setMetaUserEmail(email);
+  initBird();
   birdIdentify(email);
   let first = true;
   try {
