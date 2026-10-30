@@ -1,4 +1,8 @@
-/** Bird is reserved for installed mobile apps, never browser visitors. */
-export function isBirdPlatformAllowed(platform: string | undefined): boolean {
-  return platform === "ios" || platform === "android";
+/**
+ * Bird audience: installed mobile apps always; browser visitors only once they
+ * have declared an email. Anonymous website visitors never reach Bird.
+ */
+export function isBirdPlatformAllowed(platform: string | undefined, hasEmail = false): boolean {
+  if (platform === "ios" || platform === "android") return true;
+  return platform === "web" && hasEmail;
 }
