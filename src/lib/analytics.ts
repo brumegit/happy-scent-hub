@@ -94,15 +94,24 @@ function withBird(fn: (bird: BirdLike) => void, attempt = 0): void {
   if (attempt < 20) setTimeout(() => withBird(fn, attempt + 1), 500);
 }
 
-function birdIdentify(email: string): void {
+// Bird calls run in order: an event must never fire before the identify that
+// precedes it has finished, or it lands on an anonymous contact with no email.
+let birdChain: Promise<unknown> = Promise.resolve();
+function birdQueue(fn: (bird: BirdLike) => unknown): void {
   withBird((bird) => {
-    void Promise.resolve(
-      bird.contact?.identify?.({
-        strategy: "Visitor",
-        identifier: { key: "emailaddress", value: email },
-      }),
-    ).catch(() => {});
+    birdChain = birdChain
+      .then(() => Promise.race([Promise.resolve(fn(bird)), new Promise((r) => setTimeout(r, 5000))]))
+      .catch(() => {});
   });
+}
+
+function birdIdentify(email: string): void {
+  birdQueue((bird) =>
+    bird.contact?.identify?.({
+      strategy: "Visitor",
+      identifier: { key: "emailaddress", value: email },
+    }),
+  );
 }
 
 /**
@@ -111,21 +120,18 @@ function birdIdentify(email: string): void {
  * contact. Must run before any email identification.
  */
 export function birdIdentifyInstall(installId: string): void {
-  withBird((bird) => {
-    void Promise.resolve(
-      bird.contact?.identify?.({
-        strategy: "Visitor",
-        identifier: { key: "externalid", value: installId },
-      }),
-    ).catch(() => {});
-  });
+  birdQueue((bird) =>
+    bird.contact?.identify?.({
+      strategy: "Visitor",
+      identifier: { key: "externalid", value: installId },
+    }),
+  );
 }
 
 function birdTrack(name: string, props: Record<string, unknown>): void {
-  withBird((bird) => {
+  birdQueue((bird) => {
     const fn = bird.tracker?.track ?? bird.tracker?.web?.track;
-    if (!fn) return;
-    void Promise.resolve(fn.call(bird.tracker, name, props)).catch(() => {});
+    return fn ? fn.call(bird.tracker, name, props) : undefined;
   });
 }
 
